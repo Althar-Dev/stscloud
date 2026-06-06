@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -187,7 +188,7 @@ export default function DeployPage() {
             </div>
           )}
 
-          {step === 3 && (step === 3 && (
+          {step === 3 && (
             <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
                <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto shadow-2xl shadow-primary/30">
                  <Rocket className="size-12 text-primary animate-bounce" />
@@ -210,13 +211,13 @@ export default function DeployPage() {
                   <span className="text-xs md:text-sm font-medium">Mounting persistent storage...</span>
                 </div>
               </div>
-              <Link href="/dashboard" className="block w-full">
+              <Link href="/" className="block w-full">
                 <Button className="w-full bg-primary text-white h-12 shadow-lg shadow-primary/20">
                   Go to Dashboard
                 </Button>
               </Link>
             </div>
-          ))}
+          )}
         </main>
       </SidebarInset>
     </>

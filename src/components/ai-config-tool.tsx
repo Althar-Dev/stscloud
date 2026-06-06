@@ -29,7 +29,7 @@ export function AIConfigTool() {
       setResult(output);
       toast({
         title: "Optimization Complete",
-        description: "AI has generated optimized settings for your instance.",
+        description: "AI has generated optimized settings for your server.",
       });
     } catch (error) {
       toast({

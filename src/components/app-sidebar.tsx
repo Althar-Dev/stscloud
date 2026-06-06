@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -27,12 +28,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Rocket, label: "Deploy Server", href: "/deploy" },
 ];
 
 const infrastructureItems = [
-  { icon: ServerIcon, label: "All Servers", href: "/dashboard" },
+  { icon: ServerIcon, label: "All Servers", href: "/" },
   { icon: Cpu, label: "Node Health", href: "/nodes" },
   { icon: ShieldCheck, label: "Security", href: "/access" },
 ];
@@ -77,9 +78,9 @@ export function AppSidebar() {
             <SidebarMenu>
               {infrastructureItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) || (item.href === "/" && pathname === "/")} tooltip={item.label}>
                     <Link href={item.href}>
-                      <item.icon className={pathname.startsWith(item.href) ? "text-primary" : ""} />
+                      <item.icon className={(pathname.startsWith(item.href) && item.href !== "/") || (item.href === "/" && pathname === "/") ? "text-primary" : ""} />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
