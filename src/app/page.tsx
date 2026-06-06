@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -22,9 +21,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const mockServers = [
-  { id: "s-1", name: "Main Survival", game: "Minecraft", players: "12/20", status: "online", node: "Phoenix-01" },
-  { id: "s-2", name: "CS2 Competitive", game: "CS2", players: "4/10", status: "online", node: "Phoenix-02" },
-  { id: "s-3", name: "Valheim World", game: "Valheim", players: "0/10", status: "offline", node: "Europe-North" },
+  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", players: "1.2k req/m", status: "online" },
+  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", players: "Active", status: "online" },
+  { id: "s-3", name: "Portfolio Site", type: "Website", details: "Static • London-01", players: "450 req/m", status: "offline" },
 ];
 
 export default function Dashboard() {
@@ -66,10 +65,10 @@ export default function Dashboard() {
                   <div className="size-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                     <Zap className="size-6 text-white" />
                   </div>
-                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">3 Running</Badge>
+                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">2 Running</Badge>
                 </div>
                 <div className="mt-4">
-                  <div className="text-2xl font-bold font-headline">5 Active</div>
+                  <div className="text-2xl font-bold font-headline">3 Active</div>
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
                 </div>
               </CardContent>
@@ -99,7 +98,7 @@ export default function Dashboard() {
                   <Badge variant="outline" className="border-green-500/30 text-green-500 bg-green-500/5">Protected</Badge>
                 </div>
                 <div className="mt-4">
-                  <div className="text-2xl font-bold font-headline">24 DDoS</div>
+                  <div className="text-2xl font-bold font-headline">128 Attacks</div>
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Mitigated Today</div>
                 </div>
               </CardContent>
@@ -110,7 +109,7 @@ export default function Dashboard() {
                   <div className="size-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
                     <ServerIcon className="size-6 text-muted-foreground" />
                   </div>
-                  <Badge variant="secondary">Global</Badge>
+                  <Badge variant="secondary">Cloud</Badge>
                 </div>
                 <div className="mt-4">
                   <div className="text-2xl font-bold font-headline">2 Nodes</div>
@@ -141,7 +140,7 @@ export default function Dashboard() {
                     <div className="p-5 flex flex-row items-center justify-between pb-3">
                       <div className="space-y-1">
                         <div className="text-lg font-headline font-bold truncate max-w-[150px]">{server.name}</div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{server.game} • {server.node}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{server.type} • {server.details}</p>
                       </div>
                       <div className={cn(
                         "size-2.5 rounded-full",
@@ -152,7 +151,7 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Activity className="size-4 text-primary" />
-                          <span className="font-medium text-muted-foreground">{server.players} Players</span>
+                          <span className="font-medium text-muted-foreground">{server.players}</span>
                         </div>
                         <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                           <ExternalLink className="size-4" />

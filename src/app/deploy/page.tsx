@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -22,12 +21,10 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const templates = [
-  { id: "mc", name: "Minecraft", group: "Games", icon: "⛏️", color: "text-green-400" },
-  { id: "cs2", name: "Counter-Strike 2", group: "Games", icon: "🎯", color: "text-orange-400" },
-  { id: "rust", name: "Rust", group: "Games", icon: "☢️", color: "text-red-400" },
-  { id: "node", name: "Node.js", group: "Apps", icon: "🟢", color: "text-green-500" },
-  { id: "db", name: "Redis Cache", group: "Data", icon: "💾", color: "text-red-500" },
-  { id: "docker", name: "Custom Docker", group: "Other", icon: "🐳", color: "text-blue-400" },
+  { id: "web-next", name: "Next.js App", group: "Website", icon: "🌐", color: "text-blue-400" },
+  { id: "web-static", name: "Static Site", group: "Website", icon: "📄", color: "text-green-400" },
+  { id: "bot-discord", name: "Discord Bot", group: "Bots", icon: "🤖", color: "text-indigo-400" },
+  { id: "bot-telegram", name: "Telegram Bot", group: "Bots", icon: "✈️", color: "text-sky-400" },
 ];
 
 export default function DeployPage() {
@@ -70,7 +67,7 @@ export default function DeployPage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="text-center space-y-2">
                 <h2 className="text-2xl md:text-3xl font-headline font-bold">Choose a Template</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Select from our pre-configured environments or use a custom image.</p>
+                <p className="text-muted-foreground text-sm md:text-base">Select your application environment.</p>
               </div>
 
               <div className="relative max-w-md mx-auto">
@@ -78,7 +75,7 @@ export default function DeployPage() {
                 <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
                 {templates.map((t) => (
                   <Card 
                     key={t.id} 
@@ -126,10 +123,10 @@ export default function DeployPage() {
                   <CardContent className="space-y-4">
                     <div className="flex justify-between font-bold font-headline text-sm md:text-base">
                       <span>Limits</span>
-                      <span className="text-primary">200% (2 vCores)</span>
+                      <span className="text-primary">100% (1 vCore)</span>
                     </div>
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: '50%' }} />
+                      <div className="h-full bg-primary" style={{ width: '25%' }} />
                     </div>
                   </CardContent>
                 </Card>
@@ -143,10 +140,10 @@ export default function DeployPage() {
                   <CardContent className="space-y-4">
                     <div className="flex justify-between font-bold font-headline text-sm md:text-base">
                       <span>Max RAM</span>
-                      <span className="text-accent">4096 MB</span>
+                      <span className="text-accent">1024 MB</span>
                     </div>
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-accent" style={{ width: '40%' }} />
+                      <div className="h-full bg-accent" style={{ width: '20%' }} />
                     </div>
                   </CardContent>
                 </Card>
@@ -194,7 +191,7 @@ export default function DeployPage() {
                  <Rocket className="size-12 text-primary animate-bounce" />
                </div>
                <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Deploying System...</h2>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Deploying Server...</h2>
                 <p className="text-muted-foreground text-sm">We are provisioning your Docker container and setting up the network routes.</p>
               </div>
               <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 space-y-4 text-left">
@@ -204,7 +201,7 @@ export default function DeployPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-green-500" />
-                  <span className="text-xs md:text-sm font-medium">Docker image pulled (v1.20.1)</span>
+                  <span className="text-xs md:text-sm font-medium">Docker image pulled (v1.2.0)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-primary animate-pulse" />

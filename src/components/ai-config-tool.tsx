@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -16,10 +15,10 @@ export function AIConfigTool() {
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<GenerateOptimizedServerConfigsOutput | null>(null);
   const [formData, setFormData] = React.useState({
-    gameName: "Minecraft",
-    playerCount: 20,
+    gameName: "Next.js Website",
+    playerCount: 1000,
     resourceUsage: "medium" as const,
-    performanceGoals: "High FPS, stable TPS, low latency"
+    performanceGoals: "Fast load times, SEO optimized, edge caching"
   });
 
   const handleGenerate = async () => {
@@ -54,7 +53,7 @@ export function AIConfigTool() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="game">Game Profile</Label>
+            <Label htmlFor="game">App/Bot Type</Label>
             <Input 
               id="game" 
               value={formData.gameName}
@@ -63,7 +62,7 @@ export function AIConfigTool() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="players">Expected Players</Label>
+              <Label htmlFor="players">Target Traffic (Reqs)</Label>
               <Input 
                 id="players" 
                 type="number"
@@ -92,7 +91,7 @@ export function AIConfigTool() {
             <Label htmlFor="goals">Performance Goals</Label>
             <Input 
               id="goals" 
-              placeholder="e.g., minimal latency, high tick rate"
+              placeholder="e.g., fast API response, low latency"
               value={formData.performanceGoals}
               onChange={(e) => setFormData(p => ({ ...p, performanceGoals: e.target.value }))}
             />
@@ -130,15 +129,15 @@ export function AIConfigTool() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Launch Parameters</h4>
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Runtime Arguments</h4>
             <pre className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-accent border border-primary/20 overflow-x-auto">
-              {result?.launchParameters || "bin/server-exec --port 25565 --max-players 20 --optimized-io"}
+              {result?.launchParameters || "npm run start -- --port 8080 --optimize"}
             </pre>
           </div>
           <div>
-            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Settings</h4>
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Config</h4>
             <div className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-slate-300 border border-border whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar">
-              {result?.optimizedSettings || "performance-mode=true\ntick-rate=20\nnetwork-compression=256\nview-distance=10"}
+              {result?.optimizedSettings || "NODE_ENV=production\nMEMORY_LIMIT=1024\nCACHE_TTL=3600\nCOMPRESSION=true"}
             </div>
           </div>
         </CardContent>
