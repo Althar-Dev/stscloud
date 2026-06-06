@@ -13,7 +13,8 @@ import {
   Database, 
   Globe, 
   ChevronLeft,
-  CheckCircle2
+  CheckCircle2,
+  Bot
 } from "lucide-react";
 import React from "react";
 import { Input } from "@/components/ui/input";
@@ -21,10 +22,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const templates = [
-  { id: "web-next", name: "Next.js App", group: "Website", icon: "🌐", color: "text-blue-400" },
-  { id: "web-static", name: "Static Site", group: "Website", icon: "📄", color: "text-green-400" },
-  { id: "bot-discord", name: "Discord Bot", group: "Bots", icon: "🤖", color: "text-indigo-400" },
-  { id: "bot-telegram", name: "Telegram Bot", group: "Bots", icon: "✈️", color: "text-sky-400" },
+  { id: "website", name: "Website", group: "Cloud", icon: Globe, color: "text-blue-400" },
+  { id: "bots", name: "Bots", group: "Cloud", icon: Bot, color: "text-indigo-400" },
 ];
 
 export default function DeployPage() {
@@ -75,20 +74,24 @@ export default function DeployPage() {
                 <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 max-w-2xl mx-auto">
                 {templates.map((t) => (
                   <Card 
                     key={t.id} 
                     className={cn(
-                      "cursor-pointer hover:border-primary/50 transition-all group",
+                      "cursor-pointer hover:border-primary/50 transition-all group overflow-hidden relative",
                       selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card border-border/50"
                     )}
                     onClick={() => setSelectedTemplate(t.id)}
                   >
-                    <CardContent className="p-4 md:p-6 text-center space-y-2 md:space-y-3">
-                      <div className="text-3xl md:text-4xl group-hover:scale-110 transition-transform">{t.icon}</div>
-                      <div className="font-headline font-bold text-sm md:text-base">{t.name}</div>
-                      <Badge variant="secondary" className="text-[10px] uppercase">{t.group}</Badge>
+                    <CardContent className="p-8 text-center space-y-4">
+                      <div className={cn("size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
+                        <t.icon className="size-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="font-headline font-bold text-lg">{t.name}</div>
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-widest">{t.group}</Badge>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

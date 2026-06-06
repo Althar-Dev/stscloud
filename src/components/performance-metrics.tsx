@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,7 @@ export function PerformanceMetrics() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // Only run on client to prevent hydration mismatch
+    // FIX: Only run on client after mount to prevent hydration mismatch
     setMounted(true);
     setData(generateData());
 
@@ -48,7 +47,7 @@ export function PerformanceMetrics() {
     return () => clearInterval(interval);
   }, []);
 
-  // Hydration safety: render skeleton on server and first client pass
+  // Hydration safety: render skeleton on server
   if (!mounted || data.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
