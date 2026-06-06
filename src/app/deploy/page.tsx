@@ -11,12 +11,11 @@ import {
   ArrowRight, 
   Cpu, 
   Database, 
-  Globe, 
   ChevronLeft,
   CheckCircle2,
   Bot,
   HardDrive,
-  Zap
+  Globe
 } from "lucide-react";
 import React from "react";
 import { Input } from "@/components/ui/input";
@@ -166,23 +165,7 @@ export default function DeployPage() {
                 ))}
               </div>
 
-              <div className="pt-6">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 px-1">Lokasi Server</h3>
-                <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  <div className="p-3 md:p-4 rounded-xl border border-primary bg-primary/5 text-center cursor-pointer">
-                    <Globe className="size-4 mx-auto mb-2 text-primary" />
-                    <div className="text-xs md:text-sm font-bold">Phoenix-01</div>
-                    <div className="text-[8px] md:text-[10px] text-muted-foreground">US-WEST</div>
-                  </div>
-                  <div className="p-3 md:p-4 rounded-xl border border-border bg-transparent text-center cursor-pointer opacity-50 hover:opacity-100 transition-opacity">
-                    <Globe className="size-4 mx-auto mb-2 text-muted-foreground" />
-                    <div className="text-xs md:text-sm font-bold">Singapore-01</div>
-                    <div className="text-[8px] md:text-[10px] text-muted-foreground">ASIA-SE</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-4">
+              <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
                 <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto">
                   <ChevronLeft className="size-4" /> Kembali
                 </Button>
