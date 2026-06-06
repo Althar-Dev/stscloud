@@ -2,7 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -14,7 +14,9 @@ import {
   Globe, 
   ChevronLeft,
   CheckCircle2,
-  Bot
+  Bot,
+  HardDrive,
+  Zap
 } from "lucide-react";
 import React from "react";
 import { Input } from "@/components/ui/input";
@@ -26,9 +28,24 @@ const templates = [
   { id: "bots", name: "Bots", group: "Cloud", icon: Bot, color: "text-indigo-400" },
 ];
 
+const resourcePresets = [
+  { id: "p1", ram: "1GB", cpu: "20%", disk: "1GB" },
+  { id: "p2", ram: "2GB", cpu: "30%", disk: "2GB" },
+  { id: "p3", ram: "3GB", cpu: "40%", disk: "3GB" },
+  { id: "p4", ram: "4GB", cpu: "45%", disk: "4GB" },
+  { id: "p5", ram: "5GB", cpu: "50%", disk: "5GB" },
+  { id: "p6", ram: "6GB", cpu: "55%", disk: "6GB" },
+  { id: "p7", ram: "7GB", cpu: "60%", disk: "7GB" },
+  { id: "p8", ram: "8GB", cpu: "65%", disk: "8GB" },
+  { id: "p9", ram: "9GB", cpu: "70%", disk: "9GB" },
+  { id: "p10", ram: "10GB", cpu: "75%", disk: "10GB" },
+  { id: "p11", ram: "Unlimited", cpu: "85%", disk: "Unlimited" },
+];
+
 export default function DeployPage() {
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = React.useState<string>("p1");
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
 
@@ -36,7 +53,7 @@ export default function DeployPage() {
     <>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
+        <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-6 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <div className="h-4 w-px bg-border" />
@@ -46,7 +63,7 @@ export default function DeployPage() {
 
         <main className="flex-1 p-4 md:p-6 space-y-8 max-w-5xl mx-auto w-full">
           {/* Progress Tracker */}
-          <div className="flex items-center justify-between max-w-2xl mx-auto relative mb-12 px-4">
+          <div className="flex items-center justify-between max-w-2xl mx-auto relative mb-8 md:mb-12 px-4">
             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-secondary -translate-y-1/2 -z-10" />
             {[1, 2, 3].map((s) => (
               <div 
@@ -65,17 +82,16 @@ export default function DeployPage() {
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="text-center space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Choose a Template</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Select your application environment.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Pilih Template</h2>
+                <p className="text-muted-foreground text-sm">Pilih lingkungan aplikasi Anda.</p>
               </div>
 
               <div className="relative max-w-md mx-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
+                <Input placeholder="Cari template..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
-              {/* Template Grid - Changed grid-cols-1 to grid-cols-2 */}
-              <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="grid grid-cols-2 gap-3 md:gap-4 max-w-2xl mx-auto">
                 {templates.map((t) => (
                   <Card 
                     key={t.id} 
@@ -85,12 +101,12 @@ export default function DeployPage() {
                     )}
                     onClick={() => setSelectedTemplate(t.id)}
                   >
-                    <CardContent className="p-4 md:p-8 text-center space-y-3 md:space-y-4">
-                      <div className={cn("size-12 md:size-16 mx-auto rounded-xl md:rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
-                        <t.icon className="size-6 md:size-8" />
+                    <CardContent className="p-4 md:p-8 text-center space-y-3">
+                      <div className={cn("size-10 md:size-16 mx-auto rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
+                        <t.icon className="size-5 md:size-8" />
                       </div>
                       <div className="space-y-1">
-                        <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
+                        <div className="font-headline font-bold text-sm md:text-lg">{t.name}</div>
                         <Badge variant="secondary" className="text-[8px] md:text-[10px] uppercase tracking-widest px-1.5">{t.group}</Badge>
                       </div>
                     </CardContent>
@@ -104,7 +120,7 @@ export default function DeployPage() {
                   onClick={() => setStep(2)}
                   className="bg-primary text-white px-6 md:px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
                 >
-                  Configure Resources <ArrowRight className="size-4" />
+                  Konfigurasi Paket <ArrowRight className="size-4" />
                 </Button>
               </div>
             </div>
@@ -113,77 +129,68 @@ export default function DeployPage() {
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="text-center space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Resource Allocation</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Define the limits for your new {selectedTemplateData?.name} server.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Pilih Paket Sumber Daya</h2>
+                <p className="text-muted-foreground text-sm">Tentukan kapasitas performa untuk {selectedTemplateData?.name} Anda.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <Card className="bg-card border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Cpu className="size-4 text-primary" /> CPU Power
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between font-bold font-headline text-sm md:text-base">
-                      <span>Limits</span>
-                      <span className="text-primary">100% (1 vCore)</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: '25%' }} />
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                {resourcePresets.map((preset) => (
+                  <Card 
+                    key={preset.id}
+                    className={cn(
+                      "cursor-pointer transition-all border-border/50 hover:border-primary/50",
+                      selectedPreset === preset.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card"
+                    )}
+                    onClick={() => setSelectedPreset(preset.id)}
+                  >
+                    <CardContent className="p-3 md:p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Database className="size-4 text-accent" />
+                          <span className="font-bold font-headline text-sm md:text-base">{preset.ram}</span>
+                        </div>
+                        {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5 text-[10px] md:text-xs">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Cpu className="size-3" />
+                          <span>CPU {preset.cpu}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <HardDrive className="size-3" />
+                          <span>Disk {preset.disk}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-                <Card className="bg-card border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Database className="size-4 text-accent" /> Memory Allocation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between font-bold font-headline text-sm md:text-base">
-                      <span>Max RAM</span>
-                      <span className="text-accent">1024 MB</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-accent" style={{ width: '20%' }} />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card border-border/50 md:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Globe className="size-4 text-green-400" /> Regional Node
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl border border-primary bg-primary/5 text-center cursor-pointer">
-                      <div className="text-sm font-bold">Phoenix-01</div>
-                      <div className="text-[10px] text-muted-foreground">US-WEST (15ms)</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-border bg-transparent text-center cursor-pointer opacity-50 hover:opacity-100 transition-opacity">
-                      <div className="text-sm font-bold">London-01</div>
-                      <div className="text-[10px] text-muted-foreground">EU-WEST (140ms)</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-border bg-transparent text-center cursor-pointer opacity-50 hover:opacity-100 transition-opacity">
-                      <div className="text-sm font-bold">Singapore-01</div>
-                      <div className="text-[10px] text-muted-foreground">ASIA-SE (210ms)</div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="pt-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 px-1">Lokasi Server</h3>
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                  <div className="p-3 md:p-4 rounded-xl border border-primary bg-primary/5 text-center cursor-pointer">
+                    <Globe className="size-4 mx-auto mb-2 text-primary" />
+                    <div className="text-xs md:text-sm font-bold">Phoenix-01</div>
+                    <div className="text-[8px] md:text-[10px] text-muted-foreground">US-WEST</div>
+                  </div>
+                  <div className="p-3 md:p-4 rounded-xl border border-border bg-transparent text-center cursor-pointer opacity-50 hover:opacity-100 transition-opacity">
+                    <Globe className="size-4 mx-auto mb-2 text-muted-foreground" />
+                    <div className="text-xs md:text-sm font-bold">Singapore-01</div>
+                    <div className="text-[8px] md:text-[10px] text-muted-foreground">ASIA-SE</div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-4">
                 <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto">
-                  <ChevronLeft className="size-4" /> Back
+                  <ChevronLeft className="size-4" /> Kembali
                 </Button>
                 <Button 
                   onClick={() => setStep(3)}
                   className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
                 >
-                  Finalize Deployment <ArrowRight className="size-4" />
+                  Deploy Server <ArrowRight className="size-4" />
                 </Button>
               </div>
             </div>
@@ -191,30 +198,30 @@ export default function DeployPage() {
 
           {step === 3 && (
             <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-               <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto shadow-2xl shadow-primary/30">
-                 <Rocket className="size-12 text-primary animate-bounce" />
+               <div className="size-20 md:size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto shadow-2xl shadow-primary/30">
+                 <Rocket className="size-10 md:size-12 text-primary animate-bounce" />
                </div>
                <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Deploying Server...</h2>
-                <p className="text-muted-foreground text-sm">We are provisioning your Docker container and setting up the network routes.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Memulai Deployment...</h2>
+                <p className="text-muted-foreground text-sm">Kami sedang menyiapkan container Docker dan merutekan jaringan.</p>
               </div>
-              <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 space-y-4 text-left">
+              <div className="p-4 md:p-6 rounded-2xl bg-secondary/30 border border-border/50 space-y-4 text-left">
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-green-500" />
-                  <span className="text-xs md:text-sm font-medium">Network interface created</span>
+                  <span className="text-[10px] md:text-sm font-medium">Antarmuka jaringan dibuat</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-green-500" />
-                  <span className="text-xs md:text-sm font-medium">Docker image pulled (v1.2.0)</span>
+                  <span className="text-[10px] md:text-sm font-medium">Docker image ditarik (v1.2.0)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs md:text-sm font-medium">Mounting persistent storage...</span>
+                  <span className="text-[10px] md:text-sm font-medium">Menghubungkan penyimpanan...</span>
                 </div>
               </div>
               <Link href="/" className="block w-full">
                 <Button className="w-full bg-primary text-white h-12 shadow-lg shadow-primary/20">
-                  Go to Dashboard
+                  Kembali ke Dashboard
                 </Button>
               </Link>
             </div>
