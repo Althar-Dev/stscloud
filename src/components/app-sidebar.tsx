@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainNavItems = [
-  { icon: Home, label: "Landing Page", href: "/" },
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Rocket, label: "Deploy Instance", href: "/deploy" },
 ];
