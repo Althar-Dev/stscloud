@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateOptimizedServerConfigs, type GenerateOptimizedServerConfigsOutput } from "@/ai/flows/generate-optimized-server-configs";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export function AIConfigTool() {
   const [loading, setLoading] = React.useState(false);
@@ -45,11 +46,11 @@ export function AIConfigTool() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="bg-card border-border/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
+          <CardTitle className="flex items-center gap-2 font-headline text-lg md:text-xl">
             <BrainCircuit className="size-5 text-primary" />
             Config Intelligence
           </CardTitle>
-          <CardDescription>Tell STS AI about your needs to get optimized parameters.</CardDescription>
+          <CardDescription className="text-sm">Tell STS AI about your needs to get optimized parameters.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
@@ -60,7 +61,7 @@ export function AIConfigTool() {
               onChange={(e) => setFormData(p => ({ ...p, gameName: e.target.value }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="players">Expected Players</Label>
               <Input 
@@ -109,7 +110,7 @@ export function AIConfigTool() {
 
       <Card className={cn(
         "bg-card border-border/50 relative overflow-hidden transition-all duration-500",
-        !result && "opacity-50 grayscale pointer-events-none"
+        !result && "opacity-50 grayscale pointer-events-none min-h-[300px]"
       )}>
         {!result && (
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-background/20 backdrop-blur-sm">
@@ -120,23 +121,23 @@ export function AIConfigTool() {
           </div>
         )}
         <CardHeader>
-          <CardTitle className="font-headline flex items-center justify-between">
-            Optimization Result
-            <Button size="sm" variant="ghost" className="h-8 gap-2 text-xs">
+          <CardTitle className="font-headline flex items-center justify-between text-lg md:text-xl">
+            Result
+            <Button size="sm" variant="ghost" className="h-8 gap-2 text-[10px] md:text-xs">
               <Save className="size-3" /> Apply Config
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Launch Parameters</h4>
-            <pre className="p-3 bg-black/40 rounded-lg text-xs font-code text-accent border border-primary/20 overflow-x-auto">
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Launch Parameters</h4>
+            <pre className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-accent border border-primary/20 overflow-x-auto">
               {result?.launchParameters || "bin/server-exec --port 25565 --max-players 20 --optimized-io"}
             </pre>
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Settings</h4>
-            <div className="p-3 bg-black/40 rounded-lg text-xs font-code text-slate-300 border border-border whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar">
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Settings</h4>
+            <div className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-slate-300 border border-border whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar">
               {result?.optimizedSettings || "performance-mode=true\ntick-rate=20\nnetwork-compression=256\nview-distance=10"}
             </div>
           </div>

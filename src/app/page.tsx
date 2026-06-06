@@ -1,4 +1,6 @@
 
+"use client";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { PerformanceMetrics } from "@/components/performance-metrics";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -17,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const mockInstances = [
   { id: "s-1", name: "Main Survival", game: "Minecraft", players: "12/20", status: "online", node: "Phoenix-01" },
@@ -29,32 +32,33 @@ export default function Dashboard() {
     <>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
+        <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-6 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <div className="h-4 w-px bg-border" />
-            <h1 className="font-headline font-semibold text-lg">System Dashboard</h1>
+            <h1 className="font-headline font-semibold text-lg hidden sm:block">System Dashboard</h1>
+            <h1 className="font-headline font-semibold text-lg sm:hidden">Dashboard</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative w-72 hidden md:block">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="relative w-40 lg:w-72 hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input 
-                placeholder="Quick jump to instance..." 
+                placeholder="Quick jump..." 
                 className="bg-secondary/40 border-none h-9 pl-9 focus-visible:ring-primary/40"
               />
             </div>
-            <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white">
+            <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white px-3 md:px-4">
               <Plus className="size-4" />
-              New Server
+              <span className="hidden xs:inline">New Server</span>
             </Button>
           </div>
         </header>
 
-        <main className="flex-1 p-6 space-y-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
           {/* Hero Section */}
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card className="bg-primary/10 border-primary/20">
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="size-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                     <Zap className="size-6 text-white" />
@@ -68,7 +72,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             <Card className="bg-accent/10 border-accent/20">
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="size-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
                     <Activity className="size-6 text-accent-foreground" />
@@ -82,7 +86,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/20">
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="size-10 rounded-xl bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/20">
                     <Shield className="size-6 text-white" />
@@ -96,7 +100,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             <Card className="bg-card border-border/50">
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="size-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
                     <Server className="size-6 text-muted-foreground" />
@@ -115,8 +119,8 @@ export default function Dashboard() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-headline font-bold">Real-time Node Health</h2>
-              <Button variant="link" className="text-primary hover:text-accent gap-1 p-0">
-                View detailed metrics <ChevronRight className="size-4" />
+              <Button variant="link" className="text-primary hover:text-accent gap-1 p-0 text-sm">
+                View metrics <ChevronRight className="size-4" />
               </Button>
             </div>
             <PerformanceMetrics />
@@ -125,10 +129,10 @@ export default function Dashboard() {
           {/* Recent Instances */}
           <section className="space-y-4">
             <h2 className="text-xl font-headline font-bold">Recent Instances</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {mockInstances.map((instance) => (
                 <Link key={instance.id} href={`/instances/${instance.id}`}>
-                  <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300">
+                  <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full">
                     <CardHeader className="flex flex-row items-center justify-between pb-3">
                       <div className="space-y-1">
                         <CardTitle className="text-lg font-headline">{instance.name}</CardTitle>
@@ -154,7 +158,7 @@ export default function Dashboard() {
                 </Link>
               ))}
               <Link href="/deploy">
-                <Card className="h-full border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-8 hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                <Card className="h-full min-h-[140px] border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group">
                   <Plus className="size-8 text-muted-foreground group-hover:text-primary mb-2 transition-colors" />
                   <p className="text-sm font-semibold text-muted-foreground group-hover:text-primary">Deploy New Instance</p>
                 </Card>
@@ -167,6 +171,3 @@ export default function Dashboard() {
   );
 }
 
-function cn(...inputs: any) {
-  return inputs.filter(Boolean).join(" ");
-}
