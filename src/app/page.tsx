@@ -56,7 +56,7 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-          {/* Hero Stats - 2 columns on all screens */}
+          {/* Hero Stats - 2 columns */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
               <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
