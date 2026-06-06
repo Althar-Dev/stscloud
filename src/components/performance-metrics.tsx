@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,10 +6,6 @@ import {
   Area, 
   AreaChart, 
   ResponsiveContainer, 
-  XAxis, 
-  YAxis, 
-  Tooltip,
-  CartesianGrid 
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cpu, HardDrive, MemoryStick } from "lucide-react";
@@ -31,7 +28,7 @@ export function PerformanceMetrics() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // Only run on client
+    // Only run on client to prevent hydration mismatch
     setMounted(true);
     setData(generateData());
 
@@ -86,16 +83,19 @@ export function PerformanceMetrics() {
         data={data} 
         dataKey="memory"
       />
-      <Card className="bg-card border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-headline text-muted-foreground uppercase tracking-wider">Disk Usage</CardTitle>
+      <Card className="bg-card border-border/50 overflow-hidden relative group">
+        <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+          <HardDrive className="size-12 text-orange-400" />
+        </div>
+        <CardHeader className="flex flex-row items-center justify-between pb-2 relative">
+          <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Disk Usage</CardTitle>
           <HardDrive className="size-4 text-orange-400" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <div className="text-2xl font-bold font-headline">12.4 GB</div>
-          <p className="text-xs text-muted-foreground">of 100 GB total</p>
+          <p className="text-[10px] text-muted-foreground font-bold tracking-widest">OF 100 GB TOTAL</p>
           <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-orange-400" style={{ width: '12.4%' }} />
+            <div className="h-full bg-orange-400 transition-all duration-1000" style={{ width: '12.4%' }} />
           </div>
         </CardContent>
       </Card>
@@ -105,9 +105,9 @@ export function PerformanceMetrics() {
 
 function MetricCard({ title, value, icon: Icon, color, data, dataKey }: any) {
   return (
-    <Card className="bg-card border-border/50 overflow-hidden">
+    <Card className="bg-card border-border/50 overflow-hidden relative">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-headline text-muted-foreground uppercase tracking-wider">{title}</CardTitle>
+        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
         <Icon className="size-4" style={{ color }} />
       </CardHeader>
       <CardContent className="pb-0">
