@@ -81,13 +81,13 @@ export default function DeployPage() {
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="text-center space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Pilih Template</h2>
-                <p className="text-muted-foreground text-sm">Pilih lingkungan aplikasi Anda.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Select Template</h2>
+                <p className="text-muted-foreground text-sm">Choose your application environment.</p>
               </div>
 
               <div className="relative max-w-md mx-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input placeholder="Cari template..." className="bg-secondary/40 border-none h-11 pl-10" />
+                <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:gap-4 max-w-2xl mx-auto">
@@ -119,7 +119,7 @@ export default function DeployPage() {
                   onClick={() => setStep(2)}
                   className="bg-primary text-white px-6 md:px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
                 >
-                  Konfigurasi Paket <ArrowRight className="size-4" />
+                  Configure Package <ArrowRight className="size-4" />
                 </Button>
               </div>
             </div>
@@ -128,8 +128,8 @@ export default function DeployPage() {
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="text-center space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Pilih Paket Sumber Daya</h2>
-                <p className="text-muted-foreground text-sm">Tentukan kapasitas performa untuk {selectedTemplateData?.name} Anda.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Select Resource Package</h2>
+                <p className="text-muted-foreground text-sm">Define performance capacity for your {selectedTemplateData?.name}.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -167,7 +167,7 @@ export default function DeployPage() {
 
               <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
                 <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto">
-                  <ChevronLeft className="size-4" /> Kembali
+                  <ChevronLeft className="size-4" /> Back
                 </Button>
                 <Button 
                   onClick={() => setStep(3)}
@@ -185,26 +185,26 @@ export default function DeployPage() {
                  <Rocket className="size-10 md:size-12 text-primary animate-bounce" />
                </div>
                <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-headline font-bold">Memulai Deployment...</h2>
-                <p className="text-muted-foreground text-sm">Kami sedang menyiapkan container Docker dan merutekan jaringan.</p>
+                <h2 className="text-2xl md:text-3xl font-headline font-bold">Starting Deployment...</h2>
+                <p className="text-muted-foreground text-sm">Provisioning Docker containers and routing networking.</p>
               </div>
               <div className="p-4 md:p-6 rounded-2xl bg-secondary/30 border border-border/50 space-y-4 text-left">
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] md:text-sm font-medium">Antarmuka jaringan dibuat</span>
+                  <span className="text-[10px] md:text-sm font-medium">Network interface created</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] md:text-sm font-medium">Docker image ditarik (v1.2.0)</span>
+                  <span className="text-[10px] md:text-sm font-medium">Docker image pulled (v1.2.0)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-[10px] md:text-sm font-medium">Menghubungkan penyimpanan...</span>
+                  <span className="text-[10px] md:text-sm font-medium">Attaching storage...</span>
                 </div>
               </div>
               <Link href="/" className="block w-full">
                 <Button className="w-full bg-primary text-white h-12 shadow-lg shadow-primary/20">
-                  Kembali ke Dashboard
+                  Return to Dashboard
                 </Button>
               </Link>
             </div>

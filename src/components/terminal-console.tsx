@@ -57,7 +57,7 @@ export function TerminalConsole() {
       addLog("Initializing server boot sequence...", "info");
       setTimeout(() => {
         setStatus("online");
-        addLog("Server successfully initialized and listening on port 25565", "success");
+        addLog("Server successfully initialized and listening on port 8080", "success");
       }, 2000);
     } else if (action === "stop") {
       setStatus("offline");

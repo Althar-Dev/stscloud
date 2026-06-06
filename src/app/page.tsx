@@ -21,9 +21,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const mockServers = [
-  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", players: "1.2k req/m", status: "online" },
-  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", players: "Active", status: "online" },
-  { id: "s-3", name: "Portfolio Site", type: "Website", details: "Static • London-01", players: "450 req/m", status: "offline" },
+  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
+  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", usage: "Active", status: "online" },
+  { id: "s-3", name: "Portfolio Site", type: "Website", details: "Static • London-01", usage: "450 req/m", status: "offline" },
 ];
 
 export default function Dashboard() {
@@ -42,7 +42,7 @@ export default function Dashboard() {
             <div className="relative w-40 lg:w-72 hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input 
-                placeholder="Quick jump..." 
+                placeholder="Search..." 
                 className="bg-secondary/40 border-none h-9 pl-9 focus-visible:ring-primary/40"
               />
             </div>
@@ -56,7 +56,7 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-          {/* Hero Stats - Changed to grid-cols-2 by default */}
+          {/* Hero Stats - 2 columns on all screens */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
               <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
@@ -65,7 +65,7 @@ export default function Dashboard() {
                   <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                     <Zap className="size-4 md:size-6 text-white" />
                   </div>
-                  <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Running</Badge>
+                  <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
                 </div>
                 <div className="mt-3 md:mt-4">
                   <div className="text-lg md:text-2xl font-bold font-headline">3 Active</div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-3 md:mt-4">
                   <div className="text-lg md:text-2xl font-bold font-headline">128</div>
-                  <div className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-widest font-bold">Mitigated</div>
+                  <div className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-widest font-bold">Attacks Blocked</div>
                 </div>
               </CardContent>
             </Card>
@@ -109,28 +109,28 @@ export default function Dashboard() {
                   <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-secondary flex items-center justify-center border border-border">
                     <ServerIcon className="size-4 md:size-6 text-muted-foreground" />
                   </div>
-                  <Badge variant="secondary" className="text-[8px] md:text-[10px]">Cloud</Badge>
+                  <Badge variant="secondary" className="text-[8px] md:text-[10px]">Edge</Badge>
                 </div>
                 <div className="mt-3 md:mt-4">
                   <div className="text-lg md:text-2xl font-bold font-headline">2 Nodes</div>
-                  <div className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-widest font-bold">Infras</div>
+                  <div className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-widest font-bold">Infra</div>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* Performance Overview */}
+          {/* Node Health */}
           <section className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-xl font-headline font-bold">Real-time Node Health</h2>
               <Button variant="link" className="text-primary hover:text-accent gap-1 p-0 text-sm">
-                View all <ChevronRight className="size-4" />
+                Details <ChevronRight className="size-4" />
               </Button>
             </div>
             <PerformanceMetrics />
           </section>
 
-          {/* My Servers - Changed to grid-cols-2 for all screen sizes */}
+          {/* Servers Grid - 2 columns */}
           <section className="space-y-4">
             <h2 className="text-xl font-headline font-bold px-2">My Servers</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
@@ -151,7 +151,7 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between text-[10px] md:text-sm">
                         <div className="flex items-center gap-1.5 md:gap-2">
                           <Activity className="size-3 md:size-4 text-primary" />
-                          <span className="font-medium text-muted-foreground truncate">{server.players}</span>
+                          <span className="font-medium text-muted-foreground truncate">{server.usage}</span>
                         </div>
                         <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1 hidden xs:block">
                           <ExternalLink className="size-3 md:size-4" />

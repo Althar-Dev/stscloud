@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -35,7 +34,7 @@ const mainNavItems = [
 const infrastructureItems = [
   { icon: ServerIcon, label: "All Servers", href: "/" },
   { icon: Cpu, label: "Node Health", href: "/nodes" },
-  { icon: ShieldCheck, label: "Security", href: "/access" },
+  { icon: ShieldCheck, label: "Security", href: "/security" },
 ];
 
 export function AppSidebar() {
@@ -78,9 +77,9 @@ export function AppSidebar() {
             <SidebarMenu>
               {infrastructureItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) || (item.href === "/" && pathname === "/")} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
                     <Link href={item.href}>
-                      <item.icon className={(pathname.startsWith(item.href) && item.href !== "/") || (item.href === "/" && pathname === "/") ? "text-primary" : ""} />
+                      <item.icon className={pathname === item.href ? "text-primary" : ""} />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>

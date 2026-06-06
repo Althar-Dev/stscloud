@@ -131,13 +131,13 @@ export function AIConfigTool() {
           <div>
             <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Runtime Arguments</h4>
             <pre className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-accent border border-primary/20 overflow-x-auto">
-              {result?.launchParameters || "npm run start -- --port 8080 --optimize"}
+              {result?.launchParameters || "npm run start -- --optimize"}
             </pre>
           </div>
           <div>
             <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Config</h4>
             <div className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-slate-300 border border-border whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar">
-              {result?.optimizedSettings || "NODE_ENV=production\nMEMORY_LIMIT=1024\nCACHE_TTL=3600\nCOMPRESSION=true"}
+              {result?.optimizedSettings || "NODE_ENV=production\nMEMORY_LIMIT=1024\nCACHE_TTL=3600"}
             </div>
           </div>
         </CardContent>

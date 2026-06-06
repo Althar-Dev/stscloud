@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -34,11 +33,9 @@ import {
 const mockFiles = [
   { name: "configs", type: "folder", size: "--", modified: "2h ago" },
   { name: "logs", type: "folder", size: "--", modified: "10m ago" },
-  { name: "server.properties", type: "file", size: "1.2 KB", modified: "1d ago" },
-  { name: "whitelist.json", type: "file", size: "450 B", modified: "3d ago" },
-  { name: "eula.txt", type: "file", size: "128 B", modified: "5d ago" },
-  { name: "world", type: "folder", size: "--", modified: "Just now" },
-  { name: "spigot.jar", type: "file", size: "42 MB", modified: "1w ago" },
+  { name: "package.json", type: "file", size: "1.2 KB", modified: "1d ago" },
+  { name: ".env", type: "file", size: "450 B", modified: "3d ago" },
+  { name: "README.md", type: "file", size: "2 KB", modified: "5d ago" },
 ];
 
 export function FileExplorer() {
@@ -48,7 +45,7 @@ export function FileExplorer() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto max-w-full pb-1 whitespace-nowrap">
           <span className="hover:text-primary cursor-pointer">/root</span>
           <ChevronRight className="size-3 flex-shrink-0" />
-          <span className="text-foreground font-semibold">minecraft-server</span>
+          <span className="text-foreground font-semibold">app-server</span>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64 min-w-[160px]">
