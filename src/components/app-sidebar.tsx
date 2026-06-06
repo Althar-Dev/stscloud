@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,14 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Server,
+  Server as ServerIcon,
   Cpu,
   ShieldCheck,
   LogOut,
   Zap,
   Rocket,
-  PlusCircle,
-  Home
 } from "lucide-react";
 
 import {
@@ -31,11 +28,11 @@ import {
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: Rocket, label: "Deploy Instance", href: "/deploy" },
+  { icon: Rocket, label: "Deploy Server", href: "/deploy" },
 ];
 
 const infrastructureItems = [
-  { icon: Server, label: "All Instances", href: "/instances" },
+  { icon: ServerIcon, label: "All Servers", href: "/dashboard" },
   { icon: Cpu, label: "Node Health", href: "/nodes" },
   { icon: ShieldCheck, label: "Security", href: "/access" },
 ];

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -13,7 +12,7 @@ import {
   Cpu, 
   ArrowRight, 
   CheckCircle2,
-  Server,
+  Server as ServerIcon,
   Activity
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -45,7 +44,7 @@ export default function LandingPage() {
             </Link>
             <Link href="/deploy">
               <Button className="bg-primary text-white shadow-lg shadow-primary/20 gap-2">
-                Deploy Now <ArrowRight className="size-4" />
+                Deploy Server <ArrowRight className="size-4" />
               </Button>
             </Link>
           </div>
@@ -64,6 +63,9 @@ export default function LandingPage() {
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-headline font-bold leading-tight">
                 Empower Your <span className="text-primary">Gaming</span> Experience
               </h1>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-headline font-bold leading-tight">
+                Empower Your <span className="text-primary">Gaming</span> Experience
+              </h1>
               <p className="text-muted-foreground text-lg md:text-xl max-w-xl">
                 Deploy, manage, and scale high-performance game servers with AI-driven intelligence and global low-latency infrastructure.
               </p>
@@ -75,7 +77,7 @@ export default function LandingPage() {
                 </Link>
                 <Link href="/dashboard">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-border/50 hover:bg-secondary/50 w-full sm:w-auto">
-                    View Demo
+                    View Dashboard
                   </Button>
                 </Link>
               </div>
@@ -124,7 +126,7 @@ export default function LandingPage() {
                 { title: "Global Network", desc: "Low-latency edge nodes deployed in over 12 locations across US, EU, and Asia.", icon: <Globe className="size-8 text-accent" /> },
                 { title: "Enterprise Security", desc: "Advanced L3/L4/L7 DDoS mitigation system protects your server 24/7.", icon: <Shield className="size-8 text-green-500" /> },
                 { title: "Instant Deployment", desc: "Get your server up and running in under 60 seconds with our pre-built templates.", icon: <Zap className="size-8 text-yellow-500" /> },
-                { title: "Scalable Storage", desc: "NVMe-backed persistent storage that grows with your community's needs.", icon: <Server className="size-8 text-blue-500" /> },
+                { title: "Scalable Storage", desc: "NVMe-backed persistent storage that grows with your community's needs.", icon: <ServerIcon className="size-8 text-blue-500" /> },
                 { title: "Full Root Access", desc: "Complete control via SFTP and our custom web-based terminal console.", icon: <Badge className="size-8 text-purple-500" /> },
               ].map((f, i) => (
                 <div key={i} className="p-8 rounded-2xl bg-card border border-border/50 hover:border-primary/50 transition-all group">
@@ -196,4 +198,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

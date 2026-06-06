@@ -22,7 +22,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-export default function InstancePage() {
+export default function ServerPage() {
   const { id } = useParams();
 
   return (
@@ -34,7 +34,7 @@ export default function InstancePage() {
             <SidebarTrigger />
             <div className="h-4 w-px bg-border" />
             <div className="flex items-center gap-2">
-              <Link href="/" className="text-muted-foreground hover:text-foreground">
+              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="size-4" />
               </Link>
               <h1 className="font-headline font-semibold text-base md:text-lg truncate max-w-[120px] md:max-w-none">Main Survival</h1>

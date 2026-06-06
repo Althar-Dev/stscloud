@@ -43,7 +43,7 @@ export default function DeployPage() {
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <div className="h-4 w-px bg-border" />
-            <h1 className="font-headline font-semibold text-lg">Provision Engine</h1>
+            <h1 className="font-headline font-semibold text-lg">Server Setup</h1>
           </div>
         </header>
 
@@ -112,7 +112,7 @@ export default function DeployPage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="text-center space-y-2">
                 <h2 className="text-2xl md:text-3xl font-headline font-bold">Resource Allocation</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Define the limits for your new {selectedTemplateData?.name} instance.</p>
+                <p className="text-muted-foreground text-sm md:text-base">Define the limits for your new {selectedTemplateData?.name} server.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -187,7 +187,7 @@ export default function DeployPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && (step === 3 && (
             <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
                <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto shadow-2xl shadow-primary/30">
                  <Rocket className="size-12 text-primary animate-bounce" />
@@ -210,13 +210,13 @@ export default function DeployPage() {
                   <span className="text-xs md:text-sm font-medium">Mounting persistent storage...</span>
                 </div>
               </div>
-              <Link href="/instances/new-server" className="block w-full">
+              <Link href="/dashboard" className="block w-full">
                 <Button className="w-full bg-primary text-white h-12 shadow-lg shadow-primary/20">
-                  Go to Console
+                  Go to Dashboard
                 </Button>
               </Link>
             </div>
-          )}
+          ))}
         </main>
       </SidebarInset>
     </>

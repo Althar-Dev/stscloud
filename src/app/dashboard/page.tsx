@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -8,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Server, 
+  Server as ServerIcon, 
   Activity, 
   Plus, 
   ChevronRight, 
@@ -21,7 +20,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const mockInstances = [
+const mockServers = [
   { id: "s-1", name: "Main Survival", game: "Minecraft", players: "12/20", status: "online", node: "Phoenix-01" },
   { id: "s-2", name: "CS2 Competitive", game: "CS2", players: "4/10", status: "online", node: "Phoenix-02" },
   { id: "s-3", name: "Valheim World", game: "Valheim", players: "0/10", status: "offline", node: "Europe-North" },
@@ -70,7 +69,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-4">
                   <div className="text-2xl font-bold font-headline">5 Active</div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Instances</div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
                 </div>
               </CardContent>
             </Card>
@@ -108,7 +107,7 @@ export default function Dashboard() {
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="size-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
-                    <Server className="size-6 text-muted-foreground" />
+                    <ServerIcon className="size-6 text-muted-foreground" />
                   </div>
                   <Badge variant="secondary">Global</Badge>
                 </div>
@@ -131,28 +130,28 @@ export default function Dashboard() {
             <PerformanceMetrics />
           </section>
 
-          {/* Recent Instances */}
+          {/* My Servers */}
           <section className="space-y-4">
-            <h2 className="text-xl font-headline font-bold px-2">My Instances</h2>
+            <h2 className="text-xl font-headline font-bold px-2">My Servers</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockInstances.map((instance) => (
-                <Link key={instance.id} href={`/instances/${instance.id}`}>
+              {mockServers.map((server) => (
+                <Link key={server.id} href={`/instances/${server.id}`}>
                   <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                     <div className="p-5 flex flex-row items-center justify-between pb-3">
                       <div className="space-y-1">
-                        <div className="text-lg font-headline font-bold truncate max-w-[150px]">{instance.name}</div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{instance.game} • {instance.node}</p>
+                        <div className="text-lg font-headline font-bold truncate max-w-[150px]">{server.name}</div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{server.game} • {server.node}</p>
                       </div>
                       <div className={cn(
                         "size-2.5 rounded-full",
-                        instance.status === "online" ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500"
+                        server.status === "online" ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500"
                       )} />
                     </div>
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Activity className="size-4 text-primary" />
-                          <span className="font-medium text-muted-foreground">{instance.players} Players</span>
+                          <span className="font-medium text-muted-foreground">{server.players} Players</span>
                         </div>
                         <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                           <ExternalLink className="size-4" />
@@ -167,7 +166,7 @@ export default function Dashboard() {
                   <div className="size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-3 transition-colors">
                     <Plus className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <p className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Deploy New Instance</p>
+                  <p className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Deploy New Server</p>
                 </Card>
               </Link>
             </div>
