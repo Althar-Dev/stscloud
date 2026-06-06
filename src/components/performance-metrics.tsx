@@ -28,22 +28,38 @@ const generateData = () => {
 };
 
 export function PerformanceMetrics() {
-  const [data, setData] = React.useState(generateData());
+  const [data, setData] = React.useState<any[]>([]);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setIsMounted(true);
+    setData(generateData());
+
     const interval = setInterval(() => {
       setData((prev) => {
+        if (prev.length === 0) return generateData();
         const nextTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const lastPoint = prev[prev.length - 1];
         const next = {
           time: nextTime,
-          cpu: Math.max(5, Math.min(95, prev[prev.length - 1].cpu + (Math.random() * 10 - 5))),
-          memory: Math.max(5, Math.min(95, prev[prev.length - 1].memory + (Math.random() * 4 - 2))),
+          cpu: Math.max(5, Math.min(95, lastPoint.cpu + (Math.random() * 10 - 5))),
+          memory: Math.max(5, Math.min(95, lastPoint.memory + (Math.random() * 4 - 2))),
         };
         return [...prev.slice(1), next];
       });
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  if (!isMounted || data.length === 0) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="bg-card border-border/50 h-[160px] animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   const latest = data[data.length - 1];
 
