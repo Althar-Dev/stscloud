@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Bot,
   HardDrive,
-  Globe
+  Globe,
+  Tag
 } from "lucide-react";
 import React from "react";
 import { Input } from "@/components/ui/input";
@@ -28,17 +29,17 @@ const templates = [
 ];
 
 const resourcePresets = [
-  { id: "p1", ram: "1GB", cpu: "20%", disk: "1GB" },
-  { id: "p2", ram: "2GB", cpu: "30%", disk: "2GB" },
-  { id: "p3", ram: "3GB", cpu: "40%", disk: "3GB" },
-  { id: "p4", ram: "4GB", cpu: "45%", disk: "4GB" },
-  { id: "p5", ram: "5GB", cpu: "50%", disk: "5GB" },
-  { id: "p6", ram: "6GB", cpu: "55%", disk: "6GB" },
-  { id: "p7", ram: "7GB", cpu: "60%", disk: "7GB" },
-  { id: "p8", ram: "8GB", cpu: "65%", disk: "8GB" },
-  { id: "p9", ram: "9GB", cpu: "70%", disk: "9GB" },
-  { id: "p10", ram: "10GB", cpu: "75%", disk: "10GB" },
-  { id: "p11", ram: "Unlimited", cpu: "85%", disk: "Unlimited" },
+  { id: "p1", ram: "1GB", cpu: "20%", disk: "1GB", price: "IDR 3.000" },
+  { id: "p2", ram: "2GB", cpu: "30%", disk: "2GB", price: "IDR 5.000" },
+  { id: "p3", ram: "3GB", cpu: "40%", disk: "3GB", price: "IDR 8.000" },
+  { id: "p4", ram: "4GB", cpu: "45%", disk: "4GB", price: "IDR 10.000" },
+  { id: "p5", ram: "5GB", cpu: "50%", disk: "5GB", price: "IDR 13.000" },
+  { id: "p6", ram: "6GB", cpu: "55%", disk: "6GB", price: "IDR 15.000" },
+  { id: "p7", ram: "7GB", cpu: "60%", disk: "7GB", price: "IDR 18.000" },
+  { id: "p8", ram: "8GB", cpu: "65%", disk: "8GB", price: "IDR 20.000" },
+  { id: "p9", ram: "9GB", cpu: "70%", disk: "9GB", price: "IDR 23.000" },
+  { id: "p10", ram: "10GB", cpu: "75%", disk: "10GB", price: "IDR 25.000" },
+  { id: "p11", ram: "Unlimited", cpu: "85%", disk: "Unlimited", price: "IDR 30.000" },
 ];
 
 export default function DeployPage() {
@@ -137,7 +138,7 @@ export default function DeployPage() {
                   <Card 
                     key={preset.id}
                     className={cn(
-                      "cursor-pointer transition-all border-border/50 hover:border-primary/50",
+                      "cursor-pointer transition-all border-border/50 hover:border-primary/50 overflow-hidden",
                       selectedPreset === preset.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card"
                     )}
                     onClick={() => setSelectedPreset(preset.id)}
@@ -150,6 +151,7 @@ export default function DeployPage() {
                         </div>
                         {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                       </div>
+                      
                       <div className="grid grid-cols-1 gap-1.5 text-[10px] md:text-xs">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Cpu className="size-3" />
@@ -158,6 +160,13 @@ export default function DeployPage() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <HardDrive className="size-3" />
                           <span>Disk {preset.disk}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-2">
+                          <Tag className="size-3 text-primary" />
+                          <span className="font-bold text-xs md:text-sm text-primary">{preset.price}</span>
                         </div>
                       </div>
                     </CardContent>
