@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -78,7 +77,7 @@ export default function DeployPage() {
                 <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 {templates.map((t) => (
                   <Card 
                     key={t.id} 
@@ -101,7 +100,7 @@ export default function DeployPage() {
                 <Button 
                   disabled={!selectedTemplate} 
                   onClick={() => setStep(2)}
-                  className="bg-primary text-white px-6 md:px-8 h-12 gap-2 w-full md:w-auto"
+                  className="bg-primary text-white px-6 md:px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
                 >
                   Configure Resources <ArrowRight className="size-4" />
                 </Button>
@@ -180,7 +179,7 @@ export default function DeployPage() {
                 </Button>
                 <Button 
                   onClick={() => setStep(3)}
-                  className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
+                  className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
                 >
                   Finalize Deployment <ArrowRight className="size-4" />
                 </Button>
@@ -223,4 +222,3 @@ export default function DeployPage() {
     </>
   );
 }
-

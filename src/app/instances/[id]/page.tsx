@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -21,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export default function InstancePage() {
   const { id } = useParams();
@@ -53,24 +53,27 @@ export default function InstancePage() {
 
         <main className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
           <Tabs defaultValue="console" className="w-full space-y-6">
-            <div className="flex items-center justify-start overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none md:justify-between">
-              <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit sm:w-auto h-auto min-w-max">
-                <TabsTrigger value="console" className="rounded-lg gap-2 py-2 md:py-1.5 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Terminal className="size-4" /> <span className="hidden sm:inline">Console</span>
-                </TabsTrigger>
-                <TabsTrigger value="files" className="rounded-lg gap-2 py-2 md:py-1.5 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <FolderOpen className="size-4" /> <span className="hidden sm:inline">Files</span>
-                </TabsTrigger>
-                <TabsTrigger value="intelligence" className="rounded-lg gap-2 py-2 md:py-1.5 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <BrainCircuit className="size-4" /> <span className="hidden sm:inline">AI Config</span>
-                </TabsTrigger>
-                <TabsTrigger value="stats" className="rounded-lg gap-2 py-2 md:py-1.5 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Cpu className="size-4" /> <span className="hidden sm:inline">Performance</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 md:py-1.5 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Settings className="size-4" /> <span className="hidden sm:inline">Settings</span>
-                </TabsTrigger>
-              </TabsList>
+            <div className="flex items-center justify-start">
+              <ScrollArea className="w-full" orientation="horizontal">
+                <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
+                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Terminal className="size-4" /> <span>Console</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <FolderOpen className="size-4" /> <span>Files</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="intelligence" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <BrainCircuit className="size-4" /> <span>AI Config</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="stats" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Cpu className="size-4" /> <span>Performance</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Settings className="size-4" /> <span>Settings</span>
+                  </TabsTrigger>
+                </TabsList>
+                <ScrollBar orientation="horizontal" className="hidden" />
+              </ScrollArea>
             </div>
 
             <TabsContent value="console" className="space-y-6 animate-in fade-in duration-500">

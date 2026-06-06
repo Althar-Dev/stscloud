@@ -28,11 +28,11 @@ const generateData = () => {
 
 export function PerformanceMetrics() {
   const [data, setData] = React.useState<any[]>([]);
-  const [isMounted, setIsMounted] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setIsMounted(true);
-    // Initialize data only on client mount to prevent hydration mismatch
+    // Only run on client
+    setMounted(true);
     setData(generateData());
 
     const interval = setInterval(() => {
@@ -51,8 +51,8 @@ export function PerformanceMetrics() {
     return () => clearInterval(interval);
   }, []);
 
-  // Strict check for isMounted to prevent any SSR content mismatch
-  if (!isMounted || data.length === 0) {
+  // Hydration safety: render skeleton on server and first client pass
+  if (!mounted || data.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
