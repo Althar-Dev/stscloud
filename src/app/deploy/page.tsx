@@ -74,7 +74,8 @@ export default function DeployPage() {
                 <Input placeholder="Search templates..." className="bg-secondary/40 border-none h-11 pl-10" />
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {/* Template Grid - Changed grid-cols-1 to grid-cols-2 */}
+              <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
                 {templates.map((t) => (
                   <Card 
                     key={t.id} 
@@ -84,13 +85,13 @@ export default function DeployPage() {
                     )}
                     onClick={() => setSelectedTemplate(t.id)}
                   >
-                    <CardContent className="p-8 text-center space-y-4">
-                      <div className={cn("size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
-                        <t.icon className="size-8" />
+                    <CardContent className="p-4 md:p-8 text-center space-y-3 md:space-y-4">
+                      <div className={cn("size-12 md:size-16 mx-auto rounded-xl md:rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
+                        <t.icon className="size-6 md:size-8" />
                       </div>
                       <div className="space-y-1">
-                        <div className="font-headline font-bold text-lg">{t.name}</div>
-                        <Badge variant="secondary" className="text-[10px] uppercase tracking-widest">{t.group}</Badge>
+                        <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
+                        <Badge variant="secondary" className="text-[8px] md:text-[10px] uppercase tracking-widest px-1.5">{t.group}</Badge>
                       </div>
                     </CardContent>
                   </Card>
