@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "server-hero",
+      "description": "A high-tech server room with glowing violet lights.",
+      "imageUrl": "https://picsum.photos/seed/stscloud1/1200/800",
+      "imageHint": "server room technology"
+    },
+    {
+      "id": "game-background",
+      "description": "Abstract futuristic digital landscape.",
+      "imageUrl": "https://picsum.photos/seed/stscloud2/800/600",
+      "imageHint": "cyberpunk digital"
+    }
+  ]
+}
