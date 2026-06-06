@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -33,6 +32,7 @@ export function PerformanceMetrics() {
 
   React.useEffect(() => {
     setIsMounted(true);
+    // Initialize data only on client mount to prevent hydration mismatch
     setData(generateData());
 
     const interval = setInterval(() => {
@@ -51,11 +51,16 @@ export function PerformanceMetrics() {
     return () => clearInterval(interval);
   }, []);
 
+  // Strict check for isMounted to prevent any SSR content mismatch
   if (!isMounted || data.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="bg-card border-border/50 h-[160px] animate-pulse" />
+          <Card key={i} className="bg-card border-border/50 h-[160px] animate-pulse">
+            <CardContent className="h-full flex items-center justify-center">
+              <div className="w-1/2 h-4 bg-secondary rounded" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
