@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -263,7 +262,7 @@ export default function DeployPage() {
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Image src="/img/icon.png" alt="STS" width={20} height={20} className="object-contain" />
+                        <Image src="/img/icon.png" alt="STS" width={30} height={30} className="object-contain" />
                         <span className="font-bold font-headline text-lg">{preset.name}</span>
                       </div>
                       {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
