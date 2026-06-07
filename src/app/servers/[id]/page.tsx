@@ -74,7 +74,7 @@ export default function ServerPage() {
 
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
         <Tabs defaultValue="console" className="w-full space-y-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center justify-start">
               <ScrollArea className="w-full" orientation="horizontal">
                 <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
@@ -91,31 +91,31 @@ export default function ServerPage() {
                 <ScrollBar orientation="horizontal" className="hidden" />
               </ScrollArea>
             </div>
+
+            {/* Quick Info Labels - Responsive Positioning */}
+            <div className="flex flex-wrap items-center gap-3 md:gap-6 px-1">
+              <div className="flex items-center gap-2">
+                <Globe className="size-3.5 text-primary" />
+                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:hidden">Address</span>
+                  <span className="text-xs font-code text-primary">play.stscloud.net:25565</span>
+                </div>
+              </div>
+              <div className="h-4 w-px bg-border hidden md:block" />
+              <div className="flex items-center gap-2">
+                <Clock className="size-3.5 text-primary" />
+                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:hidden">Uptime</span>
+                  <span className="text-xs font-bold font-headline">2d 14h 32m</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            {/* Top Section: Console + Info Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-3 h-[500px] md:h-[600px]">
-                <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
-              </div>
-              <div className="space-y-4">
-                <Card className="bg-card border-border/50 hover:border-primary/30 transition-colors p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Globe className="size-3.5 text-primary" />
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Address</h3>
-                  </div>
-                  <div className="text-sm font-code text-primary break-all">play.stscloud.net:25565</div>
-                </Card>
-
-                <Card className="bg-card border-border/50 hover:border-primary/30 transition-colors p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="size-3.5 text-primary" />
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Uptime</h3>
-                  </div>
-                  <div className="text-xl font-bold font-headline text-foreground">2d 14h 32m</div>
-                </Card>
-              </div>
+            {/* Top Section: Full Width Console */}
+            <div className="w-full h-[500px] md:h-[600px]">
+              <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
             </div>
 
             {/* Bottom Section: Performance Metrics */}
