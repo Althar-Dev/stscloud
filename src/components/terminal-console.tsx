@@ -5,6 +5,7 @@ import * as React from "react";
 import { Terminal as TerminalIcon, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface LogLine {
@@ -75,7 +76,17 @@ export function TerminalConsole({ externalStatus }: TerminalConsoleProps) {
       <div className="flex items-center justify-between p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-2">
           <TerminalIcon className="size-4 text-primary" />
-          <span className="text-xs font-headline font-semibold uppercase tracking-wider text-muted-foreground">Server Console Output</span>
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-[10px] font-bold uppercase tracking-wider px-2 py-0 h-5",
+              externalStatus === "online" ? "border-green-500/50 text-green-500 bg-green-500/5" :
+              externalStatus === "starting" ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/5" :
+              "border-red-500/50 text-red-500 bg-red-500/5"
+            )}
+          >
+            {externalStatus || "offline"}
+          </Badge>
         </div>
       </div>
 
