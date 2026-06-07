@@ -1,7 +1,6 @@
 
 "use client";
 
-import { PerformanceMetrics } from "@/components/performance-metrics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,11 +124,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-lg md:text-xl font-headline font-bold px-1">Infrastructure Load</h2>
-          <PerformanceMetrics />
         </section>
 
         <section className="space-y-4">
