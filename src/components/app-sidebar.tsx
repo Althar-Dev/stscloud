@@ -7,11 +7,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Server as ServerIcon,
-  Cpu,
-  ShieldCheck,
   LogOut,
   Zap,
-  Rocket,
 } from "lucide-react";
 
 import {
@@ -27,15 +24,9 @@ import {
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 
-const mainNavItems = [
+const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Rocket, label: "Deploy Server", href: "/deploy" },
-];
-
-const infrastructureItems = [
   { icon: ServerIcon, label: "All Servers", href: "/servers" },
-  { icon: Cpu, label: "Node Health", href: "/nodes" },
-  { icon: ShieldCheck, label: "Security", href: "/security" },
 ];
 
 export function AppSidebar() {
@@ -58,25 +49,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden uppercase tracking-widest text-[10px] font-bold">General</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
-                    <Link href={item.href}>
-                      <item.icon className={pathname === item.href ? "text-primary" : ""} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden uppercase tracking-widest text-[10px] font-bold">System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {infrastructureItems.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
                     <Link href={item.href}>
