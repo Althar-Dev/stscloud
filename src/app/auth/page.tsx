@@ -54,10 +54,10 @@ export default function AuthPage() {
     if (authLoading || user) {
       const interval = setInterval(() => {
         setLoadingProgress((prev) => {
-          if (prev >= 100) return 0;
+          if (prev >= 100) return 100;
           return prev + 2;
         });
-      }, 50);
+      }, 30);
       return () => clearInterval(interval);
     }
   }, [authLoading, user]);
@@ -101,29 +101,35 @@ export default function AuthPage() {
     }
   };
 
-  // Branded loading without pulse, matched width icon and bar
+  // Branded loading without pulse, matched width icon and bar, increased size
   if (authLoading || user) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="space-y-6 w-full max-w-[200px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-full aspect-square transition-all duration-500">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
+        <div className="space-y-10 w-full max-w-[240px] sm:max-w-[320px] flex flex-col items-center animate-in fade-in duration-700">
+          <div className="relative w-full aspect-square">
             <Image 
               src="/img/icon.png" 
               alt="STSCloud" 
               fill 
-              className="object-contain grayscale opacity-90" 
+              className="object-contain grayscale opacity-80" 
+              priority
             />
           </div>
-          <div className="w-full space-y-3">
+          <div className="w-full space-y-4">
             <div className="h-[2px] w-full bg-secondary overflow-hidden rounded-full">
               <div 
                 className="h-full bg-primary transition-all duration-300 ease-out" 
                 style={{ width: `${loadingProgress}%` }}
               />
             </div>
-            <p className="text-[9px] text-center uppercase tracking-[0.2em] font-bold text-muted-foreground/50">
-              Verifying Connection
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-[10px] sm:text-[11px] text-center uppercase tracking-[0.3em] font-bold text-muted-foreground/60">
+                Verifying Connection
+              </p>
+              <p className="text-[8px] sm:text-[9px] text-center uppercase tracking-widest text-muted-foreground/40 font-medium">
+                STSCloud Infrastructure Engine
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -151,7 +157,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl relative overflow-hidden group">
+        <Card className="border-border/50 bg-card shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-50" />
           
           <CardHeader className="space-y-1">
