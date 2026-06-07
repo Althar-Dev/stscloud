@@ -140,32 +140,32 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
+        <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
-            <CardContent className="p-4 md:p-6 relative">
+            <CardContent className="p-3 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center">
-                  <Zap className="size-5 md:size-6 text-white" />
+                <div className="size-8 md:size-10 rounded-xl bg-primary flex items-center justify-center">
+                  <Zap className="size-4 md:size-6 text-white" />
                 </div>
-                <Badge variant="outline" className="text-[9px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
+                <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
               </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">3 Active</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
+              <div className="mt-3 md:mt-4">
+                <div className="text-lg md:text-2xl font-bold font-headline">3 Active</div>
+                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-accent/10 border-accent/20 overflow-hidden relative group">
-            <CardContent className="p-4 md:p-6 relative">
+            <CardContent className="p-3 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Activity className="size-5 md:size-6 text-accent-foreground" />
+                <div className="size-8 md:size-10 rounded-xl bg-accent flex items-center justify-center">
+                  <Activity className="size-4 md:size-6 text-accent-foreground" />
                 </div>
-                <Badge variant="outline" className="text-[9px] md:text-[10px] border-accent/30 text-accent bg-accent/5">Optimal</Badge>
+                <Badge variant="outline" className="text-[8px] md:text-[10px] border-accent/30 text-accent bg-accent/5">Optimal</Badge>
               </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">99.9%</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
+              <div className="mt-3 md:mt-4">
+                <div className="text-lg md:text-2xl font-bold font-headline">99.9%</div>
+                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
               </div>
             </CardContent>
           </Card>
