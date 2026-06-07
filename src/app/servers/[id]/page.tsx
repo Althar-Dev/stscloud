@@ -136,8 +136,7 @@ export default function ServerPage() {
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            <PerformanceMetrics />
-            
+            {/* Console and Sidebar Info First */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
                 <TerminalConsole externalStatus={status} />
@@ -160,6 +159,9 @@ export default function ServerPage() {
                 </Card>
               </div>
             </div>
+
+            {/* Performance Metrics Below Console */}
+            <PerformanceMetrics />
           </TabsContent>
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
