@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,7 +141,7 @@ export default function DeployPage() {
       toast({
         variant: "destructive",
         title: "Payment Error",
-        description: result.error || "Gagal memproses pembayaran"
+        description: result.error || "Failed to process payment"
       });
       setStep(4);
     }
@@ -512,16 +513,19 @@ export default function DeployPage() {
              <div className="space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2>
               <p className="text-muted-foreground text-sm">
-                Scan QRIS untuk menyelesaikan pembayaran
+                Scan QRIS to complete payment
               </p>
             </div>
             
             <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
               <div className="bg-white rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
                 {paymentLoading ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="size-10 text-primary animate-spin" />
-                    <p className="text-xs text-muted-foreground font-bold">Membangkitkan QRIS...</p>
+                  <div className="w-full h-full p-4 space-y-4">
+                    <Skeleton className="w-full aspect-square rounded-lg bg-secondary/10" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-3/4 mx-auto bg-secondary/10" />
+                      <Skeleton className="h-4 w-1/2 mx-auto bg-secondary/10" />
+                    </div>
                   </div>
                 ) : paymentData?.qr_url ? (
                   <div className="space-y-4">
@@ -536,12 +540,12 @@ export default function DeployPage() {
                     {paymentStatus === "success" && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-[2px]">
                         <CheckCircle2 className="size-20 text-green-500 fill-white" />
-                        <p className="text-green-600 font-bold text-lg">LUNAS</p>
+                        <p className="text-green-600 font-bold text-lg">PAID</p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-destructive font-bold">Gagal memuat QRIS</p>
+                  <p className="text-destructive font-bold">Failed to load QRIS</p>
                 )}
               </div>
 
@@ -569,7 +573,7 @@ export default function DeployPage() {
 
                 {paymentStatus === "success" && (
                   <Link href="/dashboard" className="block w-full">
-                    <Button variant="outline" className="w-full h-12">Ke Dasbor</Button>
+                    <Button variant="outline" className="w-full h-12">To Dashboard</Button>
                   </Link>
                 )}
               </div>
@@ -581,7 +585,7 @@ export default function DeployPage() {
               className="gap-2"
               disabled={paymentStatus === "success"}
             >
-              <ChevronLeft className="size-4" /> Batal & Kembali
+              <ChevronLeft className="size-4" /> Cancel & Back
             </Button>
           </div>
         )}

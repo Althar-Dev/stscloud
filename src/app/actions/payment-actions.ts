@@ -1,4 +1,3 @@
-
 'use server';
 
 import { SValePay } from "@starvale-sdk/svalepay";
@@ -43,10 +42,10 @@ export async function createSvalePayment(input: {
       };
     }
 
-    return { success: false, error: "Gagal membuat pembayaran" };
+    return { success: false, error: "Failed to create payment" };
   } catch (error: any) {
     console.error("SValePay Error:", error);
-    return { success: false, error: error.message || "Terjadi kesalahan sistem" };
+    return { success: false, error: error.message || "A system error occurred" };
   }
 }
 
