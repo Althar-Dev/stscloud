@@ -1,3 +1,4 @@
+
 "use client";
 
 import { PerformanceMetrics } from "@/components/performance-metrics";
@@ -8,7 +9,6 @@ import {
   Server as ServerIcon, 
   Activity, 
   Plus, 
-  ChevronRight, 
   ExternalLink,
   Zap,
   Shield,
@@ -55,18 +55,16 @@ export default function Dashboard() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-        {/* Dashboard Summary Header */}
         <div className="flex items-center justify-between px-2">
           <div className="space-y-1">
-            <h2 className="text-2xl font-headline font-bold">System Status</h2>
-            <p className="text-sm text-muted-foreground">All systems operational.</p>
+            <h2 className="text-2xl font-headline font-bold">System Overview</h2>
+            <p className="text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
           </div>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1">
             <Activity className="size-3 mr-2 animate-pulse" /> Healthy
           </Badge>
         </div>
 
-        {/* Hero Stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
             <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
@@ -129,22 +127,16 @@ export default function Dashboard() {
           </Card>
         </section>
 
-        {/* Real-time Health */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-headline font-bold">Node Performance</h2>
-          </div>
+          <h2 className="text-xl font-headline font-bold px-2">Node Performance</h2>
           <PerformanceMetrics />
         </section>
 
-        {/* Servers Grid */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-headline font-bold">Active Projects</h2>
-          </div>
+          <h2 className="text-xl font-headline font-bold px-2">Active Projects</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentServers.map((server) => (
-              <Link key={server.id} href={`/instances/${server.id}`}>
+              <Link key={server.id} href={`/servers/${server.id}`}>
                 <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                   <div className="p-5 flex flex-row items-center justify-between pb-3">
                     <div className="space-y-1">
@@ -175,7 +167,7 @@ export default function Dashboard() {
                 <div className="size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-3 transition-colors">
                   <Plus className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <p className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">New Project</p>
+                <p className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Deploy New Server</p>
               </Card>
             </Link>
           </div>

@@ -135,7 +135,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-headline font-bold px-2">My Servers</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {mockServers.map((server) => (
-                <Link key={server.id} href={`/instances/${server.id}`}>
+                <Link key={server.id} href={`/servers/${server.id}`}>
                   <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                     <div className="p-5 flex flex-row items-center justify-between pb-3">
                       <div className="space-y-1">
