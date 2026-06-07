@@ -19,12 +19,10 @@ import {
   Terminal, 
   Settings, 
   FolderOpen, 
-  MoreVertical,
   ArrowLeft,
-  Zap,
   Globe,
   Clock,
-  LifeBuoy,
+  Headset,
   User,
   LogOut,
   Settings as SettingsIcon,
@@ -32,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
@@ -105,7 +103,7 @@ export default function ServerPage() {
         <div className="flex items-center gap-2 md:gap-4">
           <Link href="/support">
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
-              <LifeBuoy className="size-4" />
+              <Headset className="size-4" />
               <span className="hidden sm:inline">Support</span>
             </Button>
           </Link>

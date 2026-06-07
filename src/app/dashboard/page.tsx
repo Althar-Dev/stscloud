@@ -19,7 +19,7 @@ import {
   Plus, 
   ExternalLink,
   Zap,
-  LifeBuoy,
+  Headset,
   User,
   Settings,
   LogOut,
@@ -80,7 +80,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 md:gap-4">
           <Link href="/support">
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
-              <LifeBuoy className="size-4" />
+              <Headset className="size-4" />
               <span className="hidden sm:inline">Support</span>
             </Button>
           </Link>

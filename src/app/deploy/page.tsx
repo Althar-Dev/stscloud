@@ -27,7 +27,7 @@ import {
   Code2,
   CreditCard,
   ShoppingCart,
-  LifeBuoy,
+  Headset,
   User,
   Settings,
   LogOut
@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter } from "navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const templates = [
@@ -127,7 +127,7 @@ export default function DeployPage() {
         <div className="flex items-center gap-2 md:gap-4">
           <Link href="/support">
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
-              <LifeBuoy className="size-4" />
+              <Headset className="size-4" />
               <span className="hidden sm:inline">Support</span>
             </Button>
           </Link>
