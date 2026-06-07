@@ -25,7 +25,10 @@ import {
   User,
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Cpu,
+  Database,
+  HardDrive
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -37,11 +40,11 @@ import * as React from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const allServers = [
-  { id: "s-1", name: "Main Survival", type: "Game Server", details: "Minecraft • Asia-SE", usage: "45/100 players", status: "online" },
-  { id: "s-2", name: "Official Website", type: "Web Hosting", details: "Next.js • US-East", usage: "1.2k req/m", status: "online" },
-  { id: "s-3", name: "Support Bot", type: "Bot Hosting", details: "Discord.js • Global", usage: "99% uptime", status: "online" },
-  { id: "s-4", name: "Development Lab", type: "Virtual Machine", details: "Ubuntu 22.04 • EU-West", usage: "Idle", status: "offline" },
-  { id: "s-5", name: "Database Primary", type: "Database", details: "PostgreSQL • Asia-SE", usage: "23% load", status: "online" },
+  { id: "s-1", name: "Main Survival", type: "Game Server", details: "Minecraft • Asia-SE", cpu: "45%", ram: "4GB", disk: "12GB", status: "online" },
+  { id: "s-2", name: "Official Website", type: "Web Hosting", details: "Next.js • US-East", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
+  { id: "s-3", name: "Support Bot", type: "Bot Hosting", details: "Discord.js • Global", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
+  { id: "s-4", name: "Development Lab", type: "Virtual Machine", details: "Ubuntu 22.04 • EU-West", cpu: "0%", ram: "0GB", disk: "10GB", status: "offline" },
+  { id: "s-5", name: "Database Primary", type: "Database", details: "PostgreSQL • Asia-SE", cpu: "23%", ram: "2.5GB", disk: "45GB", status: "online" },
 ];
 
 export default function ServersPage() {
@@ -188,15 +191,25 @@ export default function ServersPage() {
                     </div>
                   </div>
                   <div className="px-5 py-3 border-y border-border/30 bg-secondary/10">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{server.details}</span>
-                      <span className="font-bold text-foreground">{server.usage}</span>
+                    <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground font-medium">
+                      <div className="flex items-center gap-1">
+                        <Cpu className="size-3 text-primary" />
+                        <span>{server.cpu} CPU</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Database className="size-3 text-primary" />
+                        <span>{server.ram} RAM</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <HardDrive className="size-3 text-primary" />
+                        <span>{server.disk} DISK</span>
+                      </div>
                     </div>
                   </div>
                   <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Activity className="size-3.5 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Network: Stable</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Region: {server.details.split('•')[1]}</span>
                     </div>
                     <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                       <ChevronRight className="size-4" />

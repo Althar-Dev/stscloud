@@ -23,6 +23,9 @@ import {
   User,
   Settings,
   LogOut,
+  Cpu,
+  Database,
+  HardDrive
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,8 +37,8 @@ import * as React from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const recentServers = [
-  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
-  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", usage: "Active", status: "online" },
+  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
+  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
 ];
 
 export default function Dashboard() {
@@ -202,10 +205,20 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="px-4 md:px-5 pb-4 md:pb-5">
-                    <div className="flex items-center justify-between text-xs md:text-sm">
-                      <div className="flex items-center gap-2">
-                        <Activity className="size-3.5 md:size-4 text-primary" />
-                        <span className="font-medium text-muted-foreground">{server.usage}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-[10px] md:text-xs text-muted-foreground font-medium">
+                        <div className="flex items-center gap-1">
+                          <Cpu className="size-3 text-primary" />
+                          <span>{server.cpu}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Database className="size-3 text-primary" />
+                          <span>{server.ram}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <HardDrive className="size-3 text-primary" />
+                          <span>{server.disk}</span>
+                        </div>
                       </div>
                       <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                         <ExternalLink className="size-3.5 md:size-4" />
