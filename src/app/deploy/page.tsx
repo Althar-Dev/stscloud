@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -510,11 +509,8 @@ export default function DeployPage() {
 
         {step === 5 && (
           <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-             <div className="size-24 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto ring-1 ring-primary/20">
-               <QrCode className="size-12 text-primary animate-pulse" />
-             </div>
              <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-headline font-bold">SValePay QRIS</h2>
+              <h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2>
               <p className="text-muted-foreground text-sm">
                 Scan QRIS untuk menyelesaikan pembayaran {selectedPresetData?.price}
               </p>
