@@ -33,7 +33,7 @@ import {
   Settings,
   LogOut
 } from "lucide-react";
-import { SiNodedotjs, SiPython, SiPhp } from "react-icons/si";
+import { Icon } from "@iconify/react";
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -65,10 +65,10 @@ const applicationTypes: Record<string, { id: string; name: string }[]> = {
   ],
 };
 
-const runtimeIcons: Record<string, React.ElementType> = {
-  nodejs: SiNodedotjs,
-  python: SiPython,
-  php: SiPhp,
+const runtimeIconNames: Record<string, string> = {
+  nodejs: "logos:nodejs-icon",
+  python: "logos:python",
+  php: "logos:php",
 };
 
 export default function DeployPage() {
@@ -278,7 +278,7 @@ export default function DeployPage() {
 
             <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
               {availableAppTypes.map((type) => {
-                const RuntimeIcon = runtimeIcons[type.id] || Code2;
+                const iconName = runtimeIconNames[type.id];
                 return (
                   <Card 
                     key={type.id}
@@ -300,10 +300,14 @@ export default function DeployPage() {
                         "size-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110",
                         selectedAppType === type.id ? "bg-primary/20" : "bg-secondary/50"
                       )}>
-                        <RuntimeIcon className={cn(
-                          "size-8",
-                          selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                        )} />
+                        {iconName ? (
+                          <Icon icon={iconName} className="size-10" />
+                        ) : (
+                          <Code2 className={cn(
+                            "size-8",
+                            selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                          )} />
+                        )}
                       </div>
                       <div className="space-y-1">
                         <div className="font-headline font-bold text-lg">{type.name}</div>
