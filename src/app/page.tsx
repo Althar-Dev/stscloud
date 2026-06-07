@@ -100,7 +100,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
             <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
@@ -128,21 +128,6 @@ export default function Dashboard() {
               <div className="mt-4">
                 <div className="text-xl md:text-2xl font-bold font-headline">99.9%</div>
                 <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-500/10 border-green-500/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-green-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
-            <CardContent className="p-4 md:p-6 relative">
-              <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/20">
-                  <Shield className="size-5 md:size-6 text-white" />
-                </div>
-                <Badge variant="outline" className="text-[9px] md:text-[10px] border-green-500/30 text-green-500 bg-green-500/5">Protected</Badge>
-              </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">128</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Attacks Blocked</div>
               </div>
             </CardContent>
           </Card>
