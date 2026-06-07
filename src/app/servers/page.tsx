@@ -28,7 +28,8 @@ import {
   ChevronRight,
   Cpu,
   Database,
-  HardDrive
+  HardDrive,
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -81,15 +82,23 @@ export default function ServersPage() {
   return (
     <div className="bg-background min-h-screen">
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
-            <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
+            <span className="font-headline font-bold text-lg md:text-xl tracking-tight hidden sm:block">
               <span className="text-primary">Cloud</span>
             </span>
           </Link>
+          <div className="h-4 w-px bg-border" />
+          <button 
+            onClick={() => router.back()}
+            className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="size-4" />
+          </button>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
