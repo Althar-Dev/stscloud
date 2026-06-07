@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,13 +6,14 @@ import Image from "next/image";
 import { 
   Headset, 
   MessageSquare, 
-   Book, 
+  Book, 
   ShieldCheck, 
   ChevronRight, 
   Send,
   User,
   Settings as SettingsIcon,
   LogOut,
+  ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -103,6 +103,13 @@ export default function SupportPage() {
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
+          <button 
+            onClick={() => router.back()}
+            className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="size-4" />
+          </button>
           <h1 className="font-headline font-semibold text-lg hidden sm:block">Support Center</h1>
         </div>
 
@@ -164,7 +171,7 @@ export default function SupportPage() {
           <Card className="bg-card border-border/50 hover:bg-secondary/20 transition-all cursor-pointer group">
             <CardContent className="p-6 space-y-4">
               <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                < Book className="size-6" />
+                <Book className="size-6" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-headline font-bold text-lg">Knowledge Base</h3>
