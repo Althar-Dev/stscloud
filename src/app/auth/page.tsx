@@ -105,7 +105,7 @@ export default function AuthPage() {
   if (authLoading || user) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="space-y-10 w-full max-w-[240px] sm:max-w-[320px] flex flex-col items-center animate-in fade-in duration-700">
+        <div className="space-y-10 w-full max-w-[200px] sm:max-w-[320px] flex flex-col items-center animate-in fade-in duration-700">
           <div className="relative w-full aspect-square">
             <Image 
               src="/img/icon.png" 
