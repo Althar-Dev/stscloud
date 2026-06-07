@@ -9,7 +9,6 @@ import {
   Terminal, 
   Settings, 
   FolderOpen, 
-  Cpu, 
   Share2, 
   MoreVertical,
   ArrowLeft,
@@ -60,7 +59,7 @@ export default function ServerPage() {
             <ScrollArea className="w-full" orientation="horizontal">
               <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Terminal className="size-4" /> <span>Console & Performance</span>
+                  <Terminal className="size-4" /> <span>Console</span>
                 </TabsTrigger>
                 <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <FolderOpen className="size-4" /> <span>Files</span>
