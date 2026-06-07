@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -14,7 +15,8 @@ import {
   ExternalLink,
   Zap,
   Shield,
-  Search
+  Search,
+  LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -55,6 +57,17 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
+          {/* Dashboard Summary Header */}
+          <div className="flex items-center justify-between px-2">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-headline font-bold">Welcome Back</h2>
+              <p className="text-sm text-muted-foreground">System is operating normally across all nodes.</p>
+            </div>
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1">
+              <Activity className="size-3 mr-2 animate-pulse" /> Global Healthy
+            </Badge>
+          </div>
+
           {/* Hero Stats - 2 columns */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
@@ -132,10 +145,10 @@ export default function Dashboard() {
           {/* Recent Servers Grid - 2 columns */}
           <section className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-headline font-bold">Recent Servers</h2>
+              <h2 className="text-xl font-headline font-bold">Recent Activity</h2>
               <Link href="/servers">
                 <Button variant="link" className="text-primary hover:text-accent gap-1 p-0 text-sm">
-                  View All <ChevronRight className="size-4" />
+                  View All Servers <ChevronRight className="size-4" />
                 </Button>
               </Link>
             </div>

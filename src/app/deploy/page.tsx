@@ -79,29 +79,35 @@ export default function DeployPage() {
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-8 max-w-5xl mx-auto w-full">
-          {/* Progress Tracker with Connecting Line */}
-          <div className="flex items-center justify-between max-w-3xl mx-auto relative mb-12 px-4">
-            {/* Background Line */}
-            <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-secondary -translate-y-1/2 -z-10" />
+          {/* Progress Tracker with Visible Connecting Line */}
+          <div className="max-w-3xl mx-auto relative mb-12 px-8">
+            {/* Base Gray Line */}
+            <div className="absolute top-1/2 left-8 right-8 h-[2px] bg-secondary -translate-y-1/2" />
             
-            {/* Active Progress Line */}
+            {/* Active Blue Progress Line */}
             <div 
-              className="absolute top-1/2 left-4 h-0.5 bg-primary -translate-y-1/2 -z-10 transition-all duration-500" 
+              className="absolute top-1/2 left-8 h-[2px] bg-primary -translate-y-1/2 transition-all duration-500 ease-in-out" 
               style={{ width: `${(step - 1) * 25}%` }}
             />
 
-            {[1, 2, 3, 4, 5].map((s) => (
-              <div 
-                key={s} 
-                className={cn(
-                  "size-8 md:size-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-background",
-                  step >= s ? "border-primary text-primary" : "border-border text-muted-foreground",
-                  step === s && "ring-4 ring-primary/20 scale-110"
-                )}
-              >
-                {step > s ? <CheckCircle2 className="size-5 md:size-6 fill-primary text-white" /> : <span className="font-bold text-xs md:text-sm">{s}</span>}
-              </div>
-            ))}
+            <div className="flex items-center justify-between relative z-10">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <div 
+                  key={s} 
+                  className={cn(
+                    "size-8 md:size-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-background",
+                    step >= s ? "border-primary text-primary" : "border-border text-muted-foreground",
+                    step === s && "ring-4 ring-primary/20 scale-110"
+                  )}
+                >
+                  {step > s ? (
+                    <CheckCircle2 className="size-5 md:size-6 fill-primary text-white" />
+                  ) : (
+                    <span className="font-bold text-xs md:text-sm">{s}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {step === 1 && (
