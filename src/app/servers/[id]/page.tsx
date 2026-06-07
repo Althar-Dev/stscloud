@@ -96,14 +96,6 @@ export default function ServerPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <div className="mr-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/30 border border-border/50">
-                <span className={cn(
-                  "size-2 rounded-full",
-                  status === "online" ? "bg-green-500 animate-pulse" : 
-                  status === "starting" ? "bg-yellow-500 animate-pulse" : "bg-red-500"
-                )} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{status}</span>
-              </div>
               <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-xl border border-border/50">
                 <Button 
                   variant="ghost" 
@@ -136,7 +128,7 @@ export default function ServerPage() {
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            {/* Console and Sidebar Info First */}
+            {/* Top Section: Console + Info Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
                 <TerminalConsole externalStatus={status} />
@@ -160,8 +152,11 @@ export default function ServerPage() {
               </div>
             </div>
 
-            {/* Performance Metrics Below Console */}
-            <PerformanceMetrics />
+            {/* Bottom Section: Performance Metrics */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">System Performance</h2>
+              <PerformanceMetrics />
+            </div>
           </TabsContent>
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
