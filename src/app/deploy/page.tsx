@@ -33,7 +33,7 @@ import {
   Settings,
   LogOut
 } from "lucide-react";
-import { SiNodejs, SiPython, SiPhp } from "react-icons/si";
+import { SiNodedotjs, SiPython, SiPhp } from "react-icons/si";
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -66,7 +66,7 @@ const applicationTypes: Record<string, { id: string; name: string }[]> = {
 };
 
 const runtimeIcons: Record<string, React.ElementType> = {
-  nodejs: SiNodejs,
+  nodejs: SiNodedotjs,
   python: SiPython,
   php: SiPhp,
 };
