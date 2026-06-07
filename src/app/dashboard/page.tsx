@@ -1,160 +1,168 @@
 
 "use client";
 
-import { PerformanceMetrics } from "@/components/performance-metrics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Server as ServerIcon, 
   Activity, 
   Plus, 
-  ChevronRight, 
   ExternalLink,
   Zap,
   Shield,
-  Search
+  LifeBuoy,
+  User,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const mockServers = [
-  { id: "s-1", name: "Main Survival", game: "Minecraft", players: "12/20", status: "online", node: "Phoenix-01" },
-  { id: "s-2", name: "CS2 Competitive", game: "CS2", players: "4/10", status: "online", node: "Phoenix-02" },
-  { id: "s-3", name: "Valheim World", game: "Valheim", players: "0/10", status: "offline", node: "Europe-North" },
+const recentServers = [
+  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
+  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", usage: "Active", status: "online" },
 ];
 
 export default function Dashboard() {
   return (
     <div className="bg-background min-h-screen">
-      <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-6 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
+      <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-[40px] h-[40px] rounded-lg flex items-center justify-center">
+            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
-            <span className="font-headline font-bold text-xl tracking-tight">
+            <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
               <span className="text-primary">Cloud</span>
             </span>
           </Link>
-          <div className="h-4 w-px bg-border" />
-          <h1 className="font-headline font-semibold text-lg hidden sm:block">System Dashboard</h1>
         </div>
+
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="relative w-40 lg:w-72 hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input 
-              placeholder="Quick jump..." 
-              className="bg-secondary/40 border-none h-9 pl-9 focus-visible:ring-primary/40"
-            />
-          </div>
-          <Link href="/deploy">
-            <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white px-3 md:px-4">
-              <Plus className="size-4" />
-              <span className="hidden xs:inline">New Server</span>
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+              <LifeBuoy className="size-4" />
+              <span>Support</span>
             </Button>
           </Link>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
+                <Avatar className="size-full">
+                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
+                  <AvatarFallback>ST</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 mt-2">
+              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2">
+                <User className="size-4" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2">
+                <Settings className="size-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                <LogOut className="size-4" /> Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-        {/* Hero Stats */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
+          <div className="space-y-1">
+            <h2 className="text-xl md:text-2xl font-headline font-bold">System Overview</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
+              <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
+            </Badge>
+            <Link href="/deploy">
+              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
+                <Plus className="size-4" />
+                <span>New Server</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-10 rounded-xl bg-primary flex items-center justify-center">
-                  <Zap className="size-6 text-white" />
+                <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center">
+                  <Zap className="size-5 md:size-6 text-white" />
                 </div>
-                <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">3 Running</Badge>
+                <Badge variant="outline" className="text-[9px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
               </div>
               <div className="mt-4">
-                <div className="text-2xl font-bold font-headline">5 Active</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
+                <div className="text-xl md:text-2xl font-bold font-headline">3 Active</div>
+                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-accent/10 border-accent/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-accent/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Activity className="size-6 text-accent-foreground" />
+                <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center">
+                  <Activity className="size-5 md:size-6 text-accent-foreground" />
                 </div>
-                <Badge variant="outline" className="border-accent/30 text-accent bg-accent/5">Optimal</Badge>
+                <Badge variant="outline" className="text-[9px] md:text-[10px] border-accent/30 text-accent bg-accent/5">Optimal</Badge>
               </div>
               <div className="mt-4">
-                <div className="text-2xl font-bold font-headline">99.9%</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Uptime Average</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-500/10 border-green-500/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-green-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
-            <CardContent className="p-4 md:p-6 relative">
-              <div className="flex items-center justify-between">
-                <div className="size-10 rounded-xl bg-green-500 flex items-center justify-center">
-                  <Shield className="size-6 text-white" />
-                </div>
-                <Badge variant="outline" className="border-green-500/30 text-green-500 bg-green-500/5">Protected</Badge>
-              </div>
-              <div className="mt-4">
-                <div className="text-2xl font-bold font-headline">24 DDoS</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Mitigated Today</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div className="size-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
-                  <ServerIcon className="size-6 text-muted-foreground" />
-                </div>
-                <Badge variant="secondary">Global</Badge>
-              </div>
-              <div className="mt-4">
-                <div className="text-2xl font-bold font-headline">2 Nodes</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Infrastructure</div>
+                <div className="text-xl md:text-2xl font-bold font-headline">99.9%</div>
+                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
               </div>
             </CardContent>
           </Card>
         </section>
 
-        {/* My Servers */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-headline font-bold">Active Servers</h2>
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-lg md:text-xl font-headline font-bold">Active Projects</h2>
             <Link href="/deploy">
-              <Button variant="link" className="text-primary hover:text-accent gap-1 p-0 text-sm">
-                Deploy new <Plus className="size-4" />
-              </Button>
+               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all projects</Button>
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockServers.map((server) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentServers.map((server) => (
               <Link key={server.id} href={`/servers/${server.id}`}>
                 <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
-                  <div className="p-5 flex flex-row items-center justify-between pb-3">
-                    <div className="space-y-1">
-                      <div className="text-lg font-headline font-bold truncate max-w-[150px]">{server.name}</div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{server.game} • {server.node}</p>
+                  <div className="p-4 md:p-5 flex flex-row items-center justify-between pb-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="text-base md:text-lg font-headline font-bold truncate pr-2">{server.name}</div>
+                      <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{server.type} • {server.details}</p>
                     </div>
                     <div className={cn(
-                      "size-2.5 rounded-full",
+                      "size-2 md:size-2.5 rounded-full shrink-0",
                       server.status === "online" ? "bg-green-500 animate-pulse" : "bg-red-500"
                     )} />
                   </div>
-                  <div className="px-5 pb-5">
-                    <div className="flex items-center justify-between text-sm">
+                  <div className="px-4 md:px-5 pb-4 md:pb-5">
+                    <div className="flex items-center justify-between text-xs md:text-sm">
                       <div className="flex items-center gap-2">
-                        <Activity className="size-4 text-primary" />
-                        <span className="font-medium text-muted-foreground">{server.players} Players</span>
+                        <Activity className="size-3.5 md:size-4 text-primary" />
+                        <span className="font-medium text-muted-foreground">{server.usage}</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
-                        <ExternalLink className="size-4" />
+                      <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
+                        <ExternalLink className="size-3.5 md:size-4" />
                       </div>
                     </div>
                   </div>
@@ -162,11 +170,11 @@ export default function Dashboard() {
               </Link>
             ))}
             <Link href="/deploy">
-              <Card className="h-full min-h-[140px] border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                <div className="size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-3 transition-colors">
-                  <Plus className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Card className="h-full min-h-[120px] md:min-h-[140px] border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-4 md:p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                <div className="size-8 md:size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-2 md:mb-3 transition-colors">
+                  <Plus className="size-5 md:size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <p className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Deploy New Server</p>
+                <p className="text-xs md:text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Deploy New Server</p>
               </Card>
             </Link>
           </div>

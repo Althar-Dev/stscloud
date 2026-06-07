@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, useUser } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
@@ -31,17 +31,25 @@ export default function AuthPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const db = useFirestore();
+  const { user, loading: authLoading } = useUser();
   
   const type = searchParams.get("type") || "login";
-  const [loading, setLoading] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
 
   const isLogin = type === "login" || type === "signin";
 
+  // Redirect if user is already logged in
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       if (isLogin) {
@@ -52,11 +60,11 @@ export default function AuthPage() {
         });
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        const newUser = userCredential.user;
         
         // Create user profile in Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
+        await setDoc(doc(db, "users", newUser.uid), {
+          email: newUser.email,
           createdAt: serverTimestamp(),
           displayName: email.split('@')[0], // Default display name
         });
@@ -74,9 +82,18 @@ export default function AuthPage() {
         description: error.message || "An unexpected error occurred.",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  // Prevent flash of content if already logged in
+  if (authLoading || user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -153,9 +170,9 @@ export default function AuthPage() {
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2"
-                disabled={loading}
+                disabled={submitting}
               >
-                {loading ? (
+                {submitting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <>
