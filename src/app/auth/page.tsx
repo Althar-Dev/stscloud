@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useAuth, useFirestore, useUser } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
@@ -37,6 +38,7 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
 
   const isLogin = type === "login" || type === "signin";
 
@@ -46,6 +48,19 @@ export default function AuthPage() {
       router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
+
+  // Simulate progress for Cloudflare-like effect
+  React.useEffect(() => {
+    if (authLoading || user) {
+      const interval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          if (prev >= 100) return 0;
+          return prev + 2;
+        });
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [authLoading, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +101,31 @@ export default function AuthPage() {
     }
   };
 
-  // Prevent flash of content if already logged in
+  // Cloudflare-style branded loading
   if (authLoading || user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="space-y-8 w-full max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
+          <div className="relative w-20 h-20 animate-pulse transition-all duration-1000">
+            <Image 
+              src="/img/icon.png" 
+              alt="STSCloud" 
+              fill 
+              className="object-contain grayscale opacity-80" 
+            />
+          </div>
+          <div className="w-full space-y-3">
+            <div className="h-[2px] w-full bg-secondary overflow-hidden rounded-full">
+              <div 
+                className="h-full bg-primary transition-all duration-300 ease-out" 
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-center uppercase tracking-[0.3em] font-bold text-muted-foreground/60 animate-pulse">
+              Verifying Connection
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
