@@ -44,12 +44,6 @@ export default function Dashboard() {
               className="bg-secondary/40 border-none h-9 pl-9 focus-visible:ring-primary/40"
             />
           </div>
-          <Link href="/deploy">
-            <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
-              <Plus className="size-4" />
-              <span className="hidden xs:inline">New Server</span>
-            </Button>
-          </Link>
         </div>
       </header>
 
@@ -59,9 +53,17 @@ export default function Dashboard() {
             <h2 className="text-xl md:text-2xl font-headline font-bold">System Overview</h2>
             <p className="text-xs md:text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
           </div>
-          <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
-            <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
+              <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
+            </Badge>
+            <Link href="/deploy">
+              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
+                <Plus className="size-4" />
+                <span>New Server</span>
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
