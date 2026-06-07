@@ -33,6 +33,7 @@ import {
   Settings,
   LogOut
 } from "lucide-react";
+import { SiNodejs, SiPython, SiPhp } from "react-icons/si";
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,12 @@ const applicationTypes: Record<string, { id: string; name: string }[]> = {
     { id: "python", name: "Python" },
     { id: "php", name: "PHP" },
   ],
+};
+
+const runtimeIcons: Record<string, React.ElementType> = {
+  nodejs: SiNodejs,
+  python: SiPython,
+  php: SiPhp,
 };
 
 export default function DeployPage() {
@@ -167,21 +174,21 @@ export default function DeployPage() {
                 <Card 
                   key={t.id} 
                   className={cn(
-                    "cursor-pointer hover:border-primary/50 transition-all group overflow-hidden relative",
-                    selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card border-border/50"
+                    "cursor-pointer transition-all group overflow-hidden relative border-border/50",
+                    selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
                   )}
                   onClick={() => {
                     setSelectedTemplate(t.id);
                     setSelectedAppType(null);
                   }}
                 >
-                  <CardContent className="p-6 md:p-8 text-center space-y-3">
-                    <div className={cn("size-12 md:size-16 mx-auto rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform", t.color)}>
+                  <CardContent className="p-6 md:p-8 text-center space-y-4">
+                    <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color)}>
                       <t.icon className="size-6 md:size-8" />
                     </div>
                     <div className="space-y-1">
                       <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
-                      <Badge variant="secondary" className="text-[10px] uppercase tracking-widest px-2">{t.group}</Badge>
+                      <Badge variant="secondary" className="text-[9px] uppercase tracking-widest px-2 font-bold opacity-70">Infrastructure</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -192,7 +199,7 @@ export default function DeployPage() {
               <Button 
                 disabled={!selectedTemplate} 
                 onClick={() => setStep(2)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
                 Configure Resources <ArrowRight className="size-4" />
               </Button>
@@ -207,39 +214,39 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name}.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => (
                 <Card 
                   key={preset.id}
                   className={cn(
-                    "cursor-pointer transition-all border-border/50 hover:border-primary/50 overflow-hidden",
-                    selectedPreset === preset.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card"
+                    "cursor-pointer transition-all border-border/50 group relative overflow-hidden",
+                    selectedPreset === preset.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
                   )}
                   onClick={() => setSelectedPreset(preset.id)}
                 >
-                  <CardContent className="p-4 md:p-5 space-y-3">
+                  <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Database className="size-4 text-accent" />
-                        <span className="font-bold font-headline text-base">{preset.ram}</span>
+                        <Database className="size-4 text-primary" />
+                        <span className="font-bold font-headline text-lg">{preset.ram}</span>
                       </div>
                       {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                     </div>
                     
-                    <div className="grid grid-cols-1 gap-1.5 text-xs">
+                    <div className="space-y-2 text-xs">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Cpu className="size-3" />
-                        <span>CPU {preset.cpu}</span>
+                        <Cpu className="size-3.5" />
+                        <span className="font-medium">CPU {preset.cpu}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <HardDrive className="size-3" />
-                        <span>Disk {preset.disk}</span>
+                        <HardDrive className="size-3.5" />
+                        <span className="font-medium">Disk {preset.disk}</span>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-border/50">
+                    <div className="pt-3 border-t border-border/50">
                       <div className="flex items-center gap-2">
-                        <Tag className="size-3 text-primary" />
+                        <Tag className="size-3.5 text-primary" />
                         <span className="font-bold text-sm text-primary">{preset.price}</span>
                       </div>
                     </div>
@@ -254,7 +261,7 @@ export default function DeployPage() {
               </Button>
               <Button 
                 onClick={() => setStep(3)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
                 Select Runtime <ArrowRight className="size-4" />
               </Button>
@@ -270,23 +277,42 @@ export default function DeployPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-              {availableAppTypes.map((type) => (
-                <Card 
-                  key={type.id}
-                  className={cn(
-                    "cursor-pointer transition-all border-border/50 hover:border-primary/50 overflow-hidden",
-                    selectedAppType === type.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card"
-                  )}
-                  onClick={() => setSelectedAppType(type.id)}
-                >
-                  <CardContent className="p-8 text-center space-y-3">
-                    <div className="size-12 mx-auto rounded-xl bg-secondary flex items-center justify-center">
-                      <Code2 className="size-6 text-primary" />
-                    </div>
-                    <div className="font-headline font-bold text-lg">{type.name}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              {availableAppTypes.map((type) => {
+                const RuntimeIcon = runtimeIcons[type.id] || Code2;
+                return (
+                  <Card 
+                    key={type.id}
+                    className={cn(
+                      "relative overflow-hidden group cursor-pointer transition-all duration-300 border-border/50",
+                      selectedAppType === type.id 
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/50" 
+                        : "bg-card hover:bg-secondary/30 hover:border-primary/30"
+                    )}
+                    onClick={() => setSelectedAppType(type.id)}
+                  >
+                    {selectedAppType === type.id && (
+                      <div className="absolute top-3 right-3">
+                        <CheckCircle2 className="size-4 text-primary fill-primary text-white" />
+                      </div>
+                    )}
+                    <CardContent className="p-8 text-center flex flex-col items-center gap-4">
+                      <div className={cn(
+                        "size-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110",
+                        selectedAppType === type.id ? "bg-primary/20" : "bg-secondary/50"
+                      )}>
+                        <RuntimeIcon className={cn(
+                          "size-8",
+                          selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                        )} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="font-headline font-bold text-lg">{type.name}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Standard Runtime</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
@@ -296,7 +322,7 @@ export default function DeployPage() {
               <Button 
                 disabled={!selectedAppType}
                 onClick={() => setStep(4)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
                 Checkout <ArrowRight className="size-4" />
               </Button>
@@ -316,10 +342,10 @@ export default function DeployPage() {
                 <ShoppingCart className="size-5 text-primary" />
                 <span className="font-bold font-headline">Summary</span>
               </div>
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-y-4 text-sm">
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-y-5 text-sm">
                   <div className="text-muted-foreground">Environment</div>
-                  <div className="font-bold text-right uppercase">{selectedTemplateData?.name}</div>
+                  <div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
                   
                   <div className="text-muted-foreground">Resources</div>
                   <div className="font-bold text-right">{selectedPresetData?.ram} RAM / {selectedPresetData?.cpu} CPU</div>
@@ -333,7 +359,7 @@ export default function DeployPage() {
                 
                 <div className="pt-6 border-t border-border/50 flex items-center justify-between">
                   <span className="font-bold font-headline text-lg">Total Cost</span>
-                  <span className="font-bold font-headline text-2xl text-primary">{selectedPresetData?.price}</span>
+                  <span className="font-bold font-headline text-3xl text-primary">{selectedPresetData?.price}</span>
                 </div>
               </CardContent>
             </Card>
@@ -344,7 +370,7 @@ export default function DeployPage() {
               </Button>
               <Button 
                 onClick={() => setStep(5)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
                 Continue to Payment <CreditCard className="size-4" />
               </Button>
@@ -354,7 +380,7 @@ export default function DeployPage() {
 
         {step === 5 && (
           <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-             <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
+             <div className="size-24 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto ring-1 ring-primary/20">
                <CreditCard className="size-12 text-primary animate-pulse" />
              </div>
              <div className="space-y-2">
@@ -362,25 +388,25 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Complete your payment of {selectedPresetData?.price}.</p>
             </div>
             
-            <div className="p-8 rounded-2xl bg-secondary/30 border border-border/50 space-y-6">
+            <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
               <div className="space-y-4">
-                <div className="text-left space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Virtual Account</label>
-                  <div className="h-12 bg-background border border-border rounded-lg flex items-center px-4 font-mono font-bold">
+                <div className="text-left space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Virtual Account</label>
+                  <div className="h-14 bg-background border border-border rounded-xl flex items-center px-4 font-mono font-bold text-lg text-primary">
                     STS-8821-2931-4822
                   </div>
                 </div>
               </div>
               
               <Link href="/" className="block">
-                <Button className="w-full bg-primary text-white h-12 gap-2">
-                  <Rocket className="size-4" /> Finalize Deployment
+                <Button className="w-full bg-primary text-white h-14 gap-2 text-lg font-bold">
+                  <Rocket className="size-5" /> Finalize Deployment
                 </Button>
               </Link>
             </div>
 
             <Button variant="ghost" onClick={() => setStep(4)} className="gap-2">
-              <ChevronLeft className="size-4" /> Cancel
+              <ChevronLeft className="size-4" /> Cancel Payment
             </Button>
           </div>
         )}
