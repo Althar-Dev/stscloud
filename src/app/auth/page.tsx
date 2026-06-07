@@ -10,8 +10,6 @@ import {
   Mail, 
   Lock, 
   ArrowRight, 
-  Github, 
-  Chrome,
   Loader2,
   ChevronLeft
 } from "lucide-react";
@@ -129,26 +127,6 @@ export default function AuthPage() {
                 )}
               </Button>
             </form>
-
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="border-border/50 hover:bg-secondary/50 h-10 gap-2">
-                <Chrome className="size-4" />
-                <span className="text-xs">Google</span>
-              </Button>
-              <Button variant="outline" className="border-border/50 hover:bg-secondary/50 h-10 gap-2">
-                <Github className="size-4" />
-                <span className="text-xs">GitHub</span>
-              </Button>
-            </div>
           </CardContent>
           
           <CardFooter className="flex flex-col space-y-4 pb-8">
