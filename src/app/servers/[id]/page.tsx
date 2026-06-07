@@ -60,11 +60,11 @@ export default function ServerPage() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-3 md:gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-primary/20">
-              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg md:text-xl tracking-tight hidden sm:block">
-              STS<span className="text-primary">Cloud</span>
+              <span className="text-primary">Cloud</span>
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
@@ -77,10 +77,12 @@ export default function ServerPage() {
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden lg:flex">
-            <LifeBuoy className="size-4" />
-            <span>Support</span>
-          </Button>
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden lg:flex">
+              <LifeBuoy className="size-4" />
+              <span>Support</span>
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" className="gap-2 h-9 border-border/50 hidden sm:flex">
             <Share2 className="size-4" /> <span className="text-xs md:text-sm">Share</span>
           </Button>
@@ -134,14 +136,14 @@ export default function ServerPage() {
 
             {activeTab === "console" && (
               <div className="flex flex-row items-center justify-between md:justify-end w-full md:w-auto gap-2 md:gap-4 px-1 animate-in fade-in slide-in-from-right-2 duration-300">
-                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
+                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all">
                   <Globe className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
                     <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Address</span>
                     <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">play.stscloud.net:25565</span>
                   </div>
                 </div>
-                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
+                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all">
                   <Clock className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
                     <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Uptime</span>

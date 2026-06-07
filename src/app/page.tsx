@@ -40,20 +40,22 @@ export default function Dashboard() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
-              STS<span className="text-primary">Cloud</span>
+              <span className="text-primary">Cloud</span>
             </span>
           </Link>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
-            <LifeBuoy className="size-4" />
-            <span>Support</span>
-          </Button>
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+              <LifeBuoy className="size-4" />
+              <span>Support</span>
+            </Button>
+          </Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -93,7 +95,7 @@ export default function Dashboard() {
               <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
             </Badge>
             <Link href="/deploy">
-              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4 shadow-lg shadow-primary/20">
+              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
                 <Plus className="size-4" />
                 <span>New Server</span>
               </Button>
@@ -103,7 +105,6 @@ export default function Dashboard() {
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
                 <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center">
@@ -118,7 +119,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           <Card className="bg-accent/10 border-accent/20 overflow-hidden relative group">
-            <div className="absolute -right-4 -bottom-4 size-24 bg-accent/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
                 <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center">

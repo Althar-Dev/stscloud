@@ -84,11 +84,11 @@ export default function DeployPage() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-primary/20">
-              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-xl tracking-tight">
-              STS<span className="text-primary">Cloud</span>
+              <span className="text-primary">Cloud</span>
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
@@ -96,10 +96,12 @@ export default function DeployPage() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
-            <LifeBuoy className="size-4" />
-            <span>Support</span>
-          </Button>
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+              <LifeBuoy className="size-4" />
+              <span>Support</span>
+            </Button>
+          </Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -195,7 +197,7 @@ export default function DeployPage() {
               <Button 
                 disabled={!selectedTemplate} 
                 onClick={() => setStep(2)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
               >
                 Configure Resources <ArrowRight className="size-4" />
               </Button>
@@ -257,7 +259,7 @@ export default function DeployPage() {
               </Button>
               <Button 
                 onClick={() => setStep(3)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
               >
                 Select Runtime <ArrowRight className="size-4" />
               </Button>
@@ -299,7 +301,7 @@ export default function DeployPage() {
               <Button 
                 disabled={!selectedAppType}
                 onClick={() => setStep(4)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
               >
                 Checkout <ArrowRight className="size-4" />
               </Button>
@@ -347,7 +349,7 @@ export default function DeployPage() {
               </Button>
               <Button 
                 onClick={() => setStep(5)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto shadow-lg shadow-primary/20"
+                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto"
               >
                 Continue to Payment <CreditCard className="size-4" />
               </Button>
@@ -357,7 +359,7 @@ export default function DeployPage() {
 
         {step === 5 && (
           <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-             <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto shadow-2xl shadow-primary/30">
+             <div className="size-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
                <CreditCard className="size-12 text-primary animate-pulse" />
              </div>
              <div className="space-y-2">
@@ -376,7 +378,7 @@ export default function DeployPage() {
               </div>
               
               <Link href="/" className="block">
-                <Button className="w-full bg-primary text-white h-12 shadow-lg shadow-primary/20 gap-2">
+                <Button className="w-full bg-primary text-white h-12 gap-2">
                   <Rocket className="size-4" /> Finalize Deployment
                 </Button>
               </Link>
