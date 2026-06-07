@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 
 export default function ServerPage() {
   const { id } = useParams();
-  const [status, setStatus] = React.useState<"online" | "offline" | "starting transition-all duration-300">("online");
+  const [status, setStatus] = React.useState<"online" | "offline" | "starting">("online");
+  const [activeTab, setActiveTab] = React.useState("console");
 
   const handlePower = (action: "start" | "stop" | "restart") => {
     if (action === "start") {
@@ -57,7 +58,7 @@ export default function ServerPage() {
             <Link href="/" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="size-4" />
             </Link>
-            <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[100px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
+            <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
             <span className="hidden lg:inline-block px-2 py-0.5 rounded bg-secondary text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{id}</span>
           </div>
         </div>
@@ -72,7 +73,7 @@ export default function ServerPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-        <Tabs defaultValue="console" className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center justify-start overflow-hidden">
               <ScrollArea className="w-full" orientation="horizontal">
@@ -91,22 +92,24 @@ export default function ServerPage() {
               </ScrollArea>
             </div>
 
-            <div className="flex flex-row items-center justify-between md:justify-end w-full md:w-auto gap-2 md:gap-4 px-1">
-              <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
-                <Globe className="size-3.5 text-primary shrink-0" />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Address</span>
-                  <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">play.stscloud.net:25565</span>
+            {activeTab === "console" && (
+              <div className="flex flex-row items-center justify-between md:justify-end w-full md:w-auto gap-2 md:gap-4 px-1 animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
+                  <Globe className="size-3.5 text-primary shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Address</span>
+                    <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">play.stscloud.net:25565</span>
+                  </div>
+                </div>
+                <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
+                  <Clock className="size-3.5 text-primary shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Uptime</span>
+                    <span className="text-[10px] md:text-xs font-bold font-headline truncate">2d 14h 32m</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all shadow-sm">
-                <Clock className="size-3.5 text-primary shrink-0" />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Uptime</span>
-                  <span className="text-[10px] md:text-xs font-bold font-headline truncate">2d 14h 32m</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
