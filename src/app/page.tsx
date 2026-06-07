@@ -20,7 +20,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const pricingTiers = [
   { id: "p1", name: "Entry", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
@@ -32,8 +31,6 @@ const pricingTiers = [
 ];
 
 export default function LandingPage() {
-  const heroImage = PlaceHolderImages.find(img => img.id === "server-hero");
-
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20">
       {/* Navigation */}
@@ -68,55 +65,39 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="flex-1 space-y-8 text-center lg:text-left">
-              <Badge variant="outline" className="px-4 py-1.5 border-primary/20 bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest">
-                Next-Gen Infrastructure
-              </Badge>
-              <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tight leading-[1.1]">
-                Empower Your Projects with <span className="text-primary italic">STSCloud</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                Deploy websites, bots, and complex game nodes on high-performance infrastructure. Scalable, secure, and ready for whatever you build next.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
-                <Link href="/auth?type=signup">
-                  <Button size="lg" className="h-14 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full sm:w-auto">
-                    Start Deploying <ArrowRight className="size-5" />
-                  </Button>
-                </Link>
-                <Link href="#pricing">
-                  <Button size="lg" variant="outline" className="h-14 px-10 text-lg font-bold border-border/50 hover:bg-secondary/50 w-full sm:w-auto">
-                    View Pricing
-                  </Button>
-                </Link>
-              </div>
-              <div className="flex items-center justify-center lg:justify-start gap-8 pt-8 opacity-50">
-                <div className="flex flex-col items-center lg:items-start">
-                  <span className="text-2xl font-bold font-headline">99.9%</span>
-                  <span className="text-[10px] uppercase tracking-widest font-bold">Uptime Guaranteed</span>
-                </div>
-                <div className="h-8 w-px bg-border" />
-                <div className="flex flex-col items-center lg:items-start">
-                  <span className="text-2xl font-bold font-headline">24/7</span>
-                  <span className="text-[10px] uppercase tracking-widest font-bold">Expert Support</span>
-                </div>
-              </div>
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <Badge variant="outline" className="px-4 py-1.5 border-primary/20 bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest">
+              Next-Gen Infrastructure
+            </Badge>
+            <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tight leading-[1.1]">
+              Empower Your Projects with <span className="text-primary italic">STSCloud</span>
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              Deploy websites, bots, and complex game nodes on high-performance infrastructure. Scalable, secure, and ready for whatever you build next.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Link href="/auth?type=signup">
+                <Button size="lg" className="h-14 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full sm:w-auto">
+                  Start Deploying <ArrowRight className="size-5" />
+                </Button>
+              </Link>
+              <Link href="#pricing">
+                <Button size="lg" variant="outline" className="h-14 px-10 text-lg font-bold border-border/50 hover:bg-secondary/50 w-full sm:w-auto">
+                  View Pricing
+                </Button>
+              </Link>
             </div>
-            
-            <div className="flex-1 w-full max-w-2xl relative">
-              <div className="relative rounded-2xl overflow-hidden border border-border/50 aspect-video shadow-2xl">
-                <Image 
-                  src={heroImage?.imageUrl || "https://picsum.photos/seed/sts1/800/600"} 
-                  alt="Infrastructure Visualization" 
-                  width={1200} 
-                  height={800} 
-                  className="object-cover"
-                  data-ai-hint={heroImage?.imageHint || "server room"}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
+            <div className="flex items-center justify-center gap-8 pt-8 opacity-50">
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-headline">99.9%</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold">Uptime Guaranteed</span>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-headline">24/7</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold">Expert Support</span>
               </div>
             </div>
           </div>
@@ -124,7 +105,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats/Logos */}
-      <section className="py-12 border-y border-border/50 bg-secondary/20">
+      <section className="py-12 border-b border-border/50 bg-secondary/10">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-center gap-12 md:gap-24 grayscale opacity-60">
           <div className="flex items-center gap-2 font-headline font-bold text-xl"><Zap className="size-6 text-primary" /> Lightning Fast</div>
           <div className="flex items-center gap-2 font-headline font-bold text-xl"><Shield className="size-6 text-primary" /> DDoS Protected</div>
