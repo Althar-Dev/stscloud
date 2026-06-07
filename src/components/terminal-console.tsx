@@ -78,7 +78,14 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
   return (
     <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl border-border/50">
       <div className="flex items-center justify-between p-2 md:p-3 border-b border-border/50 bg-secondary/30">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Mac-style Window Controls */}
+          <div className="flex items-center gap-1.5 px-2 mr-1">
+            <div className="size-2 md:size-2.5 rounded-full bg-red-500/60" />
+            <div className="size-2 md:size-2.5 rounded-full bg-yellow-500/60" />
+            <div className="size-2 md:size-2.5 rounded-full bg-green-500/60" />
+          </div>
+          
           <Badge 
             variant="outline" 
             className={cn(
@@ -98,7 +105,7 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
           </Badge>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-background/50 p-1 rounded-lg border border-border/50">
+        <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/50">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -136,7 +143,7 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
         {logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-50">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm">Console ready. Start server to see logs.</p>
+            <p className="text-xs md:text-sm text-center">Console ready. Start server to see logs.</p>
           </div>
         ) : (
           logs.map((log) => (
