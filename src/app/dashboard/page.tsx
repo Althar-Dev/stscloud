@@ -174,7 +174,7 @@ export default function Dashboard() {
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-lg md:text-xl font-headline font-bold">Active Servers</h2>
-            <Link href="/deploy">
+            <Link href="/servers">
                <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all servers</Button>
             </Link>
           </div>
