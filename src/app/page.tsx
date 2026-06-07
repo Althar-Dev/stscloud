@@ -121,9 +121,6 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        
-        {/* Background elements (No glow) */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-secondary/10 -skew-x-12 -z-10 translate-x-1/2" />
       </section>
 
       {/* Stats/Logos */}

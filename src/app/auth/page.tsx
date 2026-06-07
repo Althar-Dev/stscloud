@@ -39,12 +39,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px]" />
-      </div>
-
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center text-center space-y-4">
           <Link href="/" className="group transition-transform hover:scale-105 active:scale-95">
