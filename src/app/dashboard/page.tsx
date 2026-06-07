@@ -127,7 +127,7 @@ export default function Dashboard() {
             <h2 className="text-xl md:text-2xl font-headline font-bold">System Overview</h2>
             <p className="text-xs md:text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
             <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
               <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
             </Badge>
