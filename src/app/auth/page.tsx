@@ -17,24 +17,65 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { useAuth, useFirestore } from "@/firebase";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword 
+} from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const db = useFirestore();
+  
   const type = searchParams.get("type") || "login";
   const [loading, setLoading] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
   const isLogin = type === "login" || type === "signin";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth delay
-    setTimeout(() => {
+
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in to your account.",
+        });
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Create user profile in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          createdAt: serverTimestamp(),
+          displayName: email.split('@')[0], // Default display name
+        });
+
+        toast({
+          title: "Account created!",
+          description: "Your STSCloud account is ready to use.",
+        });
+      }
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Authentication failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+    } finally {
       setLoading(false);
-      router.push("/");
-    }, 1500);
+    }
   };
 
   return (
@@ -81,6 +122,8 @@ export default function AuthPage() {
                     type="email" 
                     placeholder="name@company.com" 
                     className="pl-10 bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required 
                   />
                 </div>
@@ -101,6 +144,8 @@ export default function AuthPage() {
                     type="password" 
                     placeholder="••••••••" 
                     className="pl-10 bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required 
                   />
                 </div>

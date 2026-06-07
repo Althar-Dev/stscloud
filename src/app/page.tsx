@@ -37,11 +37,11 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-secondary">
-              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-xl tracking-tight">
-              STS<span className="text-primary">Cloud</span>
+              <span className="text-primary">Cloud</span>
             </span>
           </div>
           
@@ -204,10 +204,10 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div className="col-span-1 md:col-span-2 space-y-6">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-secondary">
-                  <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+                <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
+                  <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
                 </div>
-                <span className="font-headline font-bold text-xl tracking-tight">STSCloud</span>
+                <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
               </div>
               <p className="text-muted-foreground max-w-sm leading-relaxed">
                 Premium cloud infrastructure designed for high-performance applications and high-traffic projects.
