@@ -7,7 +7,7 @@ import Image from "next/image";
 import { 
   LifeBuoy, 
   MessageSquare, 
-  Book, 
+   Book, 
   ShieldCheck, 
   ChevronRight, 
   Send,
@@ -107,6 +107,13 @@ export default function SupportPage() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
+              <LifeBuoy className="size-4" />
+              <span className="hidden sm:inline">Support</span>
+            </Button>
+          </Link>
+          <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">

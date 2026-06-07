@@ -126,9 +126,9 @@ export default function DeployPage() {
 
         <div className="flex items-center gap-2 md:gap-4">
           <Link href="/support">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
               <LifeBuoy className="size-4" />
-              <span>Support</span>
+              <span className="hidden sm:inline">Support</span>
             </Button>
           </Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
