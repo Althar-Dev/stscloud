@@ -1,185 +1,303 @@
 
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  Server as ServerIcon, 
-  Activity, 
-  Plus, 
-  ExternalLink,
-  Zap,
-  Shield,
-  LifeBuoy,
-  User,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { 
+  Rocket, 
+  Zap, 
+  Shield, 
+  Globe, 
+  Cpu, 
+  CheckCircle2, 
+  ArrowRight,
+  ChevronRight,
+  Server as ServerIcon,
+  Activity,
+  Code2
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
-const recentServers = [
-  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
-  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", usage: "Active", status: "online" },
+const pricingTiers = [
+  { id: "p1", name: "Entry", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
+  { id: "p2", name: "Basic", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", popular: false },
+  { id: "p3", name: "Pro", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", popular: true },
+  { id: "p4", name: "Elite", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", popular: false },
+  { id: "p5", name: "Extreme", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", popular: false },
+  { id: "p6", name: "Infinite", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", popular: false },
 ];
 
-export default function Dashboard() {
+export default function LandingPage() {
+  const heroImage = PlaceHolderImages.find(img => img.id === "server-hero");
+
   return (
-    <div className="bg-background min-h-screen">
-      <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
+    <div className="bg-background min-h-screen text-foreground selection:bg-primary/20">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-secondary">
+              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
             </div>
-            <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
-              <span className="text-primary">Cloud</span>
+            <span className="font-headline font-bold text-xl tracking-tight">
+              STS<span className="text-primary">Cloud</span>
             </span>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/support">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
-              <LifeBuoy className="size-4" />
-              <span>Support</span>
-            </Button>
-          </Link>
-          <div className="h-4 w-px bg-border hidden sm:block" />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
-                <Avatar className="size-full">
-                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
-                  <AvatarFallback>ST</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 mt-2">
-              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2">
-                <User className="size-4" /> Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2">
-                <Settings className="size-4" /> Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
-                <LogOut className="size-4" /> Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-
-      <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
-          <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-headline font-bold">System Overview</h2>
-            <p className="text-xs md:text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
-              <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
-            </Badge>
-            <Link href="/deploy">
-              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
-                <Plus className="size-4" />
-                <span>New Server</span>
+          
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+            <Link href="#features" className="hover:text-primary transition-colors">Features</Link>
+            <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link>
+            <Link href="/support" className="hover:text-primary transition-colors">Support</Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link href="/auth?type=login">
+              <Button variant="ghost" size="sm" className="text-sm font-bold">Login</Button>
+            </Link>
+            <Link href="/auth?type=signup">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold h-9 px-5">
+                Get Started
               </Button>
             </Link>
           </div>
         </div>
+      </nav>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
-          <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
-            <CardContent className="p-4 md:p-6 relative">
-              <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center">
-                  <Zap className="size-5 md:size-6 text-white" />
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            <div className="flex-1 space-y-8 text-center lg:text-left">
+              <Badge variant="outline" className="px-4 py-1.5 border-primary/20 bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest">
+                Next-Gen Infrastructure
+              </Badge>
+              <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tight leading-[1.1]">
+                Empower Your Projects with <span className="text-primary italic">STSCloud</span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                Deploy websites, bots, and complex game nodes on high-performance infrastructure. Scalable, secure, and ready for whatever you build next.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                <Link href="/auth?type=signup">
+                  <Button size="lg" className="h-14 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full sm:w-auto">
+                    Start Deploying <ArrowRight className="size-5" />
+                  </Button>
+                </Link>
+                <Link href="#pricing">
+                  <Button size="lg" variant="outline" className="h-14 px-10 text-lg font-bold border-border/50 hover:bg-secondary/50 w-full sm:w-auto">
+                    View Pricing
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex items-center justify-center lg:justify-start gap-8 pt-8 opacity-50">
+                <div className="flex flex-col items-center lg:items-start">
+                  <span className="text-2xl font-bold font-headline">99.9%</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold">Uptime Guaranteed</span>
                 </div>
-                <Badge variant="outline" className="text-[9px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
-              </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">3 Active</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-accent/10 border-accent/20 overflow-hidden relative group">
-            <CardContent className="p-4 md:p-6 relative">
-              <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Activity className="size-5 md:size-6 text-accent-foreground" />
+                <div className="h-8 w-px bg-border" />
+                <div className="flex flex-col items-center lg:items-start">
+                  <span className="text-2xl font-bold font-headline">24/7</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold">Expert Support</span>
                 </div>
-                <Badge variant="outline" className="text-[9px] md:text-[10px] border-accent/30 text-accent bg-accent/5">Optimal</Badge>
               </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">99.9%</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
+            </div>
+            
+            <div className="flex-1 w-full max-w-2xl relative">
+              <div className="relative rounded-2xl overflow-hidden border border-border/50 aspect-video shadow-2xl">
+                <Image 
+                  src={heroImage?.imageUrl || "https://picsum.photos/seed/sts1/800/600"} 
+                  alt="Infrastructure Visualization" 
+                  width={1200} 
+                  height={800} 
+                  className="object-cover"
+                  data-ai-hint={heroImage?.imageHint || "server room"}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
               </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg md:text-xl font-headline font-bold">Active Projects</h2>
-            <Link href="/deploy">
-               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all projects</Button>
-            </Link>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentServers.map((server) => (
-              <Link key={server.id} href={`/servers/${server.id}`}>
-                <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
-                  <div className="p-4 md:p-5 flex flex-row items-center justify-between pb-3">
-                    <div className="space-y-1 min-w-0">
-                      <div className="text-base md:text-lg font-headline font-bold truncate pr-2">{server.name}</div>
-                      <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{server.type} • {server.details}</p>
-                    </div>
-                    <div className={cn(
-                      "size-2 md:size-2.5 rounded-full shrink-0",
-                      server.status === "online" ? "bg-green-500 animate-pulse" : "bg-red-500"
-                    )} />
+        </div>
+        
+        {/* Background elements (No glow) */}
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-secondary/10 -skew-x-12 -z-10 translate-x-1/2" />
+      </section>
+
+      {/* Stats/Logos */}
+      <section className="py-12 border-y border-border/50 bg-secondary/20">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-center gap-12 md:gap-24 grayscale opacity-60">
+          <div className="flex items-center gap-2 font-headline font-bold text-xl"><Zap className="size-6 text-primary" /> Lightning Fast</div>
+          <div className="flex items-center gap-2 font-headline font-bold text-xl"><Shield className="size-6 text-primary" /> DDoS Protected</div>
+          <div className="flex items-center gap-2 font-headline font-bold text-xl"><Globe className="size-6 text-primary" /> Global Edge</div>
+          <div className="flex items-center gap-2 font-headline font-bold text-xl"><Cpu className="size-6 text-primary" /> Intel Core i9</div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="py-24 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-20">
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Built for Creators</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to manage and scale your digital applications in one unified platform.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FeatureCard 
+              icon={Activity} 
+              title="Real-time Metrics" 
+              description="Monitor CPU, RAM, and Disk usage with live-updating charts and precise analytics."
+            />
+            <FeatureCard 
+              icon={Code2} 
+              title="Multi-Runtime" 
+              description="Optimized support for Node.js, Python, PHP, and high-performance game binaries."
+            />
+            <FeatureCard 
+              icon={ServerIcon} 
+              title="Instant Deploy" 
+              description="From configuration to production in under 60 seconds. Our automated nodes handle the rest."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="py-24 bg-secondary/10 border-t border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-20">
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Simple, Fair Pricing</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Transparent tiers designed to grow with your project. No hidden fees.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pricingTiers.map((tier) => (
+              <Card key={tier.id} className={cn(
+                "border-border/50 bg-card transition-all duration-300 hover:-translate-y-1 relative overflow-hidden",
+                tier.popular && "border-primary/50 ring-1 ring-primary/20"
+              )}>
+                {tier.popular && (
+                  <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-lg">
+                    Most Popular
                   </div>
-                  <div className="px-4 md:px-5 pb-4 md:pb-5">
-                    <div className="flex items-center justify-between text-xs md:text-sm">
-                      <div className="flex items-center gap-2">
-                        <Activity className="size-3.5 md:size-4 text-primary" />
-                        <span className="font-medium text-muted-foreground">{server.usage}</span>
-                      </div>
-                      <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
-                        <ExternalLink className="size-3.5 md:size-4" />
-                      </div>
-                    </div>
+                )}
+                <CardHeader className="space-y-1">
+                  <CardTitle className="font-headline font-bold text-xl">{tier.name}</CardTitle>
+                  <CardDescription className="text-sm font-medium">Resources for {tier.name.toLowerCase()} apps</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-headline font-bold text-primary">{tier.price}</span>
+                    <span className="text-muted-foreground text-xs uppercase font-bold">/ month</span>
                   </div>
-                </Card>
-              </Link>
-            ))}
-            <Link href="/deploy">
-              <Card className="h-full min-h-[120px] md:min-h-[140px] border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-4 md:p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                <div className="size-8 md:size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-2 md:mb-3 transition-colors">
-                  <Plus className="size-5 md:size-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-                <p className="text-xs md:text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Deploy New Server</p>
+                  
+                  <div className="space-y-3 py-6 border-y border-border/50">
+                    <PricingItem label="RAM" value={tier.ram} />
+                    <PricingItem label="CPU" value={tier.cpu} />
+                    <PricingItem label="SSD Disk" value={tier.disk} />
+                    <PricingItem label="DDoS Protection" value="Included" />
+                    <PricingItem label="Automatic Backups" value="Daily" />
+                  </div>
+
+                  <Link href="/auth?type=signup">
+                    <Button className={cn(
+                      "w-full h-12 font-bold gap-2",
+                      tier.popular ? "bg-primary hover:bg-primary/90 text-white" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50"
+                    )}>
+                      Choose {tier.name} <ChevronRight className="size-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
               </Card>
-            </Link>
+            ))}
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-20 bg-background border-t border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div className="col-span-1 md:col-span-2 space-y-6">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-secondary">
+                  <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+                </div>
+                <span className="font-headline font-bold text-xl tracking-tight">STSCloud</span>
+              </div>
+              <p className="text-muted-foreground max-w-sm leading-relaxed">
+                Premium cloud infrastructure designed for high-performance applications and high-traffic projects.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Product</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground font-medium">
+                <li><Link href="#features" className="hover:text-primary transition-colors">Features</Link></li>
+                <li><Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
+                <li><Link href="/deploy" className="hover:text-primary transition-colors">Deployment</Link></li>
+              </ul>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Company</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground font-medium">
+                <li><Link href="/support" className="hover:text-primary transition-colors">Support</Link></li>
+                <li><Link href="/auth?type=login" className="hover:text-primary transition-colors">Login</Link></li>
+                <li><Link href="/auth?type=signup" className="hover:text-primary transition-colors">Register</Link></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="pt-12 mt-12 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} STSCloud Infrastructure. All rights reserved.
+            </p>
+            <div className="flex gap-6 grayscale opacity-40">
+              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-widest">PCI-DSS Compliant</Badge>
+              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-widest">256-bit AES</Badge>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
+}
+
+function FeatureCard({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
+  return (
+    <Card className="border-border/50 bg-secondary/5 hover:bg-secondary/10 transition-all duration-300 group">
+      <CardContent className="p-8 space-y-4">
+        <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+          <Icon className="size-6" />
+        </div>
+        <h3 className="font-headline font-bold text-xl">{title}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {description}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PricingItem({ label, value }: { label: string, value: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <CheckCircle2 className="size-4 text-primary" />
+        <span>{label}</span>
+      </div>
+      <span className="font-bold">{value}</span>
+    </div>
+  );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
 }
