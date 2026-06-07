@@ -105,7 +105,7 @@ export default function AuthPage() {
   if (authLoading || user) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="space-y-4 w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
+        <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
           <div className="relative w-full aspect-square">
             <Image 
               src="/img/icon.png" 
@@ -116,7 +116,7 @@ export default function AuthPage() {
             />
           </div>
           <div className="w-full">
-            <div className="h-[2px] w-full bg-secondary overflow-hidden rounded-full">
+            <div className="h-[4px] w-full bg-secondary overflow-hidden rounded-full">
               <div 
                 className="h-full bg-primary transition-all duration-300 ease-out" 
                 style={{ width: `${loadingProgress}%` }}

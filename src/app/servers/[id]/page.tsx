@@ -33,12 +33,17 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export default function ServerPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const auth = useAuth();
   const [status, setStatus] = React.useState<"online" | "offline" | "starting">("online");
   const [activeTab, setActiveTab] = React.useState("console");
 
@@ -53,6 +58,11 @@ export default function ServerPage() {
       setTimeout(() => setStatus("starting"), 500);
       setTimeout(() => setStatus("online"), 2500);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/auth?type=login");
   };
 
   return (
@@ -89,11 +99,21 @@ export default function ServerPage() {
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
-                <Avatar className="size-full">
-                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
-                  <AvatarFallback>ST</AvatarFallback>
+              <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
+                <Avatar className="size-8 md:size-9">
+                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
+                <div className="hidden md:flex flex-col items-start text-left">
+                  <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
+                    {user?.displayName || "User Account"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
+                    {user?.email}
+                  </span>
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2">
@@ -106,7 +126,7 @@ export default function ServerPage() {
                 <SettingsIcon className="size-4" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}>
                 <LogOut className="size-4" /> Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>

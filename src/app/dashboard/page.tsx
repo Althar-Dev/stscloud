@@ -28,6 +28,9 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 const recentServers = [
   { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
@@ -35,6 +38,15 @@ const recentServers = [
 ];
 
 export default function Dashboard() {
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/auth?type=login");
+  };
+
   return (
     <div className="bg-background min-h-screen">
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
@@ -59,11 +71,21 @@ export default function Dashboard() {
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
-                <Avatar className="size-full">
-                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
-                  <AvatarFallback>ST</AvatarFallback>
+              <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
+                <Avatar className="size-8 md:size-9">
+                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
+                <div className="hidden md:flex flex-col items-start text-left">
+                  <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
+                    {user?.displayName || "User Account"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
+                    {user?.email}
+                  </span>
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2">
@@ -76,7 +98,7 @@ export default function Dashboard() {
                 <Settings className="size-4" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}>
                 <LogOut className="size-4" /> Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>

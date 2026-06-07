@@ -14,8 +14,7 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  Mail,
-  Discord
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,6 +35,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 const faqs = [
   {
@@ -57,11 +59,19 @@ const faqs = [
 ];
 
 export default function SupportPage() {
+  const router = useRouter();
+  const { user } = useUser();
+  const auth = useAuth();
   const [submitted, setSubmitted] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/auth?type=login");
   };
 
   return (
@@ -83,11 +93,21 @@ export default function SupportPage() {
         <div className="flex items-center gap-2 md:gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
-                <Avatar className="size-full">
-                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
-                  <AvatarFallback>ST</AvatarFallback>
+              <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
+                <Avatar className="size-8 md:size-9">
+                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
+                <div className="hidden md:flex flex-col items-start text-left">
+                  <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
+                    {user?.displayName || "User Account"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
+                    {user?.email}
+                  </span>
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2">
@@ -100,7 +120,7 @@ export default function SupportPage() {
                 <SettingsIcon className="size-4" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}>
                 <LogOut className="size-4" /> Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
