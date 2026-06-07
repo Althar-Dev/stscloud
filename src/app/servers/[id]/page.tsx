@@ -94,9 +94,13 @@ export default function ServerPage() {
           </Link>
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+            <button 
+              onClick={() => router.back()}
+              className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+              aria-label="Go back"
+            >
               <ArrowLeft className="size-4" />
-            </Link>
+            </button>
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
             </div>
