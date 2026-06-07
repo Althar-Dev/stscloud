@@ -21,7 +21,8 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth, useFirestore, useUser } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  updateProfile
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -76,12 +77,18 @@ export default function AuthPage() {
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
+        const defaultName = email.split('@')[0];
         
+        // Update Firebase Auth Profile
+        await updateProfile(newUser, {
+          displayName: defaultName
+        });
+
         // Create user profile in Firestore
         await setDoc(doc(db, "users", newUser.uid), {
           email: newUser.email,
           createdAt: serverTimestamp(),
-          displayName: email.split('@')[0], // Default display name
+          displayName: defaultName,
         });
 
         toast({
@@ -106,7 +113,7 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
         <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-full aspect-square">
+          <div className="relative w-full aspect-square mb-2">
             <Image 
               src="/img/icon.png" 
               alt="STSCloud" 

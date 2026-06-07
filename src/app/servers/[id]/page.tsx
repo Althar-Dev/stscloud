@@ -108,7 +108,7 @@ export default function ServerPage() {
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
-                    {user?.displayName || "User Account"}
+                    {user?.displayName || user?.email?.split('@')[0] || "User Account"}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
                     {user?.email}
