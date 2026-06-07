@@ -21,6 +21,7 @@ import {
   Cpu, 
   Database, 
   ChevronLeft,
+  ArrowLeft,
   CheckCircle2,
   Bot,
   HardDrive,
@@ -124,6 +125,13 @@ export default function DeployPage() {
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
+          <button 
+            onClick={() => router.back()}
+            className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="size-4" />
+          </button>
           <h1 className="font-headline font-semibold text-lg hidden sm:block">Deploy</h1>
         </div>
 
