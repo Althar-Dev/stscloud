@@ -83,12 +83,11 @@ export function PerformanceMetrics() {
         dataKey="memory"
       />
       <Card className="bg-card border-border/50 overflow-hidden relative group">
-        <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
-          <HardDrive className="size-12 text-orange-400" />
+        <div className="absolute top-2 right-2 p-3">
+          <HardDrive className="size-8 text-orange-400" />
         </div>
         <CardHeader className="flex flex-row items-center justify-between pb-2 relative">
           <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Disk Usage</CardTitle>
-          <HardDrive className="size-4 text-orange-400" />
         </CardHeader>
         <CardContent className="relative">
           <div className="text-2xl font-bold font-headline">12.4 GB</div>
@@ -105,9 +104,11 @@ export function PerformanceMetrics() {
 function MetricCard({ title, value, icon: Icon, color, data, dataKey }: any) {
   return (
     <Card className="bg-card border-border/50 overflow-hidden relative">
+      <div className="absolute top-2 right-2 p-3">
+        <Icon className="size-8" style={{ color }} />
+      </div>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
-        <Icon className="size-4" style={{ color }} />
       </CardHeader>
       <CardContent className="pb-0">
         <div className="text-2xl font-bold font-headline" style={{ color }}>{value}</div>
