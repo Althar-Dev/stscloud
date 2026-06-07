@@ -15,8 +15,7 @@ import {
   ExternalLink,
   Zap,
   Shield,
-  Search,
-  LayoutGrid
+  Search
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";

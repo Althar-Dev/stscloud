@@ -81,14 +81,14 @@ export default function DeployPage() {
         <main className="flex-1 p-4 md:p-6 space-y-8 max-w-5xl mx-auto w-full">
           {/* Progress Tracker with Visible Connecting Line */}
           <div className="max-w-3xl mx-auto relative mb-12 px-8">
-            {/* Base Gray Line */}
-            <div className="absolute top-1/2 left-8 right-8 h-[2px] bg-secondary -translate-y-1/2" />
-            
-            {/* Active Blue Progress Line */}
-            <div 
-              className="absolute top-1/2 left-8 h-[2px] bg-primary -translate-y-1/2 transition-all duration-500 ease-in-out" 
-              style={{ width: `${(step - 1) * 25}%` }}
-            />
+            {/* Base Gray Line Container - Spans between circle centers */}
+            <div className="absolute top-1/2 left-[52px] right-[52px] h-[2px] bg-secondary -translate-y-1/2 overflow-hidden">
+              {/* Active Blue Progress Line Overlay */}
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-in-out" 
+                style={{ width: `${(step - 1) * 25}%` }}
+              />
+            </div>
 
             <div className="flex items-center justify-between relative z-10">
               {[1, 2, 3, 4, 5].map((s) => (
