@@ -41,11 +41,11 @@ import * as React from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const allServers = [
-  { id: "s-1", name: "Main Survival", type: "Game Server", details: "Minecraft • Asia-SE", cpu: "45%", ram: "4GB", disk: "12GB", status: "online" },
-  { id: "s-2", name: "Official Website", type: "Web Hosting", details: "Next.js • US-East", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
-  { id: "s-3", name: "Support Bot", type: "Bot Hosting", details: "Discord.js • Global", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
-  { id: "s-4", name: "Development Lab", type: "Virtual Machine", details: "Ubuntu 22.04 • EU-West", cpu: "0%", ram: "0GB", disk: "10GB", status: "offline" },
-  { id: "s-5", name: "Database Primary", type: "Database", details: "PostgreSQL • Asia-SE", cpu: "23%", ram: "2.5GB", disk: "45GB", status: "online" },
+  { id: "s-1", name: "Main Survival", type: "Game Server", plan: "Plus", cpu: "45%", ram: "4GB", disk: "12GB", status: "online" },
+  { id: "s-2", name: "Official Website", type: "Web Hosting", plan: "Elite", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
+  { id: "s-3", name: "Support Bot", type: "Bot Hosting", plan: "Core", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
+  { id: "s-4", name: "Development Lab", type: "Virtual Machine", plan: "Zero", cpu: "0%", ram: "0GB", disk: "10GB", status: "offline" },
+  { id: "s-5", name: "Database Primary", type: "Database", plan: "Pro", cpu: "23%", ram: "2.5GB", disk: "45GB", status: "online" },
 ];
 
 export default function ServersPage() {
@@ -183,7 +183,9 @@ export default function ServersPage() {
                         </div>
                         <div className="min-w-0">
                           <h3 className="font-headline font-bold text-base truncate">{server.name}</h3>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{server.type}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
+                            STS {server.plan}
+                          </p>
                         </div>
                       </div>
                       <Badge 
@@ -218,7 +220,7 @@ export default function ServersPage() {
                   <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Activity className="size-3.5 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Region: {server.details.split('•')[1]}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Node</span>
                     </div>
                     <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                       <ChevronRight className="size-4" />

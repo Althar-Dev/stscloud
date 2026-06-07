@@ -37,8 +37,8 @@ import * as React from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const recentServers = [
-  { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
-  { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
+  { id: "s-1", name: "Official Website", type: "Website", plan: "Elite", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
+  { id: "s-2", name: "Support Bot", type: "Bot", plan: "Core", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
 ];
 
 export default function Dashboard() {
@@ -201,7 +201,7 @@ export default function Dashboard() {
                       </Badge>
                     </div>
                     <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
-                      {server.type} • {server.details}
+                      STS {server.plan}
                     </p>
                   </div>
                   <div className="px-4 md:px-5 pb-4 md:pb-5">
