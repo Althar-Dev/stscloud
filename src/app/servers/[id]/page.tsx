@@ -19,7 +19,6 @@ import {
   Terminal, 
   Settings, 
   FolderOpen, 
-  Share2, 
   MoreVertical,
   ArrowLeft,
   Zap,
@@ -110,9 +109,6 @@ export default function ServerPage() {
               <span className="hidden sm:inline">Support</span>
             </Button>
           </Link>
-          <Button variant="outline" size="sm" className="gap-2 h-9 border-border/50 hidden sm:flex">
-            <Share2 className="size-4" /> <span className="text-xs md:text-sm">Share</span>
-          </Button>
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
