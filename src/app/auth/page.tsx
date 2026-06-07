@@ -101,17 +101,17 @@ export default function AuthPage() {
     }
   };
 
-  // Cloudflare-style branded loading
+  // Branded loading without pulse, matched width icon and bar
   if (authLoading || user) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="space-y-8 w-full max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-20 h-20 animate-pulse transition-all duration-1000">
+        <div className="space-y-6 w-full max-w-[200px] flex flex-col items-center animate-in fade-in duration-700">
+          <div className="relative w-full aspect-square transition-all duration-500">
             <Image 
               src="/img/icon.png" 
               alt="STSCloud" 
               fill 
-              className="object-contain grayscale opacity-80" 
+              className="object-contain grayscale opacity-90" 
             />
           </div>
           <div className="w-full space-y-3">
@@ -121,7 +121,7 @@ export default function AuthPage() {
                 style={{ width: `${loadingProgress}%` }}
               />
             </div>
-            <p className="text-[10px] text-center uppercase tracking-[0.3em] font-bold text-muted-foreground/60 animate-pulse">
+            <p className="text-[9px] text-center uppercase tracking-[0.2em] font-bold text-muted-foreground/50">
               Verifying Connection
             </p>
           </div>
