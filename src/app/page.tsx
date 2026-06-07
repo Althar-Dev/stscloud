@@ -40,7 +40,7 @@ export default function Dashboard() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-primary/20">
+            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
@@ -106,7 +106,7 @@ export default function Dashboard() {
             <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="size-9 md:size-10 rounded-xl bg-primary flex items-center justify-center">
                   <Zap className="size-5 md:size-6 text-white" />
                 </div>
                 <Badge variant="outline" className="text-[9px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
@@ -121,7 +121,7 @@ export default function Dashboard() {
             <div className="absolute -right-4 -bottom-4 size-24 bg-accent/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
               <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
+                <div className="size-9 md:size-10 rounded-xl bg-accent flex items-center justify-center">
                   <Activity className="size-5 md:size-6 text-accent-foreground" />
                 </div>
                 <Badge variant="outline" className="text-[9px] md:text-[10px] border-accent/30 text-accent bg-accent/5">Optimal</Badge>
@@ -152,7 +152,7 @@ export default function Dashboard() {
                     </div>
                     <div className={cn(
                       "size-2 md:size-2.5 rounded-full shrink-0",
-                      server.status === "online" ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500"
+                      server.status === "online" ? "bg-green-500 animate-pulse" : "bg-red-500"
                     )} />
                   </div>
                   <div className="px-4 md:px-5 pb-4 md:pb-5">
