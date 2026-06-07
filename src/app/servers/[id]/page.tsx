@@ -4,14 +4,12 @@
 import { TerminalConsole } from "@/components/terminal-console";
 import { PerformanceMetrics } from "@/components/performance-metrics";
 import { FileExplorer } from "@/components/file-explorer";
-import { AIConfigTool } from "@/components/ai-config-tool";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Terminal, 
   Settings, 
   FolderOpen, 
   Cpu, 
-  BrainCircuit, 
   Share2, 
   MoreVertical,
   ArrowLeft,
@@ -62,16 +60,10 @@ export default function ServerPage() {
             <ScrollArea className="w-full" orientation="horizontal">
               <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Terminal className="size-4" /> <span>Console</span>
+                  <Terminal className="size-4" /> <span>Console & Performance</span>
                 </TabsTrigger>
                 <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <FolderOpen className="size-4" /> <span>Files</span>
-                </TabsTrigger>
-                <TabsTrigger value="intelligence" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <BrainCircuit className="size-4" /> <span>AI Config</span>
-                </TabsTrigger>
-                <TabsTrigger value="stats" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Cpu className="size-4" /> <span>Performance</span>
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <Settings className="size-4" /> <span>Settings</span>
@@ -81,7 +73,9 @@ export default function ServerPage() {
             </ScrollArea>
           </div>
 
-          <TabsContent value="console" className="space-y-6 animate-in fade-in duration-500">
+          <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
+            <PerformanceMetrics />
+            
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
                 <TerminalConsole />
@@ -119,24 +113,6 @@ export default function ServerPage() {
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <FileExplorer />
-          </TabsContent>
-
-          <TabsContent value="intelligence" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <AIConfigTool />
-          </TabsContent>
-
-          <TabsContent value="stats" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-            <div className="flex flex-col gap-8">
-              <PerformanceMetrics />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-xl border border-border/50 bg-card h-64 md:h-80 flex flex-col items-center justify-center">
-                  <p className="text-muted-foreground text-sm italic">Historical analysis graph placeholder...</p>
-                </div>
-                <div className="p-6 rounded-xl border border-border/50 bg-card h-64 md:h-80 flex flex-col items-center justify-center">
-                  <p className="text-muted-foreground text-sm italic">Network I/O graph placeholder...</p>
-                </div>
-              </div>
-            </div>
           </TabsContent>
 
           <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
