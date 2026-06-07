@@ -32,7 +32,7 @@ const mainNavItems = [
 ];
 
 const infrastructureItems = [
-  { icon: ServerIcon, label: "All Servers", href: "/" },
+  { icon: ServerIcon, label: "All Servers", href: "/servers" },
   { icon: Cpu, label: "Node Health", href: "/nodes" },
   { icon: ShieldCheck, label: "Security", href: "/security" },
 ];
@@ -43,7 +43,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar">
       <SidebarHeader className="h-16 flex items-center border-b border-border/50 px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center justify-center gap-3 w-full">
           <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
             <Zap className="size-5 text-primary-foreground fill-primary-foreground" />
           </div>

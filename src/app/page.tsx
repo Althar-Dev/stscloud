@@ -20,10 +20,9 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const mockServers = [
+const recentServers = [
   { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
   { id: "s-2", name: "Support Bot", type: "Bot", details: "Discord.js • Phoenix-02", usage: "Active", status: "online" },
-  { id: "s-3", name: "Portfolio Site", type: "Website", details: "Static • London-01", usage: "450 req/m", status: "offline" },
 ];
 
 export default function Dashboard() {
@@ -130,11 +129,18 @@ export default function Dashboard() {
             <PerformanceMetrics />
           </section>
 
-          {/* Servers Grid - 2 columns */}
+          {/* Recent Servers Grid - 2 columns */}
           <section className="space-y-4">
-            <h2 className="text-xl font-headline font-bold px-2">My Servers</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-              {mockServers.map((server) => (
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-xl font-headline font-bold">Recent Servers</h2>
+              <Link href="/servers">
+                <Button variant="link" className="text-primary hover:text-accent gap-1 p-0 text-sm">
+                  View All <ChevronRight className="size-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {recentServers.map((server) => (
                 <Link key={server.id} href={`/servers/${server.id}`}>
                   <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                     <div className="p-3 md:p-5 flex flex-row items-center justify-between pb-2 md:pb-3">
