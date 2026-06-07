@@ -512,7 +512,7 @@ export default function DeployPage() {
              <div className="space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2>
               <p className="text-muted-foreground text-sm">
-                Scan QRIS untuk menyelesaikan pembayaran {selectedPresetData?.price}
+                Scan QRIS untuk menyelesaikan pembayaran
               </p>
             </div>
             
@@ -562,7 +562,7 @@ export default function DeployPage() {
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="size-5" /> Periksa Status Pembayaran
+                      <RefreshCw className="size-5" /> Check Status
                     </>
                   )}
                 </Button>
