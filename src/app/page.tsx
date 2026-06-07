@@ -11,10 +11,8 @@ import {
   ExternalLink,
   Zap,
   Shield,
-  Search
 } from "lucide-react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const recentServers = [
@@ -35,15 +33,6 @@ export default function Dashboard() {
               STS<span className="text-primary">Cloud</span>
             </span>
           </Link>
-        </div>
-        <div className="flex items-center gap-2 md:gap-4">
-          <div className="relative w-40 lg:w-72 hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search..." 
-              className="bg-secondary/40 border-none h-9 pl-9 focus-visible:ring-primary/40"
-            />
-          </div>
         </div>
       </header>
 
