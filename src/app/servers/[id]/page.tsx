@@ -92,35 +92,36 @@ export default function ServerPage() {
               </ScrollArea>
             </div>
 
-            {/* Quick Info Labels - Mobile: Justify Between, Desktop: End gap */}
-            <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-6 px-1">
-              <div className="flex items-center gap-2">
+            {/* Styled Badge Cards */}
+            <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-4 px-1">
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-colors shadow-sm">
                 <Globe className="size-3.5 text-primary" />
-                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:hidden">Address</span>
-                  <span className="text-xs font-code text-primary">play.stscloud.net:25565</span>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Address</span>
+                  <span className="text-xs font-code text-primary font-medium">play.stscloud.net:25565</span>
                 </div>
               </div>
-              <div className="h-4 w-px bg-border hidden md:block" />
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-colors shadow-sm">
                 <Clock className="size-3.5 text-primary" />
-                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:hidden">Uptime</span>
-                  <span className="text-xs font-bold font-headline text-right md:text-left">2d 14h 32m</span>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Uptime</span>
+                  <span className="text-xs font-bold font-headline">2d 14h 32m</span>
                 </div>
               </div>
             </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            {/* Console Section First */}
+            {/* Console Section Top */}
             <div className="w-full h-[600px] md:h-[650px]">
               <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
             </div>
 
-            {/* Performance Metrics Below Console */}
+            {/* Performance Metrics Below */}
             <div className="space-y-4">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Infrastructure Performance</h2>
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Infrastructure Performance</h2>
+              </div>
               <PerformanceMetrics />
             </div>
           </TabsContent>
