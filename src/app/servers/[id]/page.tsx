@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { TerminalConsole } from "@/components/terminal-console";
 import { PerformanceMetrics } from "@/components/performance-metrics";
 import { FileExplorer } from "@/components/file-explorer";
@@ -12,15 +13,33 @@ import {
   Share2, 
   MoreVertical,
   ArrowLeft,
-  Zap
+  Zap,
+  Play,
+  RotateCcw,
+  Square
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export default function ServerPage() {
   const { id } = useParams();
+  const [status, setStatus] = React.useState<"online" | "offline" | "starting">("offline");
+
+  const handlePower = (action: "start" | "stop" | "restart") => {
+    if (action === "start") {
+      setStatus("starting");
+      setTimeout(() => setStatus("online"), 2000);
+    } else if (action === "stop") {
+      setStatus("offline");
+    } else {
+      setStatus("offline");
+      setTimeout(() => setStatus("starting"), 500);
+      setTimeout(() => setStatus("online"), 2500);
+    }
+  };
 
   return (
     <div className="bg-background min-h-screen">
@@ -55,21 +74,62 @@ export default function ServerPage() {
 
       <main className="flex-1 p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
         <Tabs defaultValue="console" className="w-full space-y-6">
-          <div className="flex items-center justify-start">
-            <ScrollArea className="w-full" orientation="horizontal">
-              <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
-                <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Terminal className="size-4" /> <span>Console</span>
-                </TabsTrigger>
-                <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <FolderOpen className="size-4" /> <span>Files</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
-                  <Settings className="size-4" /> <span>Settings</span>
-                </TabsTrigger>
-              </TabsList>
-              <ScrollBar orientation="horizontal" className="hidden" />
-            </ScrollArea>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-start">
+              <ScrollArea className="w-full" orientation="horizontal">
+                <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
+                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Terminal className="size-4" /> <span>Console</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <FolderOpen className="size-4" /> <span>Files</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Settings className="size-4" /> <span>Settings</span>
+                  </TabsTrigger>
+                </TabsList>
+                <ScrollBar orientation="horizontal" className="hidden" />
+              </ScrollArea>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="mr-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/30 border border-border/50">
+                <span className={cn(
+                  "size-2 rounded-full",
+                  status === "online" ? "bg-green-500 animate-pulse" : 
+                  status === "starting" ? "bg-yellow-500 animate-pulse" : "bg-red-500"
+                )} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">{status}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-xl border border-border/50">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-8 hover:bg-green-500/10 hover:text-green-500" 
+                  onClick={() => handlePower("start")} 
+                  disabled={status !== "offline"}
+                >
+                  <Play className="size-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-8 hover:bg-blue-500/10 hover:text-blue-500" 
+                  onClick={() => handlePower("restart")}
+                >
+                  <RotateCcw className="size-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-8 hover:bg-red-500/10 hover:text-red-500" 
+                  onClick={() => handlePower("stop")} 
+                  disabled={status === "offline"}
+                >
+                  <Square className="size-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
@@ -77,7 +137,7 @@ export default function ServerPage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
-                <TerminalConsole />
+                <TerminalConsole externalStatus={status} />
               </div>
               <div className="space-y-6">
                 <div className="p-4 rounded-xl border border-border/50 bg-card">

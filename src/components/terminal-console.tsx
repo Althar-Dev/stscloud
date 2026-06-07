@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from "react";
-import { Terminal as TerminalIcon, Play, Square, RotateCcw, Send } from "lucide-react";
+import { Terminal as TerminalIcon, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -13,10 +14,13 @@ interface LogLine {
   message: string;
 }
 
-export function TerminalConsole() {
+interface TerminalConsoleProps {
+  externalStatus?: "online" | "offline" | "starting";
+}
+
+export function TerminalConsole({ externalStatus }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
-  const [status, setStatus] = React.useState<"online" | "offline" | "starting">("offline");
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const addLog = (message: string, type: LogLine["type"] = "info") => {
@@ -35,6 +39,21 @@ export function TerminalConsole() {
     }
   }, [logs]);
 
+  // Sync logs with status changes
+  const lastStatus = React.useRef(externalStatus);
+  React.useEffect(() => {
+    if (externalStatus !== lastStatus.current) {
+      if (externalStatus === "starting") {
+        addLog("Initializing server boot sequence...", "info");
+      } else if (externalStatus === "online") {
+        addLog("Server successfully initialized and listening on port 8080", "success");
+      } else if (externalStatus === "offline") {
+        addLog("Server process exited with code 0", "info");
+      }
+      lastStatus.current = externalStatus;
+    }
+  }, [externalStatus]);
+
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
@@ -51,49 +70,12 @@ export function TerminalConsole() {
     }, 400);
   };
 
-  const handlePower = (action: "start" | "stop" | "restart") => {
-    if (action === "start") {
-      setStatus("starting");
-      addLog("Initializing server boot sequence...", "info");
-      setTimeout(() => {
-        setStatus("online");
-        addLog("Server successfully initialized and listening on port 8080", "success");
-      }, 2000);
-    } else if (action === "stop") {
-      setStatus("offline");
-      addLog("Gracefully shutting down server...", "warn");
-      setTimeout(() => addLog("Server process exited with code 0", "info"), 1000);
-    } else {
-      handlePower("stop");
-      setTimeout(() => handlePower("start"), 1500);
-    }
-  };
-
   return (
     <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl">
       <div className="flex items-center justify-between p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-2">
           <TerminalIcon className="size-4 text-primary" />
-          <span className="text-xs font-headline font-semibold uppercase tracking-wider text-muted-foreground">Server Console</span>
-          <div className="ml-2 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background border border-border">
-            <span className={cn(
-              "size-2 rounded-full",
-              status === "online" ? "bg-green-500 animate-pulse" : 
-              status === "starting" ? "bg-yellow-500 animate-pulse" : "bg-red-500"
-            )} />
-            <span className="text-[10px] font-bold uppercase">{status}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="size-8 hover:bg-green-500/10 hover:text-green-500" onClick={() => handlePower("start")} disabled={status !== "offline"}>
-            <Play className="size-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="size-8 hover:bg-blue-500/10 hover:text-blue-500" onClick={() => handlePower("restart")}>
-            <RotateCcw className="size-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="size-8 hover:bg-red-500/10 hover:text-red-500" onClick={() => handlePower("stop")} disabled={status === "offline"}>
-            <Square className="size-4" />
-          </Button>
+          <span className="text-xs font-headline font-semibold uppercase tracking-wider text-muted-foreground">Server Console Output</span>
         </div>
       </div>
 
