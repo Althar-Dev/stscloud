@@ -173,9 +173,9 @@ export default function Dashboard() {
 
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg md:text-xl font-headline font-bold">Active Projects</h2>
+            <h2 className="text-lg md:text-xl font-headline font-bold">Active Servers</h2>
             <Link href="/deploy">
-               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all projects</Button>
+               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all servers</Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -229,4 +229,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
