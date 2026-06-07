@@ -75,7 +75,7 @@ export default function ServerPage() {
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
         <Tabs defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center justify-start">
+            <div className="flex items-center justify-start overflow-hidden">
               <ScrollArea className="w-full" orientation="horizontal">
                 <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
                   <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
@@ -92,8 +92,8 @@ export default function ServerPage() {
               </ScrollArea>
             </div>
 
-            {/* Quick Info Labels - Responsive Positioning */}
-            <div className="flex flex-wrap items-center gap-3 md:gap-6 px-1">
+            {/* Quick Info Labels - Mobile: Justify Between, Desktop: End gap */}
+            <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-6 px-1">
               <div className="flex items-center gap-2">
                 <Globe className="size-3.5 text-primary" />
                 <div className="flex flex-col md:flex-row md:items-center md:gap-2">
@@ -106,21 +106,21 @@ export default function ServerPage() {
                 <Clock className="size-3.5 text-primary" />
                 <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:hidden">Uptime</span>
-                  <span className="text-xs font-bold font-headline">2d 14h 32m</span>
+                  <span className="text-xs font-bold font-headline text-right md:text-left">2d 14h 32m</span>
                 </div>
               </div>
             </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            {/* Top Section: Full Width Console */}
-            <div className="w-full h-[500px] md:h-[600px]">
+            {/* Console Section First */}
+            <div className="w-full h-[600px] md:h-[650px]">
               <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
             </div>
 
-            {/* Bottom Section: Performance Metrics */}
+            {/* Performance Metrics Below Console */}
             <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">System Performance</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Infrastructure Performance</h2>
               <PerformanceMetrics />
             </div>
           </TabsContent>
