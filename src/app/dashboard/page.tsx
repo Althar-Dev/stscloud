@@ -182,15 +182,24 @@ export default function Dashboard() {
             {recentServers.map((server) => (
               <Link key={server.id} href={`/servers/${server.id}`}>
                 <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
-                  <div className="p-4 md:p-5 flex flex-row items-center justify-between pb-3">
-                    <div className="space-y-1 min-w-0">
+                  <div className="p-4 md:p-5 pb-3">
+                    <div className="flex items-center gap-2 mb-1">
                       <div className="text-base md:text-lg font-headline font-bold truncate pr-2">{server.name}</div>
-                      <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{server.type} • {server.details}</p>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[8px] md:text-[9px] uppercase font-bold tracking-widest h-4 md:h-5 px-1.5",
+                          server.status === "online" 
+                            ? "border-green-500/50 text-green-500 bg-green-500/5" 
+                            : "border-red-500/50 text-red-500 bg-red-500/5"
+                        )}
+                      >
+                        {server.status}
+                      </Badge>
                     </div>
-                    <div className={cn(
-                      "size-2 md:size-2.5 rounded-full shrink-0",
-                      server.status === "online" ? "bg-green-500 animate-pulse" : "bg-red-500"
-                    )} />
+                    <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
+                      {server.type} • {server.details}
+                    </p>
                   </div>
                   <div className="px-4 md:px-5 pb-4 md:pb-5">
                     <div className="flex items-center justify-between text-xs md:text-sm">
@@ -220,3 +229,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
