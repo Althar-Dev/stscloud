@@ -10,8 +10,7 @@ import {
   Mail, 
   Lock, 
   ArrowRight, 
-  Loader2,
-  ChevronLeft
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,11 +145,6 @@ export default function AuthPage() {
           <Badge variant="outline" className="bg-transparent border-none text-[10px] font-bold uppercase tracking-widest">PCI-DSS Compliant</Badge>
           <Badge variant="outline" className="bg-transparent border-none text-[10px] font-bold uppercase tracking-widest">256-bit AES</Badge>
         </div>
-
-        <Link href="/" className="flex items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-colors text-xs font-medium">
-          <ChevronLeft className="size-4" />
-          Back to home
-        </Link>
       </div>
     </div>
   );
