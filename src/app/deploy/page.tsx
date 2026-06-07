@@ -521,7 +521,7 @@ export default function DeployPage() {
             </div>
             
             <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
-              <div className="bg-white p-4 rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
+              <div className="bg-white rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
                 {paymentLoading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="size-10 text-primary animate-spin" />

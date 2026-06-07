@@ -29,8 +29,8 @@ export async function createSvalePayment(input: {
         code: response.data.payment_code,
         amount: input.amount,
         reference: input.external_id,
-        template: "classic",
-        theme: "dark",
+        template: "default",
+        theme: "light",
         uppercase: true
       });
 
