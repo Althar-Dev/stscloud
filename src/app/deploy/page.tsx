@@ -44,17 +44,12 @@ const templates = [
 ];
 
 const resourcePresets = [
-  { id: "p1", ram: "1GB", cpu: "20%", disk: "1GB", price: "IDR 3.000" },
-  { id: "p2", ram: "2GB", cpu: "30%", disk: "2GB", price: "IDR 5.000" },
-  { id: "p3", ram: "3GB", cpu: "40%", disk: "3GB", price: "IDR 8.000" },
-  { id: "p4", ram: "4GB", cpu: "45%", disk: "4GB", price: "IDR 10.000" },
-  { id: "p5", ram: "5GB", cpu: "50%", disk: "5GB", price: "IDR 13.000" },
-  { id: "p6", ram: "6GB", cpu: "55%", disk: "6GB", price: "IDR 15.000" },
-  { id: "p7", ram: "7GB", cpu: "60%", disk: "7GB", price: "IDR 18.000" },
-  { id: "p8", ram: "8GB", cpu: "65%", disk: "8GB", price: "IDR 20.000" },
-  { id: "p9", ram: "9GB", cpu: "70%", disk: "9GB", price: "IDR 23.000" },
-  { id: "p10", ram: "10GB", cpu: "75%", disk: "10GB", price: "IDR 25.000" },
-  { id: "p11", ram: "Unlimited", cpu: "85%", disk: "Unlimited", price: "IDR 30.000" },
+  { id: "p1", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000" },
+  { id: "p2", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000" },
+  { id: "p3", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000" },
+  { id: "p4", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000" },
+  { id: "p5", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000" },
+  { id: "p6", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000" },
 ];
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
