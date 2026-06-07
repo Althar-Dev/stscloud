@@ -7,6 +7,7 @@ import { PerformanceMetrics } from "@/components/performance-metrics";
 import { FileExplorer } from "@/components/file-explorer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,10 +94,23 @@ export default function ServerPage() {
           </Link>
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2">
-            <Link href="/" className="text-muted-foreground hover:text-foreground">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="size-4" />
             </Link>
-            <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-[9px] md:text-[10px] h-5 px-2 font-bold uppercase tracking-wider shrink-0 transition-colors duration-500",
+                  status === "online" ? "border-green-500/50 text-green-500 bg-green-500/5" :
+                  status === "starting" ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/5" :
+                  "border-red-500/50 text-red-500 bg-red-500/5"
+                )}
+              >
+                {status}
+              </Badge>
+            </div>
           </div>
         </div>
         
@@ -145,18 +159,18 @@ export default function ServerPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-        <Tabs value={activeTab} onValueChange={setStatus as any} defaultValue="console" className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center justify-start overflow-hidden">
               <ScrollArea className="w-full" orientation="horizontal">
                 <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
-                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("console")}>
+                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <Terminal className="size-4" /> <span>Console</span>
                   </TabsTrigger>
-                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("files")}>
+                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("settings")}>
+                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <SettingsIcon className="size-4" /> <span>Settings</span>
                   </TabsTrigger>
                 </TabsList>
