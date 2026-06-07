@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Aturan untuk koleksi users: 
+    // Pengguna hanya bisa membaca dan menulis dokumen mereka sendiri berdasarkan UID Auth mereka.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aturan default: Tolak semua akses ke dokumen lain secara default demi keamanan.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
