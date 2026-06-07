@@ -5,6 +5,7 @@ import { TerminalConsole } from "@/components/terminal-console";
 import { PerformanceMetrics } from "@/components/performance-metrics";
 import { FileExplorer } from "@/components/file-explorer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 import { 
   Terminal, 
   Settings, 
@@ -17,7 +18,8 @@ import {
   RotateCcw,
   Square,
   Globe,
-  Clock
+  Clock,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -155,6 +157,14 @@ export default function ServerPage() {
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Uptime</h3>
                   </div>
                   <div className="text-xl font-bold font-headline text-foreground">2d 14h 32m</div>
+                </Card>
+
+                <Card className="bg-card border-border/50 hover:border-primary/30 transition-colors p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="size-3.5 text-primary" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Players</h3>
+                  </div>
+                  <div className="text-xl font-bold font-headline text-foreground">12 / 20</div>
                 </Card>
               </div>
             </div>
