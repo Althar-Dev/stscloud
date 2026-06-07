@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter } from "navigation";
+import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const templates = [

@@ -30,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams, useRouter } from "navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
@@ -145,18 +145,18 @@ export default function ServerPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
-        <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={setStatus as any} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center justify-start overflow-hidden">
               <ScrollArea className="w-full" orientation="horizontal">
                 <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
-                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                  <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("console")}>
                     <Terminal className="size-4" /> <span>Console</span>
                   </TabsTrigger>
-                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                  <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("files")}>
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                  <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm" onClick={() => setActiveTab("settings")}>
                     <SettingsIcon className="size-4" /> <span>Settings</span>
                   </TabsTrigger>
                 </TabsList>
@@ -169,14 +169,14 @@ export default function ServerPage() {
                 <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all">
                   <Globe className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Address</span>
+                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground leading-none mb-1">Address</span>
                     <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">play.stscloud.net:25565</span>
                   </div>
                 </div>
                 <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all">
                   <Clock className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Uptime</span>
+                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground leading-none mb-1">Uptime</span>
                     <span className="text-[10px] md:text-xs font-bold font-headline truncate">2d 14h 32m</span>
                   </div>
                 </div>
