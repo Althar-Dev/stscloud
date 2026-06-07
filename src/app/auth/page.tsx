@@ -101,34 +101,26 @@ export default function AuthPage() {
     }
   };
 
-  // Branded loading without pulse, matched width icon and bar, increased size
+  // Minimalist branded loading without text, matched width icon and bar
   if (authLoading || user) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="space-y-10 w-full max-w-[200px] sm:max-w-[320px] flex flex-col items-center animate-in fade-in duration-700">
+        <div className="space-y-4 w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
           <div className="relative w-full aspect-square">
             <Image 
               src="/img/icon.png" 
               alt="STSCloud" 
               fill 
-              className="object-contain grayscale opacity-80" 
+              className="object-contain grayscale opacity-60" 
               priority
             />
           </div>
-          <div className="w-full space-y-4">
+          <div className="w-full">
             <div className="h-[2px] w-full bg-secondary overflow-hidden rounded-full">
               <div 
                 className="h-full bg-primary transition-all duration-300 ease-out" 
                 style={{ width: `${loadingProgress}%` }}
               />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <p className="text-[10px] sm:text-[11px] text-center uppercase tracking-[0.3em] font-bold text-muted-foreground/60">
-                Verifying Connection
-              </p>
-              <p className="text-[8px] sm:text-[9px] text-center uppercase tracking-widest text-muted-foreground/40 font-medium">
-                STSCloud Infrastructure Engine
-              </p>
             </div>
           </div>
         </div>
