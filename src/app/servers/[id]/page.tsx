@@ -99,17 +99,6 @@ export default function ServerPage() {
             </Link>
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "text-[9px] md:text-[10px] h-5 px-2 font-bold uppercase tracking-wider shrink-0 transition-colors duration-500",
-                  status === "online" ? "border-green-500/50 text-green-500 bg-green-500/5" :
-                  status === "starting" ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/5" :
-                  "border-red-500/50 text-red-500 bg-red-500/5"
-                )}
-              >
-                {status}
-              </Badge>
             </div>
           </div>
         </div>
