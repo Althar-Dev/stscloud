@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Rocket, 
-  Search, 
   ArrowRight, 
   Cpu, 
   Database, 
@@ -23,7 +22,6 @@ import {
   ShoppingCart
 } from "lucide-react";
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -81,9 +79,17 @@ export default function DeployPage() {
         </header>
 
         <main className="flex-1 p-4 md:p-6 space-y-8 max-w-5xl mx-auto w-full">
-          {/* Progress Tracker */}
+          {/* Progress Tracker with Connecting Line */}
           <div className="flex items-center justify-between max-w-3xl mx-auto relative mb-12 px-4">
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-secondary -translate-y-1/2 -z-10" />
+            {/* Background Line */}
+            <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-secondary -translate-y-1/2 -z-10" />
+            
+            {/* Active Progress Line */}
+            <div 
+              className="absolute top-1/2 left-4 h-0.5 bg-primary -translate-y-1/2 -z-10 transition-all duration-500" 
+              style={{ width: `${(step - 1) * 25}%` }}
+            />
+
             {[1, 2, 3, 4, 5].map((s) => (
               <div 
                 key={s} 
@@ -115,7 +121,7 @@ export default function DeployPage() {
                     )}
                     onClick={() => {
                       setSelectedTemplate(t.id);
-                      setSelectedAppType(null); // Reset app type when template changes
+                      setSelectedAppType(null);
                     }}
                   >
                     <CardContent className="p-6 md:p-8 text-center space-y-3">
