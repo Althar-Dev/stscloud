@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -36,8 +37,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar">
       <SidebarHeader className="h-16 flex items-center border-b border-border/50 px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
         <Link href="/" className="flex items-center justify-center gap-3 w-full">
-          <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
-            <Zap className="size-5 text-primary-foreground fill-primary-foreground" />
+          <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+            <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
           </div>
           <span className="font-headline font-bold text-xl tracking-tight group-data-[collapsible=icon]:hidden truncate">
             STS<span className="text-primary">Cloud</span>

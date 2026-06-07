@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -59,8 +60,8 @@ export default function ServerPage() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-3 md:gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Zap className="size-5 text-white fill-white" />
+            <div className="size-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-primary/20">
+              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg md:text-xl tracking-tight hidden sm:block">
               STS<span className="text-primary">Cloud</span>
