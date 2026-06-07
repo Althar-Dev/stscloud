@@ -48,12 +48,12 @@ const templates = [
 ];
 
 const resourcePresets = [
-  { id: "p1", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000" },
-  { id: "p2", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000" },
-  { id: "p3", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000" },
-  { id: "p4", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000" },
-  { id: "p5", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000" },
-  { id: "p6", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000" },
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000" },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000" },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000" },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000" },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000" },
+  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000" },
 ];
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
@@ -262,14 +262,18 @@ export default function DeployPage() {
                 >
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Database className="size-4 text-primary" />
-                        <span className="font-bold font-headline text-lg">{preset.ram}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Image src="/img/icon.png" alt="STS" width={20} height={20} className="object-contain" />
+                        <span className="font-bold font-headline text-lg">{preset.name}</span>
                       </div>
                       {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                     </div>
                     
                     <div className="space-y-2 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Database className="size-3.5" />
+                        <span className="font-medium">{preset.ram} RAM</span>
+                      </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Cpu className="size-3.5" />
                         <span className="font-medium">CPU {preset.cpu}</span>
@@ -388,7 +392,10 @@ export default function DeployPage() {
                   <div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
                   
                   <div className="text-muted-foreground">Resources</div>
-                  <div className="font-bold text-right">{selectedPresetData?.ram} RAM / {selectedPresetData?.cpu} CPU</div>
+                  <div className="font-bold text-right flex items-center justify-end gap-1.5">
+                    <Image src="/img/icon.png" alt="STS" width={16} height={16} className="object-contain" />
+                    {selectedPresetData?.name} ({selectedPresetData?.ram})
+                  </div>
                   
                   <div className="text-muted-foreground">Runtime</div>
                   <div className="font-bold text-right uppercase">{selectedAppType}</div>
