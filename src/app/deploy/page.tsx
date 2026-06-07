@@ -1,9 +1,12 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +87,7 @@ export default function DeployPage() {
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = React.useState<string | null>("p1");
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
+  const [serverName, setServerName] = React.useState("");
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -377,15 +381,30 @@ export default function DeployPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Review Order</h2>
-              <p className="text-muted-foreground text-sm">Review your configuration before deployment.</p>
+              <p className="text-muted-foreground text-sm">Configure your server and review your order.</p>
             </div>
 
             <Card className="max-w-xl mx-auto border-border/50 bg-card overflow-hidden">
               <div className="p-6 bg-secondary/30 border-b border-border/50 flex items-center gap-3">
                 <ShoppingCart className="size-5 text-primary" />
-                <span className="font-bold font-headline">Summary</span>
+                <span className="font-bold font-headline">Summary & Config</span>
               </div>
               <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="serverName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                    <Input 
+                      id="serverName" 
+                      placeholder="e.g., My Minecraft World" 
+                      className="bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" 
+                      value={serverName}
+                      onChange={(e) => setServerName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/50 my-2" />
+
                 <div className="grid grid-cols-2 gap-y-5 text-sm">
                   <div className="text-muted-foreground">Environment</div>
                   <div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
@@ -415,6 +434,7 @@ export default function DeployPage() {
                 <ChevronLeft className="size-4" /> Back
               </Button>
               <Button 
+                disabled={!serverName.trim()}
                 onClick={() => setStep(5)}
                 className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
