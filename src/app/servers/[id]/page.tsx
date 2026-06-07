@@ -16,7 +16,10 @@ import {
   Zap,
   Play,
   RotateCcw,
-  Square
+  Square,
+  Globe,
+  Clock,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -139,31 +142,31 @@ export default function ServerPage() {
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
                 <TerminalConsole externalStatus={status} />
               </div>
-              <div className="space-y-6">
-                <div className="p-4 rounded-xl border border-border/50 bg-card">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Stats</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                      <span className="text-sm text-muted-foreground">Players</span>
-                      <span className="text-xl font-bold font-headline">12 / 20</span>
-                    </div>
-                    <div className="flex justify-between items-end">
-                      <span className="text-sm text-muted-foreground">Uptime</span>
-                      <span className="text-xl font-bold font-headline">2d 14h</span>
-                    </div>
-                    <div className="flex justify-between items-end">
-                      <span className="text-sm text-muted-foreground">Address</span>
-                      <span className="text-xs font-code text-primary break-all ml-4 text-right">play.stscloud.net:25565</span>
-                    </div>
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="size-3.5 text-primary" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Address</h3>
                   </div>
+                  <div className="text-xs font-code text-primary break-all">play.stscloud.net:25565</div>
                 </div>
-                <div className="p-4 rounded-xl border border-border/50 bg-card">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Node: Phoenix-01</h3>
-                  <div className="space-y-2">
-                    <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: '45%' }} />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground text-center">Node load: 45% (Nominal)</p>
+
+                <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="size-3.5 text-primary" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Uptime</h3>
+                  </div>
+                  <div className="text-xl font-bold font-headline text-foreground">2d 14h 32m</div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="size-3.5 text-primary" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Network</h3>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xl font-bold font-headline text-foreground">12 / 20</div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Active Players</p>
                   </div>
                 </div>
               </div>
