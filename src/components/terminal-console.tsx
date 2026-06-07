@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Terminal as TerminalIcon, Send } from "lucide-react";
+import { Terminal as TerminalIcon, Send, Play, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +17,10 @@ interface LogLine {
 
 interface TerminalConsoleProps {
   externalStatus?: "online" | "offline" | "starting";
+  onPowerAction?: (action: "start" | "stop" | "restart") => void;
 }
 
-export function TerminalConsole({ externalStatus }: TerminalConsoleProps) {
+export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -87,6 +88,35 @@ export function TerminalConsole({ externalStatus }: TerminalConsoleProps) {
           >
             {externalStatus || "offline"}
           </Badge>
+        </div>
+
+        <div className="flex items-center gap-1 bg-background/40 p-1 rounded-lg border border-border/50">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="size-7 hover:bg-green-500/10 hover:text-green-500" 
+            onClick={() => onPowerAction?.("start")} 
+            disabled={externalStatus !== "offline"}
+          >
+            <Play className="size-3.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="size-7 hover:bg-blue-500/10 hover:text-blue-500" 
+            onClick={() => onPowerAction?.("restart")}
+          >
+            <RotateCcw className="size-3.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="size-7 hover:bg-red-500/10 hover:text-red-500" 
+            onClick={() => onPowerAction?.("stop")} 
+            disabled={externalStatus === "offline"}
+          >
+            <Square className="size-3.5" />
+          </Button>
         </div>
       </div>
 

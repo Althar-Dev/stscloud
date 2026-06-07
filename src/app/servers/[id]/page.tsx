@@ -15,9 +15,6 @@ import {
   MoreVertical,
   ArrowLeft,
   Zap,
-  Play,
-  RotateCcw,
-  Square,
   Globe,
   Clock
 } from "lucide-react";
@@ -75,7 +72,7 @@ export default function ServerPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
         <Tabs defaultValue="console" className="w-full space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center justify-start">
@@ -94,44 +91,13 @@ export default function ServerPage() {
                 <ScrollBar orientation="horizontal" className="hidden" />
               </ScrollArea>
             </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-xl border border-border/50">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="size-8 hover:bg-green-500/10 hover:text-green-500" 
-                  onClick={() => handlePower("start")} 
-                  disabled={status !== "offline"}
-                >
-                  <Play className="size-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="size-8 hover:bg-blue-500/10 hover:text-blue-500" 
-                  onClick={() => handlePower("restart")}
-                >
-                  <RotateCcw className="size-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="size-8 hover:bg-red-500/10 hover:text-red-500" 
-                  onClick={() => handlePower("stop")} 
-                  disabled={status === "offline"}
-                >
-                  <Square className="size-4" />
-                </Button>
-              </div>
-            </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
             {/* Top Section: Console + Info Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 h-[500px] md:h-[600px]">
-                <TerminalConsole externalStatus={status} />
+                <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
               </div>
               <div className="space-y-4">
                 <Card className="bg-card border-border/50 hover:border-primary/30 transition-colors p-4">
