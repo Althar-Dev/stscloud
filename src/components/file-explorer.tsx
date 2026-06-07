@@ -72,9 +72,9 @@ export function FileExplorer() {
           <Table>
             <TableHeader className="bg-secondary/20">
               <TableRow>
-                <TableHead className="min-w-[200px]">Name</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead className="hidden sm:table-cell">Modified</TableHead>
+                <TableHead className="min-w-[160px] md:min-w-[200px]">Name</TableHead>
+                <TableHead className="hidden sm:table-cell">Size</TableHead>
+                <TableHead className="hidden md:table-cell">Modified</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -91,8 +91,8 @@ export function FileExplorer() {
                       <span className="cursor-pointer hover:text-primary transition-colors truncate">{file.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">{file.size}</TableCell>
-                  <TableCell className="text-muted-foreground hidden sm:table-cell whitespace-nowrap">{file.modified}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap hidden sm:table-cell">{file.size}</TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell whitespace-nowrap">{file.modified}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
