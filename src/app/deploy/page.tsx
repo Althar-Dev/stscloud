@@ -4,7 +4,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +27,6 @@ import {
   Code2,
   CreditCard,
   ShoppingCart,
-  Zap,
   LifeBuoy,
   User,
   Settings,
@@ -38,9 +37,10 @@ import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const templates = [
   { id: "website", name: "Website", group: "Cloud", icon: Globe, color: "text-blue-400" },
@@ -78,10 +78,23 @@ export default function DeployPage() {
   const router = useRouter();
   const { user } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
+  const [profile, setProfile] = React.useState<any>(null);
+  
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = React.useState<string | null>("p1");
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+      if (doc.exists()) {
+        setProfile(doc.data());
+      }
+    });
+    return () => unsub();
+  }, [user, db]);
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   const selectedPresetData = resourcePresets.find(p => p.id === selectedPreset);
@@ -91,6 +104,9 @@ export default function DeployPage() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
+
+  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="bg-background min-h-screen">
@@ -120,14 +136,13 @@ export default function DeployPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
                 <Avatar className="size-8 md:size-9">
-                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {userInitial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
-                    {user?.displayName || user?.email?.split('@')[0] || "User Account"}
+                    {displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
                     {user?.email}

@@ -4,7 +4,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,6 @@ import {
   Plus, 
   ExternalLink,
   Zap,
-  Shield,
   LifeBuoy,
   User,
   Settings,
@@ -28,9 +27,11 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import * as React from "react";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const recentServers = [
   { id: "s-1", name: "Official Website", type: "Website", details: "Next.js • Phoenix-01", usage: "1.2k req/m", status: "online" },
@@ -40,12 +41,27 @@ const recentServers = [
 export default function Dashboard() {
   const { user } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
   const router = useRouter();
+  const [profile, setProfile] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+      if (doc.exists()) {
+        setProfile(doc.data());
+      }
+    });
+    return () => unsub();
+  }, [user, db]);
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/auth?type=login");
   };
+
+  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="bg-background min-h-screen">
@@ -73,14 +89,13 @@ export default function Dashboard() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
                 <Avatar className="size-8 md:size-9">
-                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {userInitial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
-                    {user?.displayName || user?.email?.split('@')[0] || "User Account"}
+                    {displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
                     {user?.email}

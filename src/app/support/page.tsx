@@ -14,7 +14,6 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,10 +33,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUser, useAuth } from "@/firebase";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const faqs = [
   {
@@ -62,7 +62,20 @@ export default function SupportPage() {
   const router = useRouter();
   const { user } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
+  const [profile, setProfile] = React.useState<any>(null);
+  
   const [submitted, setSubmitted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+      if (doc.exists()) {
+        setProfile(doc.data());
+      }
+    });
+    return () => unsub();
+  }, [user, db]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +86,9 @@ export default function SupportPage() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
+
+  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="bg-background min-h-screen">
@@ -95,14 +111,13 @@ export default function SupportPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
                 <Avatar className="size-8 md:size-9">
-                  <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {userInitial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
-                    {user?.displayName || user?.email?.split('@')[0] || "User Account"}
+                    {displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
                     {user?.email}
@@ -142,7 +157,7 @@ export default function SupportPage() {
           <Card className="bg-card border-border/50 hover:bg-secondary/20 transition-all cursor-pointer group">
             <CardContent className="p-6 space-y-4">
               <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Book className="size-6" />
+                < Book className="size-6" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-headline font-bold text-lg">Knowledge Base</h3>
