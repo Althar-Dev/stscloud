@@ -19,17 +19,49 @@ import {
   Square,
   Globe,
   Clock,
-  Activity
+  Activity,
+  ArrowUpDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 export default function ServerPage() {
   const { id } = useParams();
   const [status, setStatus] = React.useState<"online" | "offline" | "starting">("offline");
+  const [networkData, setNetworkData] = React.useState<{ time: string; bytes: number }[]>([]);
+
+  React.useEffect(() => {
+    // Generate mock network data
+    const generateInitialData = () => {
+      const points = [];
+      const now = new Date();
+      for (let i = 15; i >= 0; i--) {
+        points.push({
+          time: new Date(now.getTime() - i * 5000).toLocaleTimeString(),
+          bytes: Math.floor(Math.random() * 500) + 100,
+        });
+      }
+      return points;
+    };
+
+    setNetworkData(generateInitialData());
+
+    const interval = setInterval(() => {
+      setNetworkData((prev) => {
+        const next = {
+          time: new Date().toLocaleTimeString(),
+          bytes: Math.max(50, Math.min(1000, (prev[prev.length - 1]?.bytes || 200) + (Math.random() * 200 - 100))),
+        };
+        return [...prev.slice(1), next];
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handlePower = (action: "start" | "stop" | "restart") => {
     if (action === "start") {
@@ -43,6 +75,8 @@ export default function ServerPage() {
       setTimeout(() => setStatus("online"), 2500);
     }
   };
+
+  const latestNetwork = networkData[networkData.length - 1]?.bytes || 0;
 
   return (
     <div className="bg-background min-h-screen">
@@ -159,14 +193,34 @@ export default function ServerPage() {
                   <div className="text-xl font-bold font-headline text-foreground">2d 14h 32m</div>
                 </div>
 
-                <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors group">
+                <div className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors group overflow-hidden">
                   <div className="flex items-center gap-2 mb-2">
-                    <Activity className="size-3.5 text-primary" />
+                    <ArrowUpDown className="size-3.5 text-primary" />
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Network</h3>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xl font-bold font-headline text-foreground">12 / 20</div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Active Players</p>
+                    <div className="text-xl font-bold font-headline text-foreground">{latestNetwork.toFixed(1)} KB/s</div>
+                    <div className="h-[40px] w-full mt-2 -mx-2">
+                      <ResponsiveContainer width="110%" height="100%">
+                        <AreaChart data={networkData}>
+                          <defs>
+                            <linearGradient id="colorNetwork" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <Area 
+                            type="monotone" 
+                            dataKey="bytes" 
+                            stroke="hsl(var(--primary))" 
+                            fillOpacity={1} 
+                            fill="url(#colorNetwork)" 
+                            isAnimationActive={false}
+                            strokeWidth={1.5}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               </div>
