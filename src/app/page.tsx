@@ -4,6 +4,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Server as ServerIcon, 
   Activity, 
@@ -11,6 +20,10 @@ import {
   ExternalLink,
   Zap,
   Shield,
+  LifeBuoy,
+  User,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -34,6 +47,38 @@ export default function Dashboard() {
             </span>
           </Link>
         </div>
+
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+            <LifeBuoy className="size-4" />
+            <span>Support</span>
+          </Button>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
+                <Avatar className="size-full">
+                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
+                  <AvatarFallback>ST</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 mt-2">
+              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2">
+                <User className="size-4" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2">
+                <Settings className="size-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                <LogOut className="size-4" /> Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
@@ -47,7 +92,7 @@ export default function Dashboard() {
               <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
             </Badge>
             <Link href="/deploy">
-              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
+              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4 shadow-lg shadow-primary/20">
                 <Plus className="size-4" />
                 <span>New Server</span>
               </Button>
@@ -55,7 +100,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
             <div className="absolute -right-4 -bottom-4 size-24 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
             <CardContent className="p-4 md:p-6 relative">
@@ -98,20 +143,6 @@ export default function Dashboard() {
               <div className="mt-4">
                 <div className="text-xl md:text-2xl font-bold font-headline">128</div>
                 <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Attacks Blocked</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div className="size-9 md:size-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
-                  <ServerIcon className="size-5 md:size-6 text-muted-foreground" />
-                </div>
-                <Badge variant="secondary" className="text-[9px] md:text-[10px]">Edge</Badge>
-              </div>
-              <div className="mt-4">
-                <div className="text-xl md:text-2xl font-bold font-headline">2 Nodes</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Infrastructure</div>
               </div>
             </CardContent>
           </Card>

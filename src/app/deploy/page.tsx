@@ -1,8 +1,18 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Rocket, 
   ArrowRight, 
@@ -17,7 +27,11 @@ import {
   Code2,
   CreditCard,
   ShoppingCart,
-  Zap
+  Zap,
+  LifeBuoy,
+  User,
+  Settings,
+  LogOut
 } from "lucide-react";
 import React from "react";
 import { cn } from "@/lib/utils";
@@ -77,7 +91,39 @@ export default function DeployPage() {
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
-          <h1 className="font-headline font-semibold text-lg">Deploy New Project</h1>
+          <h1 className="font-headline font-semibold text-lg hidden sm:block">Deploy</h1>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden sm:flex">
+            <LifeBuoy className="size-4" />
+            <span>Support</span>
+          </Button>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
+                <Avatar className="size-full">
+                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
+                  <AvatarFallback>ST</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 mt-2">
+              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2">
+                <User className="size-4" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2">
+                <Settings className="size-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                <LogOut className="size-4" /> Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

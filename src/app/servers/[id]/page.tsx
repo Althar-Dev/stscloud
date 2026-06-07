@@ -6,6 +6,15 @@ import { TerminalConsole } from "@/components/terminal-console";
 import { PerformanceMetrics } from "@/components/performance-metrics";
 import { FileExplorer } from "@/components/file-explorer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Terminal, 
   Settings, 
@@ -15,7 +24,11 @@ import {
   ArrowLeft,
   Zap,
   Globe,
-  Clock
+  Clock,
+  LifeBuoy,
+  User,
+  LogOut,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -59,16 +72,42 @@ export default function ServerPage() {
               <ArrowLeft className="size-4" />
             </Link>
             <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
-            <span className="hidden lg:inline-block px-2 py-0.5 rounded bg-secondary text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{id}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden lg:flex">
+            <LifeBuoy className="size-4" />
+            <span>Support</span>
+          </Button>
           <Button variant="outline" size="sm" className="gap-2 h-9 border-border/50 hidden sm:flex">
             <Share2 className="size-4" /> <span className="text-xs md:text-sm">Share</span>
           </Button>
-          <Button variant="ghost" size="icon" className="size-9">
-            <MoreVertical className="size-4" />
-          </Button>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-9 rounded-full border border-border/50 overflow-hidden">
+                <Avatar className="size-full">
+                  <AvatarImage src="https://picsum.photos/seed/profile1/40/40" />
+                  <AvatarFallback>ST</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 mt-2">
+              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2">
+                <User className="size-4" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2">
+                <SettingsIcon className="size-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                <LogOut className="size-4" /> Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -85,7 +124,7 @@ export default function ServerPage() {
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
                   <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
-                    <Settings className="size-4" /> <span>Settings</span>
+                    <SettingsIcon className="size-4" /> <span>Settings</span>
                   </TabsTrigger>
                 </TabsList>
                 <ScrollBar orientation="horizontal" className="hidden" />
