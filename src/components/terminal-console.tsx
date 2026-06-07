@@ -79,11 +79,11 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
     <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl border-border/50">
       <div className="flex items-center justify-between p-2 md:p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Mac-style Window Controls */}
+          {/* Mac-style Window Controls - Brighter with subtle glow */}
           <div className="flex items-center gap-1.5 px-2 mr-1">
-            <div className="size-2 md:size-2.5 rounded-full bg-red-500/60" />
-            <div className="size-2 md:size-2.5 rounded-full bg-yellow-500/60" />
-            <div className="size-2 md:size-2.5 rounded-full bg-green-500/60" />
+            <div className="size-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            <div className="size-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+            <div className="size-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
           </div>
           
           <Badge 
@@ -97,9 +97,9 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
           >
             <span className={cn(
               "size-1.5 rounded-full",
-              externalStatus === "online" ? "bg-green-500 animate-pulse" :
-              externalStatus === "starting" ? "bg-yellow-500 animate-pulse" :
-              "bg-red-500"
+              externalStatus === "online" ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" :
+              externalStatus === "starting" ? "bg-yellow-500 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]" :
+              "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"
             )} />
             {externalStatus || "offline"}
           </Badge>
