@@ -33,7 +33,10 @@ import {
   Headset,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Loader2,
+  RefreshCw,
+  QrCode
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -44,6 +47,8 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
+import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
+import { useToast } from "@/hooks/use-toast";
 
 const templates = [
   { id: "website", name: "Website", group: "Cloud", icon: Globe, color: "text-blue-400" },
@@ -51,12 +56,12 @@ const templates = [
 ];
 
 const resourcePresets = [
-  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000" },
-  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000" },
-  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000" },
-  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000" },
-  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000" },
-  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000" },
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000 },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000 },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000 },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", priceValue: 30000 },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", priceValue: 35000 },
+  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000 },
 ];
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
@@ -82,6 +87,7 @@ export default function DeployPage() {
   const { user } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
   const [profile, setProfile] = React.useState<any>(null);
   
   const [step, setStep] = React.useState(1);
@@ -89,6 +95,12 @@ export default function DeployPage() {
   const [selectedPreset, setSelectedPreset] = React.useState<string | null>("p1");
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
   const [serverName, setServerName] = React.useState("");
+
+  // Payment states
+  const [paymentLoading, setPaymentLoading] = React.useState(false);
+  const [paymentData, setPaymentData] = React.useState<any>(null);
+  const [paymentStatus, setPaymentStatus] = React.useState<string>("pending");
+  const [isChecking, setIsChecking] = React.useState(false);
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -109,6 +121,50 @@ export default function DeployPage() {
     router.push("/auth?type=login");
   };
 
+  const handleInitializePayment = async () => {
+    if (!selectedPresetData || !user?.email) return;
+    
+    setStep(5);
+    setPaymentLoading(true);
+    
+    const invoiceId = `STS-${Date.now()}`;
+    const result = await createSvalePayment({
+      amount: selectedPresetData.priceValue,
+      email: user.email,
+      external_id: invoiceId,
+      description: `Deployment Server: ${serverName || 'My Project'}`
+    });
+
+    if (result.success) {
+      setPaymentData(result.data);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: result.error || "Gagal memproses pembayaran"
+      });
+      setStep(4);
+    }
+    setPaymentLoading(false);
+  };
+
+  const handleCheckStatus = async () => {
+    if (!paymentData?.trx_id) return;
+    setIsChecking(true);
+    
+    const result = await checkPaymentStatus(paymentData.trx_id);
+    if (result.success) {
+      setPaymentStatus(result.status);
+      if (result.status === "success") {
+        toast({
+          title: "Payment Success!",
+          description: "Your server is being provisioned."
+        });
+      }
+    }
+    setIsChecking(false);
+  };
+
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
 
@@ -126,7 +182,7 @@ export default function DeployPage() {
           </Link>
           <div className="h-4 w-px bg-border" />
           <button 
-            onClick={() => router.back()}
+            onClick={() => step > 1 && step < 5 ? setStep(step - 1) : router.back()}
             className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
             aria-label="Go back"
           >
@@ -443,7 +499,7 @@ export default function DeployPage() {
               </Button>
               <Button 
                 disabled={!serverName.trim()}
-                onClick={() => setStep(5)}
+                onClick={handleInitializePayment}
                 className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
               >
                 Continue to Payment <CreditCard className="size-4" />
@@ -455,32 +511,81 @@ export default function DeployPage() {
         {step === 5 && (
           <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
              <div className="size-24 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto ring-1 ring-primary/20">
-               <CreditCard className="size-12 text-primary animate-pulse" />
+               <QrCode className="size-12 text-primary animate-pulse" />
              </div>
              <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-headline font-bold">Secure Payment</h2>
-              <p className="text-muted-foreground text-sm">Complete your payment of {selectedPresetData?.price}.</p>
+              <h2 className="text-2xl md:text-3xl font-headline font-bold">SValePay QRIS</h2>
+              <p className="text-muted-foreground text-sm">
+                Scan QRIS untuk menyelesaikan pembayaran {selectedPresetData?.price}
+              </p>
             </div>
             
             <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
-              <div className="space-y-4">
-                <div className="text-left space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Virtual Account</label>
-                  <div className="h-14 bg-background border border-border rounded-xl flex items-center px-4 font-mono font-bold text-lg text-primary">
-                    STS-8821-2931-4822
+              <div className="bg-white p-4 rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
+                {paymentLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="size-10 text-primary animate-spin" />
+                    <p className="text-xs text-muted-foreground font-bold">Membangkitkan QRIS...</p>
                   </div>
-                </div>
+                ) : paymentData?.qr_url ? (
+                  <div className="space-y-4">
+                    <img 
+                      src={paymentData.qr_url} 
+                      alt="QRIS Invoice" 
+                      className={cn(
+                        "w-full h-auto rounded-lg transition-opacity duration-1000",
+                        paymentStatus === "success" && "opacity-20 grayscale"
+                      )}
+                    />
+                    {paymentStatus === "success" && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-[2px]">
+                        <CheckCircle2 className="size-20 text-green-500 fill-white" />
+                        <p className="text-green-600 font-bold text-lg">LUNAS</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-destructive font-bold">Gagal memuat QRIS</p>
+                )}
               </div>
-              
-              <Link href="/" className="block">
-                <Button className="w-full bg-primary text-white h-14 gap-2 text-lg font-bold">
-                  <Rocket className="size-5" /> Finalize Deployment
+
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleCheckStatus}
+                  disabled={isChecking || paymentStatus === "success"}
+                  className={cn(
+                    "w-full h-14 gap-2 text-lg font-bold transition-all",
+                    paymentStatus === "success" ? "bg-green-500 hover:bg-green-600" : "bg-primary"
+                  )}
+                >
+                  {isChecking ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : paymentStatus === "success" ? (
+                    <>
+                      <Rocket className="size-5" /> Finalize Deployment
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="size-5" /> Periksa Status Pembayaran
+                    </>
+                  )}
                 </Button>
-              </Link>
+
+                {paymentStatus === "success" && (
+                  <Link href="/dashboard" className="block w-full">
+                    <Button variant="outline" className="w-full h-12">Ke Dasbor</Button>
+                  </Link>
+                )}
+              </div>
             </div>
 
-            <Button variant="ghost" onClick={() => setStep(4)} className="gap-2">
-              <ChevronLeft className="size-4" /> Cancel Payment
+            <Button 
+              variant="ghost" 
+              onClick={() => setStep(4)} 
+              className="gap-2"
+              disabled={paymentStatus === "success"}
+            >
+              <ChevronLeft className="size-4" /> Batal & Kembali
             </Button>
           </div>
         )}
