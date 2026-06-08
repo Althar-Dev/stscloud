@@ -289,19 +289,19 @@ export default function UserDetailPage() {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20">
-                      <Plus className="size-4" /> Agent
+                      <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
                     <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-xl">Deploy Agent for User</DialogTitle>
+                      <DialogTitle className="font-headline font-bold text-xl">Deploy Server for User</DialogTitle>
                       <DialogDescription>
-                        Directly provision a server agent for {targetUser.email}.
+                        Directly provision a server instance for {targetUser.email}.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent Name</Label>
+                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
                         <Input 
                           id="server-name" 
                           placeholder="e.g., My Cloud Project" 
@@ -331,7 +331,7 @@ export default function UserDetailPage() {
                         disabled={isProvisioning}
                       >
                         {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                        Provision Agent
+                        Provision Server
                       </Button>
                     </DialogFooter>
                   </DialogContent>
