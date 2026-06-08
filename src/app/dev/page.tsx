@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Database,
   BarChart3,
-  BrainCircuit,
   Lock,
   Headset,
   User,
@@ -35,7 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AIConfigTool } from "@/components/ai-config-tool";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -215,9 +213,6 @@ export default function DevConsole() {
             <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary data-[state=active]:text-white">
               <Activity className="size-4" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="ai" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <BrainCircuit className="size-4" /> AI Optimizer
-            </TabsTrigger>
             <TabsTrigger value="nodes" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary data-[state=active]:text-white">
               <Globe className="size-4" /> Global Nodes
             </TabsTrigger>
@@ -263,16 +258,6 @@ export default function DevConsole() {
                   <IntegrityItem name="Backup Systems" status="online" />
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="ai" className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="space-y-6">
-              <div className="max-w-3xl">
-                <h3 className="text-xl font-headline font-bold mb-2">AI Configuration Intelligence</h3>
-                <p className="text-muted-foreground text-sm">Use our LLM-powered engine to generate optimized launch parameters and environment settings for any application type.</p>
-              </div>
-              <AIConfigTool />
             </div>
           </TabsContent>
 
