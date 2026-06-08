@@ -164,7 +164,7 @@ export default function DevConsole() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <StatCard title="Global CPU" value="32.4%" trend="+2.1%" icon={Cpu} color="text-primary" />
               <StatCard title="Mem Reserved" value="1.2 TB" trend="-0.4%" icon={Database} color="text-accent" />
               <StatCard title="Active Connections" value="45.2k" trend="+12%" icon={Activity} color="text-green-400" />
@@ -178,7 +178,7 @@ export default function DevConsole() {
                     <BarChart3 className="size-5 text-primary" /> Network Throughput
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-black/20 rounded-xl m-6 border border-border/30">
+                <CardContent className="h-[300px] flex items-center justify-center bg-black/20 rounded-xl m-4 md:m-6 border border-border/30">
                   <div className="text-center space-y-2 opacity-50">
                     <Activity className="size-12 mx-auto animate-pulse" />
                     <p className="text-sm">Real-time throughput data loading...</p>
@@ -214,7 +214,7 @@ export default function DevConsole() {
           </TabsContent>
 
           <TabsContent value="nodes" className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               <NodeCard location="Singapore" dc="Equinix SG1" load={45} status="online" />
               <NodeCard location="Jakarta" dc="Cyber 1" load={78} status="online" />
               <NodeCard location="Tokyo" dc="Digital Realty" load={12} status="online" />
@@ -264,19 +264,19 @@ export default function DevConsole() {
 function StatCard({ title, value, trend, icon: Icon, color }: any) {
   return (
     <Card className="bg-card border-border/50 overflow-hidden relative group">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className={cn("size-10 rounded-xl bg-secondary flex items-center justify-center", color)}>
-            <Icon className="size-5" />
+      <CardContent className="p-3 md:p-6">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
+          <div className={cn("size-8 md:size-10 rounded-lg md:rounded-xl bg-secondary flex items-center justify-center", color)}>
+            <Icon className="size-4 md:size-5" />
           </div>
           <Badge variant="outline" className={cn(
-            "text-[10px] border-none font-bold",
+            "text-[8px] md:text-[10px] border-none font-bold px-1.5 md:px-2.5",
             trend.startsWith('+') ? "text-green-400" : trend === "Stable" ? "text-primary" : "text-red-400"
           )}>{trend}</Badge>
         </div>
-        <div className="space-y-1">
-          <div className="text-2xl font-bold font-headline">{value}</div>
-          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{title}</div>
+        <div className="space-y-0.5 md:space-y-1">
+          <div className="text-lg md:text-2xl font-bold font-headline">{value}</div>
+          <div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-tight">{title}</div>
         </div>
       </CardContent>
     </Card>
@@ -301,29 +301,29 @@ function IntegrityItem({ name, status, message }: { name: string, status: 'onlin
 function NodeCard({ location, dc, load, status }: { location: string, dc: string, load: number, status: 'online' | 'warning' | 'offline' }) {
   return (
     <Card className="bg-card border-border/50 group hover:border-primary/50 transition-colors">
-      <CardContent className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
-              <Globe className="size-5 text-primary" />
+      <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+              <Globe className="size-4 md:size-5 text-primary" />
             </div>
-            <div>
-              <div className="font-bold font-headline">{location}</div>
-              <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{dc}</div>
+            <div className="min-w-0">
+              <div className="font-bold font-headline text-xs md:text-base truncate">{location}</div>
+              <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{dc}</div>
             </div>
           </div>
           <Badge className={cn(
-            "uppercase text-[10px] font-bold tracking-widest",
+            "uppercase text-[8px] md:text-[10px] font-bold tracking-widest h-5 px-1.5 md:px-2.5 w-fit",
             status === 'online' ? "bg-green-500/10 text-green-500 border-green-500/20" : status === 'warning' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
           )} variant="outline">{status}</Badge>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-            <span className="text-muted-foreground">Cluster Load</span>
+        <div className="space-y-1.5 md:space-y-2">
+          <div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
+            <span className="text-muted-foreground">Load</span>
             <span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span>
           </div>
-          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+          <div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden">
             <div 
               className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} 
               style={{ width: `${load}%` }} 
