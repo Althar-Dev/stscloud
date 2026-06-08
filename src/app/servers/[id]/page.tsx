@@ -27,8 +27,15 @@ import {
   User,
   LogOut,
   Settings as SettingsIcon,
+  Users as UsersIcon,
+  ShieldCheck,
+  UserPlus,
+  Trash2,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -37,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -44,10 +52,12 @@ export default function ServerPage() {
   const { user } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
   const [profile, setProfile] = React.useState<any>(null);
   
   const [status, setStatus] = React.useState<"online" | "offline" | "starting">("online");
   const [activeTab, setActiveTab] = React.useState("console");
+  const [inviteEmail, setInviteEmail] = React.useState("");
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -75,6 +85,18 @@ export default function ServerPage() {
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/auth?type=login");
+  };
+
+  const handleAddAccess = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    
+    // Placeholder logic for adding access
+    toast({
+      title: "Access Request Sent",
+      description: `Access invitation sent to ${inviteEmail}`,
+    });
+    setInviteEmail("");
   };
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
@@ -163,6 +185,9 @@ export default function ServerPage() {
                   <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
+                  <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                    <UsersIcon className="size-4" /> <span>Access</span>
+                  </TabsTrigger>
                   <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <SettingsIcon className="size-4" /> <span>Settings</span>
                   </TabsTrigger>
@@ -204,6 +229,88 @@ export default function ServerPage() {
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <FileExplorer />
+          </TabsContent>
+
+          <TabsContent value="access" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-1 border-border/50 bg-card h-fit">
+                <CardHeader>
+                  <CardTitle className="text-lg font-headline font-bold flex items-center gap-2">
+                    <UserPlus className="size-5 text-primary" />
+                    Grant Access
+                  </CardTitle>
+                  <CardDescription>Invite another user to manage this server.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddAccess} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">User Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="user@example.com" 
+                          className="bg-secondary/30 border-none pl-10" 
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-11">
+                      Grant Access
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card className="lg:col-span-2 border-border/50 bg-card">
+                <CardHeader>
+                  <CardTitle className="text-lg font-headline font-bold">Authorized Users</CardTitle>
+                  <CardDescription>Users listed here can control and view this server.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/50">
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-10 border border-primary/20">
+                          <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                            {userInitial}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="text-sm font-bold flex items-center gap-2">
+                            {displayName}
+                            <Badge variant="outline" className="text-[8px] uppercase tracking-widest border-primary/50 text-primary bg-primary/5 px-1.5 h-4">Owner</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">{user?.email}</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Full Control</div>
+                    </div>
+
+                    {/* Placeholder for other users */}
+                    <div className="p-4 flex items-center justify-between group">
+                      <div className="flex items-center gap-3 opacity-60">
+                        <Avatar className="size-10">
+                          <AvatarFallback className="bg-secondary text-muted-foreground font-bold">ST</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="text-sm font-bold flex items-center gap-2">
+                            Support Team
+                            <Badge variant="outline" className="text-[8px] uppercase tracking-widest px-1.5 h-4">Member</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">support@stscloud.net</div>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">

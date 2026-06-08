@@ -13,6 +13,30 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["email"]
+    },
+    "Server": {
+      "title": "Server",
+      "description": "Information about a deployed server node.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "plan": { "type": "string" },
+        "status": { "type": "string", "enum": ["online", "offline", "starting"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "ServerAccess": {
+      "title": "Server Access",
+      "description": "Permissions granted to a user for a specific server.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "member"] },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
     }
   },
   "auth": {
@@ -22,6 +46,14 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profile document indexed by Firebase Auth UID."
+    },
+    "/servers/{serverId}": {
+      "schema": "Server",
+      "description": "Root document for a server node."
+    },
+    "/servers/{serverId}/access/{userId}": {
+      "schema": "ServerAccess",
+      "description": "Access control records for a server."
     }
   }
 }
