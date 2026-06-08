@@ -51,6 +51,20 @@ export default function DevConsole() {
   const db = useFirestore();
   const [profile, setProfile] = React.useState<any>(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
+
+  // Simulate progress for Cloudflare-like effect
+  React.useEffect(() => {
+    if (authLoading || profileLoading) {
+      const interval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          if (prev >= 100) return 100;
+          return prev + 2;
+        });
+      }, 30);
+      return () => clearInterval(interval);
+    }
+  }, [authLoading, profileLoading]);
 
   React.useEffect(() => {
     if (authLoading) return;
@@ -82,11 +96,11 @@ export default function DevConsole() {
     router.push("/auth?type=login");
   };
 
-  // Branding Loading State
+  // Branded Loading State (Matched with Auth page)
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="w-full max-w-[160px] flex flex-col items-center animate-in fade-in duration-700">
+        <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
           <div className="relative w-full aspect-square mb-2">
             <Image 
               src="/img/icon.png" 
@@ -96,7 +110,14 @@ export default function DevConsole() {
               priority
             />
           </div>
-          <Loader2 className="size-6 text-primary animate-spin" />
+          <div className="w-full">
+            <div className="h-[4px] w-full bg-secondary overflow-hidden rounded-full">
+              <div 
+                className="h-full bg-primary transition-all duration-300 ease-out" 
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
