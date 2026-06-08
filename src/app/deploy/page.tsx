@@ -35,8 +35,7 @@ import {
   Settings,
   LogOut,
   Loader2,
-  RefreshCw,
-  QrCode
+  RefreshCw
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -46,8 +45,9 @@ import Link from "next/link";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
+import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
 
 const templates = [
@@ -101,6 +101,7 @@ export default function DeployPage() {
   const [paymentData, setPaymentData] = React.useState<any>(null);
   const [paymentStatus, setPaymentStatus] = React.useState<string>("pending");
   const [isChecking, setIsChecking] = React.useState(false);
+  const [isProvisioning, setIsProvisioning] = React.useState(false);
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -158,11 +159,56 @@ export default function DeployPage() {
       if (result.status === "success") {
         toast({
           title: "Payment Success!",
-          description: "Your server is being provisioned."
+          description: "Finalizing server deployment..."
         });
+        handleFinalizeDeployment();
       }
     }
     setIsChecking(false);
+  };
+
+  const handleFinalizeDeployment = async () => {
+    if (!user?.uid || !selectedPresetData) return;
+    setIsProvisioning(true);
+
+    const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
+
+    try {
+      // 1. Provision Storage Folders
+      const provision = await provisionServerFiles(serverId);
+      if (!provision.success) throw new Error("File provisioning failed");
+
+      // 2. Create Firestore Record
+      await setDoc(doc(db, "servers", serverId), {
+        name: serverName || "Cloud Server",
+        ownerId: user.uid,
+        plan: selectedPresetData.name,
+        status: "online",
+        createdAt: serverTimestamp(),
+        runtime: selectedAppType,
+        template: selectedTemplate,
+        resources: {
+          ram: selectedPresetData.ram,
+          cpu: selectedPresetData.cpu,
+          disk: selectedPresetData.disk
+        }
+      });
+
+      toast({
+        title: "Deployment Complete",
+        description: "Your server is now live."
+      });
+
+      router.push(`/servers/${serverId}`);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Deployment Failed",
+        description: error.message
+      });
+    } finally {
+      setIsProvisioning(false);
+    }
   };
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
@@ -272,7 +318,7 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Choose the environment for your project.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {templates.map((t) => (
                 <Card 
                   key={t.id} 
@@ -317,7 +363,7 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name}.</p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => (
                 <Card 
                   key={preset.id}
@@ -383,7 +429,7 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Choose the environment for your {selectedTemplateData?.name}.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {availableAppTypes.map((type) => {
                 const iconName = runtimeIconNames[type.id];
                 return (
@@ -459,7 +505,7 @@ export default function DeployPage() {
                     <Label htmlFor="serverName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
                     <Input 
                       id="serverName" 
-                      placeholder="e.g., My Minecraft World" 
+                      placeholder="e.g., My Project" 
                       className="bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" 
                       value={serverName}
                       onChange={(e) => setServerName(e.target.value)}
@@ -533,14 +579,20 @@ export default function DeployPage() {
                       src={paymentData.qr_url} 
                       alt="QRIS Invoice" 
                       className={cn(
-                        "w-full h-auto rounded-lg transition-opacity duration-1000",
-                        paymentStatus === "success" && "opacity-20 grayscale"
+                        "w-full h-auto transition-opacity duration-1000",
+                        (paymentStatus === "success" || isProvisioning) && "opacity-20 grayscale"
                       )}
                     />
-                    {paymentStatus === "success" && (
+                    {(paymentStatus === "success" || isProvisioning) && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-[2px]">
-                        <CheckCircle2 className="size-20 text-green-500 fill-white" />
-                        <p className="text-green-600 font-bold text-lg">PAID</p>
+                        {isProvisioning ? (
+                          <Loader2 className="size-12 text-primary animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="size-20 text-green-500 fill-white" />
+                        )}
+                        <p className="text-green-600 font-bold text-lg mt-2">
+                          {isProvisioning ? "PROVISIONING..." : "PAID"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -552,17 +604,17 @@ export default function DeployPage() {
               <div className="space-y-3">
                 <Button 
                   onClick={handleCheckStatus}
-                  disabled={isChecking || paymentStatus === "success"}
+                  disabled={isChecking || paymentStatus === "success" || isProvisioning}
                   className={cn(
                     "w-full h-14 gap-2 text-lg font-bold transition-all",
-                    paymentStatus === "success" ? "bg-green-500 hover:bg-green-600" : "bg-primary"
+                    paymentStatus === "success" ? "bg-green-500" : "bg-primary"
                   )}
                 >
                   {isChecking ? (
                     <Loader2 className="size-5 animate-spin" />
                   ) : paymentStatus === "success" ? (
                     <>
-                      <Rocket className="size-5" /> Finalize Deployment
+                      <Rocket className="size-5" /> Finalizing...
                     </>
                   ) : (
                     <>
@@ -571,7 +623,7 @@ export default function DeployPage() {
                   )}
                 </Button>
 
-                {paymentStatus === "success" && (
+                {paymentStatus === "success" && !isProvisioning && (
                   <Link href="/dashboard" className="block w-full">
                     <Button variant="outline" className="w-full h-12">To Dashboard</Button>
                   </Link>
@@ -583,7 +635,7 @@ export default function DeployPage() {
               variant="ghost" 
               onClick={() => setStep(4)} 
               className="gap-2"
-              disabled={paymentStatus === "success"}
+              disabled={paymentStatus === "success" || isProvisioning}
             >
               <ChevronLeft className="size-4" /> Cancel & Back
             </Button>
