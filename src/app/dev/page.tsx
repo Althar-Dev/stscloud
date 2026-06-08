@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,15 +12,15 @@ import {
   Settings,
   ArrowLeft,
   Database,
-  BarChart3,
   Lock,
-  Headset,
   User,
   LogOut,
   CreditCard,
   Users,
   Search,
   ChevronRight,
+  Plus,
+  Loader2,
   Server as ServerIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,12 +36,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot, collection, query, limit, orderBy } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp } from "firebase/firestore";
+import { provisionServerFiles } from "@/app/actions/server-provisioning";
+import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -58,16 +78,33 @@ const mockEvents = [
   { type: 'auth', msg: 'Admin login from 192.168.1.1', time: '10:40:00' },
 ];
 
+const resourcePresets = [
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB" },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB" },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB" },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB" },
+];
+
 export default function DevConsole() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
+  
   const [profile, setProfile] = React.useState<any>(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
   const [usersList, setUsersList] = React.useState<any[]>([]);
-  const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
+
+  // Provisioning State
+  const [isProvisioning, setIsProvisioning] = React.useState(false);
+  const [provisionUserId, setProvisionUserId] = React.useState("");
+  const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
+  const [provisionServerName, setProvisionServerName] = React.useState("");
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (authLoading || profileLoading) {
@@ -104,11 +141,10 @@ export default function DevConsole() {
     return () => unsub();
   }, [user, authLoading, db, router]);
 
-  // Fetch all users for the list
   React.useEffect(() => {
     if (!profile || profile.dev !== true) return;
     
-    const usersQuery = query(collection(db, "users"), limit(50));
+    const usersQuery = query(collection(db, "users"), limit(100));
     const unsub = onSnapshot(usersQuery, (snapshot) => {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setUsersList(list);
@@ -116,6 +152,44 @@ export default function DevConsole() {
 
     return () => unsub();
   }, [profile, db]);
+
+  const handleAdminProvision = async () => {
+    if (!provisionUserId || !provisionServerName) {
+      toast({ variant: "destructive", title: "Missing Info", description: "Please select a user and server name." });
+      return;
+    }
+
+    setIsProvisioning(true);
+    const plan = resourcePresets.find(p => p.id === provisionPlanId);
+    const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
+
+    try {
+      const provision = await provisionServerFiles(serverId);
+      if (!provision.success) throw new Error("File provisioning failed");
+
+      await setDoc(doc(db, "servers", serverId), {
+        name: provisionServerName,
+        ownerId: provisionUserId,
+        plan: plan?.name,
+        status: "online",
+        createdAt: serverTimestamp(),
+        resources: {
+          ram: plan?.ram,
+          cpu: plan?.cpu,
+          disk: plan?.disk
+        }
+      });
+
+      toast({ title: "Admin Provision Success", description: `Server ${provisionServerName} deployed for user.` });
+      setIsDialogOpen(false);
+      setProvisionServerName("");
+      setProvisionUserId("");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Provisioning Failed", description: error.message });
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -177,7 +251,7 @@ export default function DevConsole() {
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline">{displayName}</span>
-                  <span className="text-[10px] text-muted-foreground">ADMIN ROLE</span>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest leading-none mt-1">ADMIN ROLE</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -200,8 +274,68 @@ export default function DevConsole() {
             <p className="text-sm text-muted-foreground">Monitor global node clusters and optimize internal configurations.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2"><Terminal className="size-4" /> Logs</Button>
-            <Button size="sm" className="bg-primary text-white gap-2"><Zap className="size-4" /> Restart Nodes</Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Provision Node</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
+                <DialogHeader>
+                  <DialogTitle className="font-headline font-bold text-xl">Quick Provisioning</DialogTitle>
+                  <DialogDescription>
+                    Manually deploy a server for a user bypassing the payment flow.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="target-user" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target User</Label>
+                    <Select value={provisionUserId} onValueChange={setProvisionUserId}>
+                      <SelectTrigger className="bg-secondary/30 border-none h-11">
+                        <SelectValue placeholder="Select user..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {usersList.map(u => (
+                          <SelectItem key={u.id} value={u.id}>{u.email}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                    <Input 
+                      id="server-name" 
+                      placeholder="Production API" 
+                      className="bg-secondary/30 border-none h-11"
+                      value={provisionServerName}
+                      onChange={(e) => setProvisionServerName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="plan" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
+                    <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
+                      <SelectTrigger className="bg-secondary/30 border-none h-11">
+                        <SelectValue placeholder="Select plan..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resourcePresets.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.ram})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    className="w-full bg-primary text-white font-bold h-11" 
+                    onClick={handleAdminProvision}
+                    disabled={isProvisioning}
+                  >
+                    {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
+                    Provision Node
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" size="sm" className="gap-2 h-10"><Terminal className="size-4" /> Global Logs</Button>
           </div>
         </div>
 

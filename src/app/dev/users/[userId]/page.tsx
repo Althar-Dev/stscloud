@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,17 +19,46 @@ import {
   Loader2,
   Cpu,
   Database,
-  HardDrive
+  HardDrive,
+  Zap,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useUser, useFirestore } from "@/firebase";
-import { doc, onSnapshot, updateDoc, collection, query, where } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, collection, query, where, setDoc, serverTimestamp } from "firebase/firestore";
+import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+const resourcePresets = [
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB" },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB" },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB" },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB" },
+];
 
 export default function UserDetailPage() {
   const { userId } = useParams();
@@ -43,6 +73,12 @@ export default function UserDetailPage() {
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
   const [loadingProgress, setLoadingProgress] = React.useState(0);
+
+  // Provisioning State
+  const [isProvisioning, setIsProvisioning] = React.useState(false);
+  const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
+  const [provisionServerName, setProvisionServerName] = React.useState("");
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   // Auth & Admin Check
   React.useEffect(() => {
@@ -131,6 +167,43 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleAdminProvision = async () => {
+    if (!provisionServerName) {
+      toast({ variant: "destructive", title: "Missing Info", description: "Please enter a server name." });
+      return;
+    }
+
+    setIsProvisioning(true);
+    const plan = resourcePresets.find(p => p.id === provisionPlanId);
+    const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
+
+    try {
+      const provision = await provisionServerFiles(serverId);
+      if (!provision.success) throw new Error("File provisioning failed");
+
+      await setDoc(doc(db, "servers", serverId), {
+        name: provisionServerName,
+        ownerId: targetUser.id,
+        plan: plan?.name,
+        status: "online",
+        createdAt: serverTimestamp(),
+        resources: {
+          ram: plan?.ram,
+          cpu: plan?.cpu,
+          disk: plan?.disk
+        }
+      });
+
+      toast({ title: "Admin Provision Success", description: `Server ${provisionServerName} deployed.` });
+      setIsDialogOpen(false);
+      setProvisionServerName("");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Provisioning Failed", description: error.message });
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
@@ -214,9 +287,60 @@ export default function UserDetailPage() {
               </div>
 
               <div className="pt-6 space-y-3">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20">
+                      <Plus className="size-4" /> Deploy Server
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
+                    <DialogHeader>
+                      <DialogTitle className="font-headline font-bold text-xl">Deploy for User</DialogTitle>
+                      <DialogDescription>
+                        Directly provision a server for {targetUser.email}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                        <Input 
+                          id="server-name" 
+                          placeholder="e.g., My Cloud Project" 
+                          className="bg-secondary/30 border-none h-11"
+                          value={provisionServerName}
+                          onChange={(e) => setProvisionServerName(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="plan" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
+                        <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
+                          <SelectTrigger className="bg-secondary/30 border-none h-11">
+                            <SelectValue placeholder="Select plan..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {resourcePresets.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name} ({p.ram})</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        className="w-full bg-primary text-white font-bold h-11" 
+                        onClick={handleAdminProvision}
+                        disabled={isProvisioning}
+                      >
+                        {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
+                        Provision Node
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
                 <Button 
-                  variant={targetUser.dev ? "destructive" : "default"} 
-                  className={cn("w-full h-11 font-bold gap-2", !targetUser.dev && "bg-primary hover:bg-primary/90")}
+                  variant={targetUser.dev ? "destructive" : "outline"} 
+                  className={cn("w-full h-11 font-bold gap-2", !targetUser.dev && "border-primary/30 text-primary bg-primary/5 hover:bg-primary/10")}
                   onClick={toggleDevStatus}
                   disabled={updating}
                 >
