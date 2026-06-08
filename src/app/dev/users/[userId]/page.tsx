@@ -289,7 +289,7 @@ export default function UserDetailPage() {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20">
-                      <Plus className="size-4" /> Provision Agent
+                      <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
@@ -331,7 +331,7 @@ export default function UserDetailPage() {
                         disabled={isProvisioning}
                       >
                         {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                        Provision Agent
+                        Provision Server
                       </Button>
                     </DialogFooter>
                   </DialogContent>

@@ -275,7 +275,7 @@ export default function DevConsole() {
           <div className="flex items-center gap-2">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Provision Agent</Button>
+                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Server</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
                 <DialogHeader>
@@ -329,7 +329,7 @@ export default function DevConsole() {
                     disabled={isProvisioning}
                   >
                     {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                    Provision Agent
+                    Provision Server
                   </Button>
                 </DialogFooter>
               </DialogContent>
