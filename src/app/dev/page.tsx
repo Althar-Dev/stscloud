@@ -19,7 +19,8 @@ import {
   Lock,
   Headset,
   User,
-  LogOut
+  LogOut,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,25 +46,66 @@ import { cn } from "@/lib/utils";
 
 export default function DevConsole() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const [profile, setProfile] = React.useState<any>(null);
+  const [profileLoading, setProfileLoading] = React.useState(true);
 
   React.useEffect(() => {
-    if (!user?.uid) return;
+    if (authLoading) return;
+    if (!user) {
+      router.push("/auth?type=login");
+      return;
+    }
+
     const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
-        setProfile(doc.data());
+        const data = doc.data();
+        setProfile(data);
+        
+        // Access Control: Only allow if dev flag is true
+        if (data.dev !== true) {
+          router.replace("/dashboard");
+        }
+      } else {
+        router.replace("/dashboard");
       }
+      setProfileLoading(false);
     });
+    
     return () => unsub();
-  }, [user, db]);
+  }, [user, authLoading, db, router]);
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/auth?type=login");
   };
+
+  // Branding Loading State
+  if (authLoading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
+        <div className="w-full max-w-[160px] flex flex-col items-center animate-in fade-in duration-700">
+          <div className="relative w-full aspect-square mb-2">
+            <Image 
+              src="/img/icon.png" 
+              alt="STSCloud" 
+              fill 
+              className="object-contain grayscale opacity-60" 
+              priority
+            />
+          </div>
+          <Loader2 className="size-6 text-primary animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  // Double check if we should even render (in case redirect hasn't happened yet)
+  if (!profile || profile.dev !== true) {
+    return null;
+  }
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "Dev Account";
   const userInitial = displayName.charAt(0).toUpperCase();
@@ -164,7 +206,7 @@ export default function DevConsole() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <StatCard title="Global CPU" value="32.4%" trend="+2.1%" icon={Cpu} color="text-primary" />
               <StatCard title="Mem Reserved" value="1.2 TB" trend="-0.4%" icon={Database} color="text-accent" />
               <StatCard title="Active Connections" value="45.2k" trend="+12%" icon={Activity} color="text-green-400" />
@@ -214,7 +256,7 @@ export default function DevConsole() {
           </TabsContent>
 
           <TabsContent value="nodes" className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               <NodeCard location="Singapore" dc="Equinix SG1" load={45} status="online" />
               <NodeCard location="Jakarta" dc="Cyber 1" load={78} status="online" />
               <NodeCard location="Tokyo" dc="Digital Realty" load={12} status="online" />
