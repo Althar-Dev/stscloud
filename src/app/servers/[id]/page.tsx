@@ -31,7 +31,11 @@ import {
   ShieldCheck,
   UserPlus,
   Trash2,
-  Mail
+  Mail,
+  History,
+  CheckCircle2,
+  Info,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +95,6 @@ export default function ServerPage() {
     e.preventDefault();
     if (!inviteEmail) return;
     
-    // Placeholder logic for adding access
     toast({
       title: "Access Request Sent",
       description: `Access invitation sent to ${inviteEmail}`,
@@ -187,6 +190,9 @@ export default function ServerPage() {
                   </TabsTrigger>
                   <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <UsersIcon className="size-4" /> <span>Access</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                    <History className="size-4" /> <span>Activity</span>
                   </TabsTrigger>
                   <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <SettingsIcon className="size-4" /> <span>Settings</span>
@@ -289,7 +295,6 @@ export default function ServerPage() {
                       <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Full Control</div>
                     </div>
 
-                    {/* Placeholder for other users */}
                     <div className="p-4 flex items-center justify-between group">
                       <div className="flex items-center gap-3 opacity-60">
                         <Avatar className="size-10">
@@ -313,6 +318,47 @@ export default function ServerPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="activity" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <Card className="border-border/50 bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-headline font-bold">Recent Activity</CardTitle>
+                <CardDescription>A log of all significant events and actions performed on this node.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/50">
+                  <ActivityItem 
+                    icon={CheckCircle2} 
+                    action="Server Started" 
+                    user="System" 
+                    time="2 hours ago" 
+                    type="success" 
+                  />
+                  <ActivityItem 
+                    icon={Info} 
+                    action="File Uploaded: server.properties" 
+                    user={displayName} 
+                    time="5 hours ago" 
+                    type="info" 
+                  />
+                  <ActivityItem 
+                    icon={UserPlus} 
+                    action="Access Granted: support@stscloud.net" 
+                    user={displayName} 
+                    time="1 day ago" 
+                    type="info" 
+                  />
+                  <ActivityItem 
+                    icon={AlertTriangle} 
+                    action="Server Restarted (Force)" 
+                    user="System" 
+                    time="2 days ago" 
+                    type="warning" 
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
                 <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">General Settings</h2>
@@ -334,6 +380,28 @@ export default function ServerPage() {
           </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
+
+function ActivityItem({ icon: Icon, action, user, time, type }: any) {
+  return (
+    <div className="p-4 flex items-center justify-between group hover:bg-secondary/10 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className={cn(
+          "size-9 rounded-lg flex items-center justify-center shrink-0",
+          type === "success" ? "bg-green-500/10 text-green-500" :
+          type === "warning" ? "bg-yellow-500/10 text-yellow-500" :
+          "bg-blue-500/10 text-blue-500"
+        )}>
+          <Icon className="size-4.5" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="text-sm font-bold">{action}</div>
+          <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">By {user}</div>
+        </div>
+      </div>
+      <div className="text-xs text-muted-foreground tabular-nums">{time}</div>
     </div>
   );
 }
