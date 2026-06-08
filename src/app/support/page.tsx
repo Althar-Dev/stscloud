@@ -99,7 +99,7 @@ export default function SupportPage() {
               <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-xl tracking-tight">
-              <span className="text-primary">Cloud</span>
+              <span className="text-primary">Support</span>
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />

@@ -74,7 +74,7 @@ export default function Dashboard() {
             <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
-            <span className="font-headline font-bold text-lg md:text-xl tracking-tight">
+            <span className="font-headline font-bold text-xl tracking-tight">
               <span className="text-primary">Cloud</span>
             </span>
           </Link>
