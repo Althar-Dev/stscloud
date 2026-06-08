@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -194,7 +193,7 @@ export default function UserDetailPage() {
         }
       });
 
-      toast({ title: "Admin Provision Success", description: `Server ${provisionServerName} deployed.` });
+      toast({ title: "Admin Provision Success", description: `Agent ${provisionServerName} deployed.` });
       setIsDialogOpen(false);
       setProvisionServerName("");
     } catch (error: any) {
@@ -282,7 +281,7 @@ export default function UserDetailPage() {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <ServerIcon className="size-4 text-primary" />
-                <span className="text-muted-foreground">Servers:</span>
+                <span className="text-muted-foreground">Agents:</span>
                 <span className="font-medium ml-auto">{userServers.length}</span>
               </div>
 
@@ -290,19 +289,19 @@ export default function UserDetailPage() {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20">
-                      <Plus className="size-4" /> Deploy Server
+                      <Plus className="size-4" /> Provision Agent
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
                     <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-xl">Deploy for User</DialogTitle>
+                      <DialogTitle className="font-headline font-bold text-xl">Deploy Agent for User</DialogTitle>
                       <DialogDescription>
-                        Directly provision a server for {targetUser.email}.
+                        Directly provision a server agent for {targetUser.email}.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent Name</Label>
                         <Input 
                           id="server-name" 
                           placeholder="e.g., My Cloud Project" 
@@ -332,7 +331,7 @@ export default function UserDetailPage() {
                         disabled={isProvisioning}
                       >
                         {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                        Provision Node
+                        Provision Agent
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -361,7 +360,7 @@ export default function UserDetailPage() {
             <Tabs defaultValue="servers" className="w-full">
               <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto border border-border/50">
                 <TabsTrigger value="servers" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-                  <ServerIcon className="size-4" /> Servers
+                  <ServerIcon className="size-4" /> Agents
                 </TabsTrigger>
                 <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
                   <Activity className="size-4" /> Recent Activity
@@ -405,7 +404,7 @@ export default function UserDetailPage() {
                   ) : (
                     <div className="col-span-full py-12 text-center bg-secondary/10 rounded-2xl border border-dashed border-border/50">
                       <ServerIcon className="size-10 text-muted-foreground mx-auto mb-3 opacity-20" />
-                      <p className="text-sm text-muted-foreground font-medium">This user hasn't deployed any servers yet.</p>
+                      <p className="text-sm text-muted-foreground font-medium">This user hasn't deployed any agents yet.</p>
                     </div>
                   )}
                 </div>

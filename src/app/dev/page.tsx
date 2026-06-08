@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -72,9 +71,9 @@ const mockTransactions = [
 ];
 
 const mockEvents = [
-  { type: 'deploy', msg: 'New Node provisioned in SG-01', time: '10:45:21' },
+  { type: 'deploy', msg: 'New Agent provisioned in SG-01', time: '10:45:21' },
   { type: 'payment', msg: 'Payment verified for TX-901', time: '10:44:05' },
-  { type: 'alert', msg: 'High CPU detected on US-East Node', time: '10:42:10' },
+  { type: 'alert', msg: 'High CPU detected on US-East Agent', time: '10:42:10' },
   { type: 'auth', msg: 'Admin login from 192.168.1.1', time: '10:40:00' },
 ];
 
@@ -271,18 +270,18 @@ export default function DevConsole() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-2xl md:text-4xl font-headline font-bold">Infrastructure Control</h2>
-            <p className="text-sm text-muted-foreground">Monitor global node clusters and optimize internal configurations.</p>
+            <p className="text-sm text-muted-foreground">Monitor global agent clusters and optimize internal configurations.</p>
           </div>
           <div className="flex items-center gap-2">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Provision Node</Button>
+                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Provision Agent</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
                 <DialogHeader>
-                  <DialogTitle className="font-headline font-bold text-xl">Quick Provisioning</DialogTitle>
+                  <DialogTitle className="font-headline font-bold text-xl">Agent Provisioning</DialogTitle>
                   <DialogDescription>
-                    Manually deploy a server for a user bypassing the payment flow.
+                    Manually deploy a server agent for a user bypassing the payment flow.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -300,7 +299,7 @@ export default function DevConsole() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                    <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent Name</Label>
                     <Input 
                       id="server-name" 
                       placeholder="Production API" 
@@ -330,7 +329,7 @@ export default function DevConsole() {
                     disabled={isProvisioning}
                   >
                     {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                    Provision Node
+                    Provision Agent
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -344,8 +343,8 @@ export default function DevConsole() {
             <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
               <Activity className="size-4" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="nodes" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <Globe className="size-4" /> Nodes
+            <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
+              <Globe className="size-4" /> Agents
             </TabsTrigger>
             <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
               <CreditCard className="size-4" /> Billing
@@ -393,19 +392,19 @@ export default function DevConsole() {
                 <CardContent className="space-y-4">
                   <IntegrityItem name="Authentication API" status="online" />
                   <IntegrityItem name="SValePay Connector" status="online" />
-                  <IntegrityItem name="Node Provisioner" status="online" />
-                  <IntegrityItem name="Database Primary" status="warning" message="High Latency Node-04" />
+                  <IntegrityItem name="Agent Provisioner" status="online" />
+                  <IntegrityItem name="Database Primary" status="warning" message="High Latency Agent-04" />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="nodes" className="animate-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="agents" className="animate-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              <NodeCard location="Singapore" dc="Equinix SG1" load={45} status="online" />
-              <NodeCard location="Jakarta" dc="Cyber 1" load={78} status="online" />
-              <NodeCard location="USA East" dc="AWS us-east-1" load={92} status="warning" />
-              <NodeCard location="Europe" dc="Hetzner DE" load={30} status="online" />
+              <AgentCard location="Singapore" dc="Equinix SG1" load={45} status="online" />
+              <AgentCard location="Jakarta" dc="Cyber 1" load={78} status="online" />
+              <AgentCard location="USA East" dc="AWS us-east-1" load={92} status="warning" />
+              <AgentCard location="Europe" dc="Hetzner DE" load={30} status="online" />
             </div>
           </TabsContent>
 
@@ -542,7 +541,7 @@ function IntegrityItem({ name, status, message }: { name: string, status: 'onlin
   );
 }
 
-function NodeCard({ location, dc, load, status }: { location: string, dc: string, load: number, status: 'online' | 'warning' | 'offline' }) {
+function AgentCard({ location, dc, load, status }: { location: string, dc: string, load: number, status: 'online' | 'warning' | 'offline' }) {
   return (
     <Card className="bg-card border-border/50 group hover:border-primary/50 transition-colors">
       <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6">
