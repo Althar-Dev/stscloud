@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -58,7 +59,6 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp } from "firebase/firestore";
-import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
@@ -77,14 +77,6 @@ const mockEvents = [
   { type: 'auth', msg: 'Admin login from 192.168.1.1', time: '10:40:00' },
 ];
 
-const resourcePresets = [
-  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
-  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB" },
-  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB" },
-  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB" },
-  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB" },
-];
-
 export default function DevConsole() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
@@ -98,11 +90,10 @@ export default function DevConsole() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [loadingProgress, setLoadingProgress] = React.useState(0);
 
-  // Provisioning State
-  const [isProvisioning, setIsProvisioning] = React.useState(false);
-  const [provisionUserId, setProvisionUserId] = React.useState("");
-  const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
-  const [provisionServerName, setProvisionServerName] = React.useState("");
+  // Agent Registration State
+  const [isAddingAgent, setIsAddingAgent] = React.useState(false);
+  const [regionName, setRegionName] = React.useState("");
+  const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -152,41 +143,32 @@ export default function DevConsole() {
     return () => unsub();
   }, [profile, db]);
 
-  const handleAdminProvision = async () => {
-    if (!provisionUserId || !provisionServerName) {
-      toast({ variant: "destructive", title: "Missing Info", description: "Please select a user and server name." });
+  const handleAddAgent = async () => {
+    if (!regionName || !agentUrl) {
+      toast({ variant: "destructive", title: "Missing Info", description: "Please enter Region Name and Agent URL." });
       return;
     }
 
-    setIsProvisioning(true);
-    const plan = resourcePresets.find(p => p.id === provisionPlanId);
-    const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
-
+    setIsAddingAgent(true);
     try {
-      const provision = await provisionServerFiles(serverId);
-      if (!provision.success) throw new Error("File provisioning failed");
-
-      await setDoc(doc(db, "servers", serverId), {
-        name: provisionServerName,
-        ownerId: provisionUserId,
-        plan: plan?.name,
+      // Logic for registering a new infrastructure agent
+      const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
+      await setDoc(doc(db, "infrastructure_agents", agentId), {
+        regionName,
+        agentUrl,
         status: "online",
         createdAt: serverTimestamp(),
-        resources: {
-          ram: plan?.ram,
-          cpu: plan?.cpu,
-          disk: plan?.disk
-        }
+        load: 0
       });
 
-      toast({ title: "Admin Provision Success", description: `Agent ${provisionServerName} deployed for user.` });
+      toast({ title: "Agent Registered", description: `New agent cluster at ${regionName} is now active.` });
       setIsDialogOpen(false);
-      setProvisionServerName("");
-      setProvisionUserId("");
+      setRegionName("");
+      setAgentUrl("");
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Provisioning Failed", description: error.message });
+      toast({ variant: "destructive", title: "Registration Failed", description: error.message });
     } finally {
-      setIsProvisioning(false);
+      setIsAddingAgent(false);
     }
   };
 
@@ -279,57 +261,41 @@ export default function DevConsole() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
                 <DialogHeader>
-                  <DialogTitle className="font-headline font-bold text-xl">Agent Provisioning</DialogTitle>
+                  <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
                   <DialogDescription>
-                    Manually deploy a server agent for a user bypassing the payment flow.
+                    Add a new infrastructure node to the global cluster.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="target-user" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target User</Label>
-                    <Select value={provisionUserId} onValueChange={setProvisionUserId}>
-                      <SelectTrigger className="bg-secondary/30 border-none h-11">
-                        <SelectValue placeholder="Select user..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usersList.map(u => (
-                          <SelectItem key={u.id} value={u.id}>{u.email}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent Name</Label>
+                    <Label htmlFor="region-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Region Name</Label>
                     <Input 
-                      id="server-name" 
-                      placeholder="Production API" 
+                      id="region-name" 
+                      placeholder="e.g. Singapore SG-01" 
                       className="bg-secondary/30 border-none h-11"
-                      value={provisionServerName}
-                      onChange={(e) => setProvisionServerName(e.target.value)}
+                      value={regionName}
+                      onChange={(e) => setRegionName(e.target.value)}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="plan" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
-                    <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
-                      <SelectTrigger className="bg-secondary/30 border-none h-11">
-                        <SelectValue placeholder="Select plan..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {resourcePresets.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.ram})</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="agent-url" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent URL</Label>
+                    <Input 
+                      id="agent-url" 
+                      placeholder="node.domain.com" 
+                      className="bg-secondary/30 border-none h-11"
+                      value={agentUrl}
+                      onChange={(e) => setAgentUrl(e.target.value)}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button 
                     className="w-full bg-primary text-white font-bold h-11" 
-                    onClick={handleAdminProvision}
-                    disabled={isProvisioning}
+                    onClick={handleAddAgent}
+                    disabled={isAddingAgent}
                   >
-                    {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                    Provision Agent
+                    {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}
+                    Add Agent
                   </Button>
                 </DialogFooter>
               </DialogContent>
