@@ -1,13 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Aturan untuk koleksi users: 
-    // Pengguna hanya bisa membaca dan menulis dokumen mereka sendiri berdasarkan UID Auth mereka.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if the user has developer/admin privileges
+    function isDev() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.dev == true;
     }
 
-    // Aturan default: Tolak semua akses ke dokumen lain secara default demi keamanan.
+    // Rules for user profiles
+    match /users/{userId} {
+      allow read, write: if (request.auth != null && request.auth.uid == userId) || isDev();
+    }
+
+    // Rules for servers
+    match /servers/{serverId} {
+      // Allow read if owner or admin
+      // Allow write (create/update/delete) if owner or admin
+      allow read, write: if request.auth != null && (
+        (resource == null || resource.data.ownerId == request.auth.uid) || 
+        (request.resource != null && request.resource.data.ownerId == request.auth.uid) ||
+        isDev()
+      );
+      
+      // Rules for sub-collections under servers (like access)
+      match /{allSubcollections=**} {
+        allow read, write: if request.auth != null && (
+          get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || 
+          isDev()
+        );
+      }
+    }
+
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }

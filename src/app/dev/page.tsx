@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,7 +19,8 @@ import {
   CreditCard,
   Users,
   Search,
-  ChevronRight
+  ChevronRight,
+  Server as ServerIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import { Input } from "@/components/ui/input";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, limit, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,9 @@ export default function DevConsole() {
   const db = useFirestore();
   const [profile, setProfile] = React.useState<any>(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
+  const [usersList, setUsersList] = React.useState<any[]>([]);
   const [loadingProgress, setLoadingProgress] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     if (authLoading || profileLoading) {
@@ -102,6 +104,19 @@ export default function DevConsole() {
     return () => unsub();
   }, [user, authLoading, db, router]);
 
+  // Fetch all users for the list
+  React.useEffect(() => {
+    if (!profile || profile.dev !== true) return;
+    
+    const usersQuery = query(collection(db, "users"), limit(50));
+    const unsub = onSnapshot(usersQuery, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUsersList(list);
+    });
+
+    return () => unsub();
+  }, [profile, db]);
+
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/auth?type=login");
@@ -126,6 +141,11 @@ export default function DevConsole() {
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "Dev Account";
   const userInitial = displayName.charAt(0).toUpperCase();
+
+  const filteredUsers = usersList.filter(u => 
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="bg-background min-h-screen">
@@ -296,40 +316,52 @@ export default function DevConsole() {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4 mb-6 px-1">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input placeholder="Search users by email or ID..." className="pl-10 bg-secondary/30 border-none" />
+                <Input 
+                  placeholder="Search users by email or name..." 
+                  className="pl-10 bg-secondary/30 border-none h-11" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-               {[1, 2, 3].map(i => (
-                 <Card key={i} className="bg-card border-border/50 hover:bg-secondary/20 transition-all cursor-pointer group">
-                   <CardContent className="p-6">
-                     <div className="flex items-center justify-between mb-4">
-                       <div className="flex items-center gap-3">
-                         <Avatar className="size-10">
-                           <AvatarFallback className="bg-primary/10 text-primary">U{i}</AvatarFallback>
-                         </Avatar>
-                         <div>
-                           <div className="text-sm font-bold">User_{i}@example.com</div>
-                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Joined 2 days ago</div>
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+               {filteredUsers.map((u, i) => (
+                 <Link key={u.id} href={`/dev/users/${u.id}`}>
+                   <Card className="bg-card border-border/50 hover:bg-secondary/20 hover:border-primary/30 transition-all cursor-pointer group h-full">
+                     <CardContent className="p-3 md:p-6">
+                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                         <div className="flex items-center gap-3">
+                           <Avatar className="size-8 md:size-10">
+                             <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                               {u.displayName?.charAt(0) || u.email?.charAt(0) || "U"}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="min-w-0">
+                             <div className="text-xs md:text-sm font-bold truncate pr-4">{u.displayName || "No Name"}</div>
+                             <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{u.email}</div>
+                           </div>
+                         </div>
+                         <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                            {u.dev && <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] uppercase">Admin</Badge>}
+                            <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-colors hidden sm:block" />
                          </div>
                        </div>
-                       <Button variant="ghost" size="icon" className="group-hover:text-primary"><ChevronRight className="size-4" /></Button>
-                     </div>
-                     <div className="flex gap-4">
-                        <div className="flex-1 text-center p-2 bg-background rounded-lg border border-border/50">
-                           <div className="text-lg font-bold">2</div>
-                           <div className="text-[8px] text-muted-foreground uppercase font-bold">Servers</div>
-                        </div>
-                        <div className="flex-1 text-center p-2 bg-background rounded-lg border border-border/50">
-                           <div className="text-lg font-bold">Paid</div>
-                           <div className="text-[8px] text-muted-foreground uppercase font-bold">Status</div>
-                        </div>
-                     </div>
-                   </CardContent>
-                 </Card>
+                       <div className="flex gap-2">
+                          <div className="flex-1 text-center p-1.5 md:p-2 bg-background/50 rounded-lg border border-border/30">
+                             <div className="text-xs md:text-lg font-bold">--</div>
+                             <div className="text-[7px] md:text-[8px] text-muted-foreground uppercase font-bold">Servers</div>
+                          </div>
+                          <div className="flex-1 text-center p-1.5 md:p-2 bg-background/50 rounded-lg border border-border/30">
+                             <div className="text-xs md:text-lg font-bold">Active</div>
+                             <div className="text-[7px] md:text-[8px] text-muted-foreground uppercase font-bold">Status</div>
+                          </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </Link>
                ))}
             </div>
           </TabsContent>
