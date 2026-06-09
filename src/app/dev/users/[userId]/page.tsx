@@ -292,7 +292,7 @@ export default function UserDetailPage() {
                       <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50">
+                  <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50 rounded-lg">
                     <DialogHeader>
                       <DialogTitle className="font-headline font-bold text-xl">Deploy Server for User</DialogTitle>
                       <DialogDescription>

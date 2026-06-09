@@ -24,6 +24,9 @@
         "plan": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "starting"] },
         "createdAt": { "type": "string", "format": "date-time" },
+        "runtime": { "type": "string" },
+        "nodeVersion": { "type": "string", "description": "Selected Node.js version for the server." },
+        "startupCommand": { "type": "string", "description": "Custom command to start the application." },
         "resources": {
           "type": "object",
           "properties": {

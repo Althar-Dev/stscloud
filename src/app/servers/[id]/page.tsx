@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -37,11 +38,20 @@ import {
   Loader2,
   Cpu,
   Database,
-  HardDrive
+  HardDrive,
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -68,6 +78,12 @@ export default function ServerPage() {
   const [activeTab, setActiveTab] = React.useState("console");
   const [inviteEmail, setInviteEmail] = React.useState("");
 
+  // Settings states
+  const [serverName, setServerName] = React.useState("");
+  const [nodeVersion, setNodeVersion] = React.useState("");
+  const [startupCommand, setStartupCommand] = React.useState("");
+  const [isSavingSettings, setIsSavingSettings] = React.useState(false);
+
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
@@ -81,7 +97,11 @@ export default function ServerPage() {
     // Specific Server Listener
     const unsubServer = onSnapshot(doc(db, "servers", id as string), (doc) => {
       if (doc.exists()) {
-        setServer({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        setServer({ id: doc.id, ...data });
+        setServerName(data.name || "");
+        setNodeVersion(data.nodeVersion || "20");
+        setStartupCommand(data.startupCommand || "npm start");
       } else {
         toast({
           variant: "destructive",
@@ -93,7 +113,7 @@ export default function ServerPage() {
       setLoading(false);
     });
 
-    // Fetch actual disk usage once
+    // Fetch actual disk usage
     getServerDiskUsage(id as string).then(res => {
       if (res.success) setDiskUsage(res.sizeInMB || 0);
     });
@@ -130,6 +150,30 @@ export default function ServerPage() {
         title: "System Error",
         description: "Failed to communicate with agent node."
       });
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!id || !db) return;
+    setIsSavingSettings(true);
+    try {
+      await updateDoc(doc(db, "servers", id as string), {
+        name: serverName,
+        nodeVersion: nodeVersion,
+        startupCommand: startupCommand
+      });
+      toast({
+        title: "Settings saved",
+        description: "Server configuration has been updated successfully."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -406,21 +450,57 @@ export default function ServerPage() {
 
           <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
-                <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">General Settings</h2>
+                <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">Server Configuration</h2>
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Server Name</label>
-                    <input className="w-full bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 text-sm" defaultValue={server?.name} />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Startup Parameters</label>
-                    <textarea 
-                      className="w-full h-32 bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 font-code text-xs md:text-sm" 
-                      defaultValue={`# Config for ${server?.runtime || 'Generic Runtime'}\n# Plan: ${server?.plan}\n# Status: ${server?.status}`} 
+                    <Label htmlFor="s-name" className="text-sm font-medium">Server Name</Label>
+                    <Input 
+                      id="s-name"
+                      className="bg-secondary/50 border-none rounded-lg h-11 focus-visible:ring-primary/50 text-sm" 
+                      value={serverName}
+                      onChange={(e) => setServerName(e.target.value)}
                     />
                   </div>
+
+                  {server?.runtime === 'nodejs' && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label htmlFor="node-version" className="text-sm font-medium">Node.js Version</Label>
+                        <Select value={nodeVersion} onValueChange={setNodeVersion}>
+                          <SelectTrigger id="node-version" className="bg-secondary/50 border-none h-11">
+                            <SelectValue placeholder="Select Node.js version" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="18">Node.js 18.x (LTS)</SelectItem>
+                            <SelectItem value="20">Node.js 20.x (Current)</SelectItem>
+                            <SelectItem value="22">Node.js 22.x (Latest)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[10px] text-muted-foreground">The server will restart to apply the new version.</p>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="startup-cmd" className="text-sm font-medium">Startup Command</Label>
+                        <Input 
+                          id="startup-cmd"
+                          className="bg-secondary/50 border-none rounded-lg h-11 focus-visible:ring-primary/50 font-code text-sm" 
+                          value={startupCommand}
+                          onChange={(e) => setStartupCommand(e.target.value)}
+                          placeholder="e.g., node index.js or npm start"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    <Button className="bg-primary hover:bg-primary/90 text-white w-full sm:w-auto h-11 text-sm">Save Changes</Button>
+                    <Button 
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      className="bg-primary hover:bg-primary/90 text-white w-full sm:w-auto h-11 text-sm font-bold gap-2"
+                    >
+                      {isSavingSettings ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      Save Changes
+                    </Button>
                     <Button variant="ghost" className="w-full sm:w-auto h-11 text-sm">Revert to default</Button>
                   </div>
                 </div>

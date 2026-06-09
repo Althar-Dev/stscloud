@@ -291,7 +291,7 @@ export default function DevConsole() {
               <DialogTrigger asChild>
                 <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Agent</Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50">
+              <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50 rounded-lg">
                 <DialogHeader>
                   <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
                   <DialogDescription>
