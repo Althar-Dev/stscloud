@@ -16,10 +16,12 @@ import {
   RefreshCw,
   Plus,
   FileText,
-  FolderPlus
+  FolderPlus,
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +46,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { getServerFiles, createServerFile, createServerFolder, deleteServerPath } from "@/app/actions/server-files";
+import { 
+  getServerFiles, 
+  createServerFile, 
+  createServerFolder, 
+  deleteServerPath,
+  readFileContent,
+  updateFileContent
+} from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +72,12 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [createType, setCreateType] = React.useState<"file" | "folder">("file");
   const [newItemName, setNewItemName] = React.useState("");
   const [isCreating, setIsCreating] = React.useState(false);
+
+  // Editor Modal State
+  const [isEditorOpen, setIsEditorOpen] = React.useState(false);
+  const [editingFileName, setEditingFileName] = React.useState("");
+  const [editingContent, setEditingContent] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
@@ -125,6 +140,33 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     } else {
       toast({ variant: "destructive", title: "Delete Error", description: result.error });
     }
+  };
+
+  const handleEditFile = async (name: string) => {
+    if (!serverId) return;
+    setLoading(true);
+    const result = await readFileContent(serverId, name);
+    if (result.success) {
+      setEditingFileName(name);
+      setEditingContent(result.content || "");
+      setIsEditorOpen(true);
+    } else {
+      toast({ variant: "destructive", title: "Read Error", description: result.error });
+    }
+    setLoading(false);
+  };
+
+  const handleSaveFile = async () => {
+    if (!serverId || !editingFileName) return;
+    setIsSaving(true);
+    const result = await updateFileContent(serverId, editingFileName, editingContent);
+    if (result.success) {
+      toast({ title: "Saved", description: `${editingFileName} updated successfully.` });
+      setIsEditorOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Save Error", description: result.error });
+    }
+    setIsSaving(false);
   };
 
   const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -210,7 +252,12 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                         ) : (
                           <File className="size-4 text-muted-foreground flex-shrink-0" />
                         )}
-                        <span className="cursor-pointer hover:text-primary transition-colors truncate">{file.name}</span>
+                        <span 
+                          className="cursor-pointer hover:text-primary transition-colors truncate"
+                          onClick={() => file.type === "file" && handleEditFile(file.name)}
+                        >
+                          {file.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap hidden sm:table-cell">{file.size}</TableCell>
@@ -223,9 +270,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem className="gap-2">
-                            <Edit2 className="size-4" /> Edit
-                          </DropdownMenuItem>
+                          {file.type === "file" && (
+                            <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}>
+                              <Edit2 className="size-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem className="gap-2">
                             <Download className="size-4" /> Download
                           </DropdownMenuItem>
@@ -251,7 +300,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="capitalize">Create New {createType}</DialogTitle>
+            <DialogTitle className="capitalize font-headline">Create New {createType}</DialogTitle>
             <DialogDescription>
               Enter a name for your new {createType}.
             </DialogDescription>
@@ -281,6 +330,44 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editor Dialog */}
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card border-border/50">
+          <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+                  <FileText className="size-5 text-primary" />
+                  {editingFileName}
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  Editing file content in real-time.
+                </DialogDescription>
+              </div>
+              <Button 
+                onClick={handleSaveFile} 
+                className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2"
+                disabled={isSaving}
+              >
+                {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                Save Changes
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden p-0 bg-black/20">
+            <Textarea 
+              value={editingContent}
+              onChange={(e) => setEditingContent(e.target.value)}
+              className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300"
+              placeholder="// Write your code here..."
+            />
+          </div>
+          <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end">
+            <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close Editor</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

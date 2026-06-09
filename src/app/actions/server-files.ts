@@ -15,7 +15,7 @@ export async function getServerFiles(serverId: string) {
     try {
       await fs.access(serverPath);
     } catch {
-      return { success: false, error: 'Storage not found' };
+      await fs.mkdir(serverPath, { recursive: true });
     }
 
     const entries = await fs.readdir(serverPath, { withFileTypes: true });
@@ -69,6 +69,26 @@ export async function deleteServerPath(serverId: string, name: string) {
     } else {
       await fs.unlink(targetPath);
     }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function readFileContent(serverId: string, fileName: string) {
+  try {
+    const filePath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', fileName);
+    const content = await fs.readFile(filePath, 'utf8');
+    return { success: true, content };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateFileContent(serverId: string, fileName: string, content: string) {
+  try {
+    const filePath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', fileName);
+    await fs.writeFile(filePath, content, 'utf8');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
