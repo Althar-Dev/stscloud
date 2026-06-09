@@ -254,7 +254,7 @@ export default function UserDetailPage() {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <CardTitle className="font-headline font-bold">{targetUser.displayName || "Standard User"}</CardTitle}
+              <CardTitle className="font-headline font-bold">{targetUser.displayName || "Standard User"}</CardTitle>
               <CardDescription className="text-xs truncate">{targetUser.email}</CardDescription>
               <div className="pt-4 flex justify-center">
                 {targetUser.dev ? (
