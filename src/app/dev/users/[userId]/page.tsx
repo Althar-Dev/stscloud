@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -21,7 +22,10 @@ import {
   HardDrive,
   Zap,
   Plus,
-  Trash2
+  Trash2,
+  Globe,
+  Bot,
+  Code2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -72,6 +76,23 @@ const resourcePresets = [
   { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB" },
 ];
 
+const templates = [
+  { id: "website", name: "Website", icon: Globe },
+  { id: "bots", name: "Bots", icon: Bot },
+];
+
+const runtimesByTemplate: Record<string, { id: string; name: string }[]> = {
+  website: [
+    { id: "nodejs", name: "Node.js" },
+    { id: "python", name: "Python" },
+    { id: "php", name: "PHP" },
+  ],
+  bots: [
+    { id: "nodejs", name: "Node.js" },
+    { id: "python", name: "Python" },
+  ],
+};
+
 export default function UserDetailPage() {
   const { userId } = useParams();
   const router = useRouter();
@@ -89,6 +110,8 @@ export default function UserDetailPage() {
   // Provisioning State
   const [isProvisioning, setIsProvisioning] = React.useState(false);
   const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
+  const [provisionTemplate, setProvisionTemplate] = React.useState("website");
+  const [provisionRuntime, setProvisionRuntime] = React.useState("nodejs");
   const [provisionServerName, setProvisionServerName] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -197,6 +220,8 @@ export default function UserDetailPage() {
         name: provisionServerName,
         ownerId: targetUser.id,
         plan: plan?.name,
+        template: provisionTemplate,
+        runtime: provisionRuntime,
         status: "online",
         createdAt: serverTimestamp(),
         resources: {
@@ -226,6 +251,8 @@ export default function UserDetailPage() {
       toast({ variant: "destructive", title: "Delete Failed", description: error.message });
     }
   };
+
+  const availableRuntimes = runtimesByTemplate[provisionTemplate] || [];
 
   if (loading || authLoading) {
     return (
@@ -316,33 +343,80 @@ export default function UserDetailPage() {
                       <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50 rounded-lg">
+                  <DialogContent className="sm:max-w-[450px] w-[95vw] bg-card border-border/50 rounded-lg">
                     <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-xl">Deploy Server for User</DialogTitle>
+                      <DialogTitle className="font-headline font-bold text-xl">Admin: Deploy Server</DialogTitle>
                       <DialogDescription>
                         Directly provision a server instance for {targetUser.email}.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="server-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
+                        <Label htmlFor="server-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
                         <Input 
                           id="server-name" 
-                          placeholder="e.g., My Cloud Project" 
+                          placeholder="e.g., Cloud Instance" 
                           className="bg-secondary/30 border-none h-11"
                           value={provisionServerName}
                           onChange={(e) => setProvisionServerName(e.target.value)}
                         />
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Template</Label>
+                          <Select value={provisionTemplate} onValueChange={(val) => {
+                            setProvisionTemplate(val);
+                            // Auto reset runtime if not compatible
+                            if (val === 'bots' && provisionRuntime === 'php') {
+                              setProvisionRuntime('nodejs');
+                            }
+                          }}>
+                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                              <SelectValue placeholder="Template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {templates.map(t => (
+                                <SelectItem key={t.id} value={t.id}>
+                                  <div className="flex items-center gap-2 uppercase text-[10px] font-bold tracking-widest">
+                                    <t.icon className="size-3" /> {t.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Runtime</Label>
+                          <Select value={provisionRuntime} onValueChange={setProvisionRuntime}>
+                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                              <SelectValue placeholder="Runtime" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableRuntimes.map(r => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  <div className="flex items-center gap-2 uppercase text-[10px] font-bold tracking-widest">
+                                    <Code2 className="size-3" /> {r.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="plan" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
+                        <Label htmlFor="plan" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
                         <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
                           <SelectTrigger className="bg-secondary/30 border-none h-11">
                             <SelectValue placeholder="Select plan..." />
                           </SelectTrigger>
                           <SelectContent>
                             {resourcePresets.map(p => (
-                              <SelectItem key={p.id} value={p.id}>{p.name} ({p.ram})</SelectItem>
+                              <SelectItem key={p.id} value={p.id}>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">{p.name}</span>
+                                  <span className="text-[10px] opacity-50">({p.ram})</span>
+                                </div>
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -355,7 +429,7 @@ export default function UserDetailPage() {
                         disabled={isProvisioning}
                       >
                         {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
-                        Provision Server
+                        Finalize Provisioning
                       </Button>
                     </DialogFooter>
                   </DialogContent>
