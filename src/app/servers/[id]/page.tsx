@@ -39,7 +39,9 @@ import {
   Cpu,
   Database,
   HardDrive,
-  Save
+  Save,
+  Rocket,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,10 +80,12 @@ export default function ServerPage() {
   const [activeTab, setActiveTab] = React.useState("console");
   const [inviteEmail, setInviteEmail] = React.useState("");
 
-  // Settings states
+  // Settings & Startup states
   const [serverName, setServerName] = React.useState("");
   const [nodeVersion, setNodeVersion] = React.useState("");
   const [startupCommand, setStartupCommand] = React.useState("");
+  const [commandRun, setCommandRun] = React.useState("");
+  const [entryFile, setEntryFile] = React.useState("");
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
 
   React.useEffect(() => {
@@ -102,6 +106,8 @@ export default function ServerPage() {
         setServerName(data.name || "");
         setNodeVersion(data.nodeVersion || "20");
         setStartupCommand(data.startupCommand || "npm start");
+        setCommandRun(data.commandRun || "node");
+        setEntryFile(data.entryFile || "index.js");
       } else {
         toast({
           variant: "destructive",
@@ -160,11 +166,13 @@ export default function ServerPage() {
       await updateDoc(doc(db, "servers", id as string), {
         name: serverName,
         nodeVersion: nodeVersion,
-        startupCommand: startupCommand
+        startupCommand: startupCommand,
+        commandRun: commandRun,
+        entryFile: entryFile
       });
       toast({
-        title: "Settings saved",
-        description: "Server configuration has been updated successfully."
+        title: "Configuration Saved",
+        description: "Server settings and startup parameters updated."
       });
     } catch (error: any) {
       toast({
@@ -289,6 +297,9 @@ export default function ServerPage() {
                   <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
+                  <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                    <Rocket className="size-4" /> <span>StartUp</span>
+                  </TabsTrigger>
                   <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <UsersIcon className="size-4" /> <span>Access</span>
                   </TabsTrigger>
@@ -338,6 +349,75 @@ export default function ServerPage() {
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <FileExplorer serverId={id as string} />
+          </TabsContent>
+
+          <TabsContent value="startup" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
+              <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Rocket className="size-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-headline font-bold">StartUp Configuration</h2>
+                  <p className="text-xs text-muted-foreground">Manage how your application boots and runs.</p>
+                </div>
+              </div>
+              <CardContent className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">StartUp Command</Label>
+                    <Input 
+                      className="bg-secondary/50 border-none font-code text-sm h-11"
+                      value={startupCommand}
+                      onChange={(e) => setStartupCommand(e.target.value)}
+                      placeholder="e.g. npm start"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NodeJs Version</Label>
+                    <Select value={nodeVersion} onValueChange={setNodeVersion}>
+                      <SelectTrigger className="bg-secondary/50 border-none h-11">
+                        <SelectValue placeholder="Select version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="18">Node.js 18 (LTS)</SelectItem>
+                        <SelectItem value="20">Node.js 20 (Stable)</SelectItem>
+                        <SelectItem value="22">Node.js 22 (Current)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Command Run</Label>
+                    <Input 
+                      className="bg-secondary/50 border-none font-code text-sm h-11"
+                      value={commandRun}
+                      onChange={(e) => setCommandRun(e.target.value)}
+                      placeholder="e.g. node, npm, yarn"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Js File</Label>
+                    <Input 
+                      className="bg-secondary/50 border-none font-code text-sm h-11"
+                      value={entryFile}
+                      onChange={(e) => setEntryFile(e.target.value)}
+                      placeholder="e.g. index.js"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-border/50">
+                  <Button 
+                    onClick={handleSaveSettings}
+                    disabled={isSavingSettings}
+                    className="w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20"
+                  >
+                    {isSavingSettings ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                    Save Startup Configuration
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
           </TabsContent>
 
           <TabsContent value="access" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
@@ -450,7 +530,7 @@ export default function ServerPage() {
 
           <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
-                <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">Server Configuration</h2>
+                <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">General Settings</h2>
                 <div className="space-y-6">
                   <div className="grid gap-2">
                     <Label htmlFor="s-name" className="text-sm font-medium">Server Name</Label>
@@ -461,36 +541,6 @@ export default function ServerPage() {
                       onChange={(e) => setServerName(e.target.value)}
                     />
                   </div>
-
-                  {server?.runtime === 'nodejs' && (
-                    <>
-                      <div className="grid gap-2">
-                        <Label htmlFor="node-version" className="text-sm font-medium">Node.js Version</Label>
-                        <Select value={nodeVersion} onValueChange={setNodeVersion}>
-                          <SelectTrigger id="node-version" className="bg-secondary/50 border-none h-11">
-                            <SelectValue placeholder="Select Node.js version" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="18">Node.js 18.x (LTS)</SelectItem>
-                            <SelectItem value="20">Node.js 20.x (Current)</SelectItem>
-                            <SelectItem value="22">Node.js 22.x (Latest)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-[10px] text-muted-foreground">The server will restart to apply the new version.</p>
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label htmlFor="startup-cmd" className="text-sm font-medium">Startup Command</Label>
-                        <Input 
-                          id="startup-cmd"
-                          className="bg-secondary/50 border-none rounded-lg h-11 focus-visible:ring-primary/50 font-code text-sm" 
-                          value={startupCommand}
-                          onChange={(e) => setStartupCommand(e.target.value)}
-                          placeholder="e.g., node index.js or npm start"
-                        />
-                      </div>
-                    </>
-                  )}
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button 

@@ -27,6 +27,8 @@
         "runtime": { "type": "string" },
         "nodeVersion": { "type": "string", "description": "Selected Node.js version for the server." },
         "startupCommand": { "type": "string", "description": "Custom command to start the application." },
+        "commandRun": { "type": "string", "description": "The command runner (e.g., node, npm, yarn)." },
+        "entryFile": { "type": "string", "description": "The entry point JS file." },
         "resources": {
           "type": "object",
           "properties": {
