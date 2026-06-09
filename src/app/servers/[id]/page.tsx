@@ -35,7 +35,11 @@ import {
   History,
   CheckCircle2,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  Cpu,
+  Database,
+  HardDrive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +51,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ServerPage() {
@@ -57,32 +61,70 @@ export default function ServerPage() {
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
-  const [profile, setProfile] = React.useState<any>(null);
   
-  const [status, setStatus] = React.useState<"online" | "offline" | "starting">("online");
+  const [profile, setProfile] = React.useState<any>(null);
+  const [server, setServer] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState("console");
   const [inviteEmail, setInviteEmail] = React.useState("");
 
   React.useEffect(() => {
-    if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+    if (!user?.uid || !id) return;
+
+    // User Profile Listener
+    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
     });
-    return () => unsub();
-  }, [user, db]);
 
-  const handlePower = (action: "start" | "stop" | "restart") => {
-    if (action === "start") {
-      setStatus("starting");
-      setTimeout(() => setStatus("online"), 2000);
-    } else if (action === "stop") {
-      setStatus("offline");
-    } else {
-      setStatus("offline");
-      setTimeout(() => setStatus("starting"), 500);
-      setTimeout(() => setStatus("online"), 2500);
+    // Specific Server Listener
+    const unsubServer = onSnapshot(doc(db, "servers", id as string), (doc) => {
+      if (doc.exists()) {
+        setServer({ id: doc.id, ...doc.data() });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Server not found",
+          description: "This instance may have been decommissioned."
+        });
+        router.push("/dashboard");
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      unsubProfile();
+      unsubServer();
+    };
+  }, [user, id, db, router, toast]);
+
+  const handlePower = async (action: "start" | "stop" | "restart") => {
+    if (!id || !db) return;
+    
+    let newStatus = server?.status;
+    if (action === "start") newStatus = "starting";
+    if (action === "stop") newStatus = "offline";
+    if (action === "restart") newStatus = "starting";
+
+    try {
+      await updateDoc(doc(db, "servers", id as string), {
+        status: newStatus
+      });
+
+      if (action === "start" || action === "restart") {
+        setTimeout(async () => {
+          await updateDoc(doc(db, "servers", id as string), {
+            status: "online"
+          });
+        }, 2000);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "System Error",
+        description: "Failed to communicate with agent node."
+      });
     }
   };
 
@@ -101,6 +143,14 @@ export default function ServerPage() {
     });
     setInviteEmail("");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
@@ -127,7 +177,9 @@ export default function ServerPage() {
               <ArrowLeft className="size-4" />
             </button>
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">Main Survival</h1>
+              <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[120px] xs:max-w-[150px] md:max-w-none">
+                {server?.name || "Instance Management"}
+              </h1>
             </div>
           </div>
         </div>
@@ -208,14 +260,16 @@ export default function ServerPage() {
                   <Globe className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
                     <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground leading-none mb-1">Address</span>
-                    <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">play.stscloud.net:25565</span>
+                    <span className="text-[10px] md:text-xs font-code text-primary font-medium truncate">
+                      {server?.id}.stscloud.net
+                    </span>
                   </div>
                 </div>
                 <div className="flex flex-1 md:flex-none items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all">
                   <Clock className="size-3.5 text-primary shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground leading-none mb-1">Uptime</span>
-                    <span className="text-[10px] md:text-xs font-bold font-headline truncate">2d 14h 32m</span>
+                    <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground leading-none mb-1">Status</span>
+                    <span className="text-[10px] md:text-xs font-bold font-headline uppercase tracking-widest">{server?.status}</span>
                   </div>
                 </div>
               </div>
@@ -224,7 +278,7 @@ export default function ServerPage() {
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
             <div className="w-full h-[500px] md:h-[600px] lg:h-[650px]">
-              <TerminalConsole externalStatus={status} onPowerAction={handlePower} />
+              <TerminalConsole externalStatus={server?.status} onPowerAction={handlePower} />
             </div>
 
             <div className="space-y-4">
@@ -328,31 +382,17 @@ export default function ServerPage() {
                 <div className="divide-y divide-border/50">
                   <ActivityItem 
                     icon={CheckCircle2} 
-                    action="Server Started" 
+                    action="Provisioning Cycle" 
                     user="System" 
-                    time="2 hours ago" 
+                    time={server?.createdAt?.toDate ? server.createdAt.toDate().toLocaleDateString() : "Just now"} 
                     type="success" 
                   />
                   <ActivityItem 
                     icon={Info} 
-                    action="File Uploaded: server.properties" 
-                    user={displayName} 
-                    time="5 hours ago" 
-                    type="info" 
-                  />
-                  <ActivityItem 
-                    icon={UserPlus} 
-                    action="Access Granted: support@stscloud.net" 
-                    user={displayName} 
-                    time="1 day ago" 
-                    type="info" 
-                  />
-                  <ActivityItem 
-                    icon={AlertTriangle} 
-                    action="Server Restarted (Force)" 
+                    action="Resource Map Updated" 
                     user="System" 
-                    time="2 days ago" 
-                    type="warning" 
+                    time="Recently" 
+                    type="info" 
                   />
                 </div>
               </CardContent>
@@ -365,11 +405,14 @@ export default function ServerPage() {
                 <div className="space-y-6">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Server Name</label>
-                    <input className="w-full bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 text-sm" defaultValue="Main Survival" />
+                    <input className="w-full bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 text-sm" defaultValue={server?.name} />
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Startup Script</label>
-                    <textarea className="w-full h-32 bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 font-code text-xs md:text-sm" defaultValue="java -Xms4G -Xmx8G -jar spigot.jar nogui" />
+                    <label className="text-sm font-medium">Startup Parameters</label>
+                    <textarea 
+                      className="w-full h-32 bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 font-code text-xs md:text-sm" 
+                      defaultValue={`# Config for ${server?.runtime}\n# Plan: ${server?.plan}\n# Status: ${server?.status}`} 
+                    />
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button className="bg-primary hover:bg-primary/90 text-white w-full sm:w-auto h-11 text-sm">Save Changes</Button>

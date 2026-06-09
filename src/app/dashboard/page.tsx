@@ -25,7 +25,8 @@ import {
   LogOut,
   Cpu,
   Database,
-  HardDrive
+  HardDrive,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,28 +35,44 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-
-const recentServers = [
-  { id: "s-1", name: "Official Website", type: "Website", plan: "Elite", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
-  { id: "s-2", name: "Support Bot", type: "Bot", plan: "Core", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
-];
+import { doc, onSnapshot, collection, query, where, limit } from "firebase/firestore";
 
 export default function Dashboard() {
-  const { user } = useUser();
+  const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const [profile, setProfile] = React.useState<any>(null);
+  const [servers, setServers] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+    
+    // User Profile Listener
+    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
     });
-    return () => unsub();
+
+    // Recent Servers Listener
+    const serversQuery = query(
+      collection(db, "servers"),
+      where("ownerId", "==", user.uid),
+      limit(6)
+    );
+    
+    const unsubServers = onSnapshot(serversQuery, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setServers(list);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubProfile();
+      unsubServers();
+    };
   }, [user, db]);
 
   const handleSignOut = async () => {
@@ -65,6 +82,17 @@ export default function Dashboard() {
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
+
+  const totalServers = servers.length;
+  const activeServers = servers.filter(s => s.status === "online").length;
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background min-h-screen">
@@ -128,11 +156,11 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
           <div className="space-y-1">
             <h2 className="text-xl md:text-2xl font-headline font-bold">System Overview</h2>
-            <p className="text-xs md:text-sm text-muted-foreground">All nodes performing within optimal parameters.</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Welcome back, {displayName}. Your dashboard is ready.</p>
           </div>
           <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
             <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
-              <Activity className="size-3 mr-2 animate-pulse" /> Global Health: Optimal
+              <Activity className="size-3 mr-2 animate-pulse" /> Status: {totalServers > 0 ? 'Online' : 'No Active Servers'}
             </Badge>
             <Link href="/deploy">
               <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
@@ -143,18 +171,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
+        <section className="grid grid-cols-2 gap-3 md:gap-6">
           <Card className="bg-primary/10 border-primary/20 overflow-hidden relative group">
             <CardContent className="p-3 md:p-6 relative">
               <div className="flex items-center justify-between">
                 <div className="size-8 md:size-10 rounded-xl bg-primary flex items-center justify-center">
                   <Zap className="size-4 md:size-6 text-white" />
                 </div>
-                <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/30 text-primary bg-primary/5">2 Online</Badge>
+                <Badge variant="outline" className="text-[8px] md:text-[10px] border-primary/30 text-primary bg-primary/5">{activeServers} Online</Badge>
               </div>
               <div className="mt-3 md:mt-4">
-                <div className="text-lg md:text-2xl font-bold font-headline">3 Active</div>
-                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Servers</div>
+                <div className="text-lg md:text-2xl font-bold font-headline">{totalServers} Total</div>
+                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Deployed Servers</div>
               </div>
             </CardContent>
           </Card>
@@ -168,7 +196,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-3 md:mt-4">
                 <div className="text-lg md:text-2xl font-bold font-headline">99.9%</div>
-                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Uptime</div>
+                <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Network Stability</div>
               </div>
             </CardContent>
           </Card>
@@ -176,13 +204,13 @@ export default function Dashboard() {
 
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg md:text-xl font-headline font-bold">Active Servers</h2>
+            <h2 className="text-lg md:text-xl font-headline font-bold">Recent Projects</h2>
             <Link href="/servers">
-               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all servers</Button>
+               <Button variant="link" size="sm" className="text-xs md:text-sm p-0 h-auto text-primary">View all projects</Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentServers.map((server) => (
+            {servers.map((server) => (
               <Link key={server.id} href={`/servers/${server.id}`}>
                 <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                   <div className="p-4 md:p-5 pb-3">
@@ -201,7 +229,7 @@ export default function Dashboard() {
                       </Badge>
                     </div>
                     <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
-                      STS {server.plan}
+                      {server.plan} Plan
                     </p>
                   </div>
                   <div className="px-4 md:px-5 pb-4 md:pb-5">
@@ -209,15 +237,15 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 text-[10px] md:text-xs text-muted-foreground font-medium">
                         <div className="flex items-center gap-1">
                           <Cpu className="size-3 text-primary" />
-                          <span>{server.cpu}</span>
+                          <span>{server.resources?.cpu || '0%'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Database className="size-3 text-primary" />
-                          <span>{server.ram}</span>
+                          <span>{server.resources?.ram || '0GB'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <HardDrive className="size-3 text-primary" />
-                          <span>{server.disk}</span>
+                          <span>{server.resources?.disk || '0GB'}</span>
                         </div>
                       </div>
                       <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
@@ -233,7 +261,7 @@ export default function Dashboard() {
                 <div className="size-8 md:size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-2 md:mb-3 transition-colors">
                   <Plus className="size-5 md:size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <p className="text-xs md:text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Deploy New Server</p>
+                <p className="text-xs md:text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Provision New Instance</p>
               </Card>
             </Link>
           </div>

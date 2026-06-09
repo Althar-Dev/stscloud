@@ -29,7 +29,8 @@ import {
   Cpu,
   Database,
   HardDrive,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -38,32 +39,44 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-
-const allServers = [
-  { id: "s-1", name: "Main Survival", type: "Game Server", plan: "Plus", cpu: "45%", ram: "4GB", disk: "12GB", status: "online" },
-  { id: "s-2", name: "Official Website", type: "Web Hosting", plan: "Elite", cpu: "12%", ram: "1.2GB", disk: "2.1GB", status: "online" },
-  { id: "s-3", name: "Support Bot", type: "Bot Hosting", plan: "Core", cpu: "5%", ram: "450MB", disk: "1.1GB", status: "online" },
-  { id: "s-4", name: "Development Lab", type: "Virtual Machine", plan: "Zero", cpu: "0%", ram: "0GB", disk: "10GB", status: "offline" },
-  { id: "s-5", name: "Database Primary", type: "Database", plan: "Pro", cpu: "23%", ram: "2.5GB", disk: "45GB", status: "online" },
-];
+import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
 
 export default function ServersPage() {
-  const { user } = useUser();
+  const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const [profile, setProfile] = React.useState<any>(null);
+  const [servers, setServers] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+    
+    // Profile Listener
+    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
     });
-    return () => unsub();
+
+    // All Servers Listener
+    const serversQuery = query(
+      collection(db, "servers"),
+      where("ownerId", "==", user.uid)
+    );
+
+    const unsubServers = onSnapshot(serversQuery, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setServers(list);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubProfile();
+      unsubServers();
+    };
   }, [user, db]);
 
   const handleSignOut = async () => {
@@ -74,10 +87,18 @@ export default function ServersPage() {
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
 
-  const filteredServers = allServers.filter(server => 
+  const filteredServers = servers.filter(server => 
     server.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    server.type.toLowerCase().includes(searchQuery.toLowerCase())
+    (server.plan && server.plan.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background min-h-screen">
@@ -148,21 +169,21 @@ export default function ServersPage() {
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
           <div className="space-y-1">
-            <h2 className="text-2xl md:text-3xl font-headline font-bold">All Servers</h2>
-            <p className="text-xs md:text-sm text-muted-foreground">Manage and monitor all your deployed infrastructure.</p>
+            <h2 className="text-2xl md:text-3xl font-headline font-bold">Project Library</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">Manage and scale all your infrastructure assets from one place.</p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input 
-                placeholder="Search servers..." 
+                placeholder="Filter by name or plan..." 
                 className="pl-10 bg-secondary/30 border-none h-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Link href="/deploy">
-              <Button className="bg-primary hover:bg-primary/90 text-white h-10 px-4 gap-2 font-bold">
+              <Button className="bg-primary hover:bg-primary/90 text-white h-10 px-4 gap-2 font-bold shadow-lg shadow-primary/20">
                 <Plus className="size-4" />
                 <span className="hidden xs:inline">Deploy New</span>
               </Button>
@@ -184,7 +205,7 @@ export default function ServersPage() {
                         <div className="min-w-0">
                           <h3 className="font-headline font-bold text-base truncate">{server.name}</h3>
                           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
-                            STS {server.plan}
+                            {server.plan} Instance
                           </p>
                         </div>
                       </div>
@@ -205,22 +226,22 @@ export default function ServersPage() {
                     <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground font-medium">
                       <div className="flex items-center gap-1">
                         <Cpu className="size-3 text-primary" />
-                        <span>{server.cpu} CPU</span>
+                        <span>{server.resources?.cpu || '0%'} CPU</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Database className="size-3 text-primary" />
-                        <span>{server.ram} RAM</span>
+                        <span>{server.resources?.ram || '0GB'} RAM</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <HardDrive className="size-3 text-primary" />
-                        <span>{server.disk} DISK</span>
+                        <span>{server.resources?.disk || '0GB'} DISK</span>
                       </div>
                     </div>
                   </div>
                   <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Activity className="size-3.5 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Node</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Instance</span>
                     </div>
                     <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
                       <ChevronRight className="size-4" />
@@ -235,11 +256,11 @@ export default function ServersPage() {
                 <Search className="size-8 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-headline font-bold text-xl">No servers found</h3>
-                <p className="text-sm text-muted-foreground">Try adjusting your search or deploy a new node.</p>
+                <h3 className="font-headline font-bold text-xl">No infrastructure found</h3>
+                <p className="text-sm text-muted-foreground">Adjust your search or start a new deployment cycle.</p>
               </div>
               <Link href="/deploy">
-                <Button variant="outline" className="mt-4">Deploy First Server</Button>
+                <Button variant="outline" className="mt-4">Deploy First Instance</Button>
               </Link>
             </div>
           )}
