@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -56,6 +55,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function DevConsole() {
   const router = useRouter();
@@ -87,18 +88,27 @@ export default function DevConsole() {
       return;
     }
 
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        setProfile(data);
-        if (data.dev !== true) {
+    const unsub = onSnapshot(
+      doc(db, "users", user.uid), 
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          setProfile(data);
+          if (data.dev !== true) {
+            router.replace("/dashboard");
+          }
+        } else {
           router.replace("/dashboard");
         }
-      } else {
-        router.replace("/dashboard");
+        setProfileLoading(false);
+      },
+      async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `users/${user.uid}`,
+          operation: 'get'
+        }));
       }
-      setProfileLoading(false);
-    });
+    );
     
     return () => unsub();
   }, [user, authLoading, db, router]);
@@ -108,19 +118,49 @@ export default function DevConsole() {
     if (!profile || profile.dev !== true) return;
     
     // Users Listener
-    const unsubUsers = onSnapshot(query(collection(db, "users"), limit(100)), (snapshot) => {
-      setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    const usersRef = collection(db, "users");
+    const unsubUsers = onSnapshot(
+      query(usersRef, limit(100)), 
+      (snapshot) => {
+        setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: usersRef.path,
+          operation: 'list'
+        }));
+      }
+    );
 
     // Agents Listener
-    const unsubAgents = onSnapshot(collection(db, "infrastructure_agents"), (snapshot) => {
-      setAgentsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    const agentsRef = collection(db, "infrastructure_agents");
+    const unsubAgents = onSnapshot(
+      agentsRef, 
+      (snapshot) => {
+        setAgentsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: agentsRef.path,
+          operation: 'list'
+        }));
+      }
+    );
 
     // Transactions Listener
-    const unsubTransactions = onSnapshot(query(collection(db, "transactions"), orderBy("createdAt", "desc"), limit(50)), (snapshot) => {
-      setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    const txRef = collection(db, "transactions");
+    const unsubTransactions = onSnapshot(
+      query(txRef, orderBy("createdAt", "desc"), limit(50)), 
+      (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: txRef.path,
+          operation: 'list'
+        }));
+      }
+    );
 
     return () => {
       unsubUsers();
@@ -136,25 +176,33 @@ export default function DevConsole() {
     }
 
     setIsAddingAgent(true);
-    try {
-      const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
-      await setDoc(doc(db, "infrastructure_agents", agentId), {
-        regionName,
-        agentUrl,
-        status: "online",
-        createdAt: serverTimestamp(),
-        load: Math.floor(Math.random() * 20) + 5 // Initial random load
-      });
+    const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
+    const agentRef = doc(db, "infrastructure_agents", agentId);
+    const agentData = {
+      regionName,
+      agentUrl,
+      status: "online",
+      createdAt: serverTimestamp(),
+      load: Math.floor(Math.random() * 20) + 5
+    };
 
-      toast({ title: "Agent Registered", description: `New agent cluster at ${regionName} is now active.` });
-      setIsDialogOpen(false);
-      setRegionName("");
-      setAgentUrl("");
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Registration Failed", description: error.message });
-    } finally {
-      setIsAddingAgent(false);
-    }
+    setDoc(agentRef, agentData)
+      .then(() => {
+        toast({ title: "Agent Registered", description: `New agent cluster at ${regionName} is now active.` });
+        setIsDialogOpen(false);
+        setRegionName("");
+        setAgentUrl("");
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: agentRef.path,
+          operation: 'create',
+          requestResourceData: agentData
+        }));
+      })
+      .finally(() => {
+        setIsAddingAgent(false);
+      });
   };
 
   const handleSignOut = async () => {
