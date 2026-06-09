@@ -13,7 +13,10 @@ import {
   Trash2,
   Edit2,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  FileText,
+  FolderPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Table,
@@ -31,8 +35,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getServerFiles } from "@/app/actions/server-files";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { getServerFiles, createServerFile, createServerFolder, deleteServerPath } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface FileExplorerProps {
   serverId?: string;
@@ -41,7 +55,14 @@ interface FileExplorerProps {
 export function FileExplorer({ serverId }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const { toast } = useToast();
+
+  // Create Modal State
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [createType, setCreateType] = React.useState<"file" | "folder">("file");
+  const [newItemName, setNewItemName] = React.useState("");
+  const [isCreating, setIsCreating] = React.useState(false);
 
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
@@ -63,6 +84,51 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     fetchFiles();
   }, [fetchFiles]);
 
+  const handleCreateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!serverId || !newItemName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      const result = createType === "file" 
+        ? await createServerFile(serverId, newItemName)
+        : await createServerFolder(serverId, newItemName);
+
+      if (result.success) {
+        toast({
+          title: "Created",
+          description: `Successfully created ${createType}: ${newItemName}`,
+        });
+        setIsCreateOpen(false);
+        setNewItemName("");
+        fetchFiles();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Creation Failed",
+        description: error.message
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDelete = async (name: string) => {
+    if (!serverId) return;
+    const result = await deleteServerPath(serverId, name);
+    if (result.success) {
+      toast({ title: "Deleted", description: `${name} has been removed.` });
+      fetchFiles();
+    } else {
+      toast({ variant: "destructive", title: "Delete Error", description: result.error });
+    }
+  };
+
+  const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -81,16 +147,31 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
               type="search"
               placeholder="Search files..."
               className="h-9 pl-8 bg-secondary/30 border-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button size="sm" variant="outline" className="h-9 gap-2">
             <Upload className="size-4" />
             <span className="hidden xs:inline">Upload</span>
           </Button>
-          <Button size="sm" className="h-9 gap-2">
-            <PlusCircle className="size-4" />
-            <span className="hidden xs:inline">Create</span>
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="h-9 gap-2 bg-primary hover:bg-primary/90 text-white font-bold">
+                <Plus className="size-4" />
+                <span>New</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="gap-2" onClick={() => { setCreateType("file"); setIsCreateOpen(true); }}>
+                <FileText className="size-4" /> New File
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={() => { setCreateType("folder"); setIsCreateOpen(true); }}>
+                <FolderPlus className="size-4" /> New Folder
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -113,14 +194,14 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                     <p className="text-xs text-muted-foreground mt-2">Accessing storage...</p>
                   </TableCell>
                 </TableRow>
-              ) : files.length === 0 ? (
+              ) : filteredFiles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-20 opacity-50">
-                    <p className="text-sm">No files found in this server.</p>
+                    <p className="text-sm">No items found in this directory.</p>
                   </TableCell>
                 </TableRow>
               ) : (
-                files.map((file) => (
+                filteredFiles.map((file) => (
                   <TableRow key={file.name} className="group hover:bg-secondary/10">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -148,7 +229,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                           <DropdownMenuItem className="gap-2">
                             <Download className="size-4" /> Download
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="gap-2 text-destructive focus:text-destructive"
+                            onClick={() => handleDelete(file.name)}
+                          >
                             <Trash2 className="size-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -161,6 +246,43 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           </Table>
         </div>
       </div>
+
+      {/* Creation Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="capitalize">Create New {createType}</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new {createType}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateItem}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Name</Label>
+                <Input
+                  id="name"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder={createType === "file" ? "index.js" : "my-folder"}
+                  className="bg-secondary/30 border-none h-11"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                className="w-full bg-primary text-white font-bold h-11"
+                disabled={isCreating || !newItemName.trim()}
+              >
+                {isCreating ? <Loader2 className="size-4 animate-spin mr-2" /> : <PlusCircle className="size-4 mr-2" />}
+                Create {createType}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

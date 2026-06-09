@@ -39,6 +39,42 @@ export async function getServerFiles(serverId: string) {
   }
 }
 
+export async function createServerFile(serverId: string, fileName: string) {
+  try {
+    const filePath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', fileName);
+    await fs.writeFile(filePath, '');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createServerFolder(serverId: string, folderName: string) {
+  try {
+    const folderPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', folderName);
+    await fs.mkdir(folderPath, { recursive: true });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteServerPath(serverId: string, name: string) {
+  try {
+    const targetPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', name);
+    const stats = await fs.stat(targetPath);
+    
+    if (stats.isDirectory()) {
+      await fs.rm(targetPath, { recursive: true, force: true });
+    } else {
+      await fs.unlink(targetPath);
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getServerLogs(serverId: string) {
   try {
     const logPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'logs', 'example.txt');
