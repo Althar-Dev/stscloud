@@ -212,6 +212,8 @@ export default function ServerPage() {
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
 
+  const isNodeJS = server?.runtime === "nodejs";
+
   return (
     <div className="bg-background min-h-screen">
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
@@ -297,9 +299,11 @@ export default function ServerPage() {
                   <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <FolderOpen className="size-4" /> <span>Files</span>
                   </TabsTrigger>
-                  <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
-                    <Rocket className="size-4" /> <span>StartUp</span>
-                  </TabsTrigger>
+                  {isNodeJS && (
+                    <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
+                      <Rocket className="size-4" /> <span>StartUp</span>
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm">
                     <UsersIcon className="size-4" /> <span>Access</span>
                   </TabsTrigger>
@@ -351,74 +355,76 @@ export default function ServerPage() {
             <FileExplorer serverId={id as string} />
           </TabsContent>
 
-          <TabsContent value="startup" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <Rocket className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-headline font-bold">StartUp Configuration</h2>
-                  <p className="text-xs text-muted-foreground">Manage how your application boots and runs.</p>
-                </div>
-              </div>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">StartUp Command</Label>
-                    <Input 
-                      className="bg-secondary/50 border-none font-code text-sm h-11"
-                      value={startupCommand}
-                      onChange={(e) => setStartupCommand(e.target.value)}
-                      placeholder="e.g. npm start"
-                    />
+          {isNodeJS && (
+            <TabsContent value="startup" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
+                <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Rocket className="size-5" />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NodeJs Version</Label>
-                    <Select value={nodeVersion} onValueChange={setNodeVersion}>
-                      <SelectTrigger className="bg-secondary/50 border-none h-11">
-                        <SelectValue placeholder="Select version" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="18">Node.js 18 (LTS)</SelectItem>
-                        <SelectItem value="20">Node.js 20 (Stable)</SelectItem>
-                        <SelectItem value="22">Node.js 22 (Current)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Command Run</Label>
-                    <Input 
-                      className="bg-secondary/50 border-none font-code text-sm h-11"
-                      value={commandRun}
-                      onChange={(e) => setCommandRun(e.target.value)}
-                      placeholder="e.g. node, npm, yarn"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Js File</Label>
-                    <Input 
-                      className="bg-secondary/50 border-none font-code text-sm h-11"
-                      value={entryFile}
-                      onChange={(e) => setEntryFile(e.target.value)}
-                      placeholder="e.g. index.js"
-                    />
+                  <div>
+                    <h2 className="text-xl font-headline font-bold">StartUp Configuration</h2>
+                    <p className="text-xs text-muted-foreground">Manage how your NodeJS application boots and runs.</p>
                   </div>
                 </div>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">StartUp Command</Label>
+                      <Input 
+                        className="bg-secondary/50 border-none font-code text-sm h-11"
+                        value={startupCommand}
+                        onChange={(e) => setStartupCommand(e.target.value)}
+                        placeholder="e.g. npm start"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NodeJs Version</Label>
+                      <Select value={nodeVersion} onValueChange={setNodeVersion}>
+                        <SelectTrigger className="bg-secondary/50 border-none h-11">
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="18">Node.js 18 (LTS)</SelectItem>
+                          <SelectItem value="20">Node.js 20 (Stable)</SelectItem>
+                          <SelectItem value="22">Node.js 22 (Current)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Command Run</Label>
+                      <Input 
+                        className="bg-secondary/50 border-none font-code text-sm h-11"
+                        value={commandRun}
+                        onChange={(e) => setCommandRun(e.target.value)}
+                        placeholder="e.g. node, npm, yarn"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Js File</Label>
+                      <Input 
+                        className="bg-secondary/50 border-none font-code text-sm h-11"
+                        value={entryFile}
+                        onChange={(e) => setEntryFile(e.target.value)}
+                        placeholder="e.g. index.js"
+                      />
+                    </div>
+                  </div>
 
-                <div className="pt-6 border-t border-border/50">
-                  <Button 
-                    onClick={handleSaveSettings}
-                    disabled={isSavingSettings}
-                    className="w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20"
-                  >
-                    {isSavingSettings ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                    Save Startup Configuration
-                  </Button>
-                </div>
-              </CardContent>
-            </div>
-          </TabsContent>
+                  <div className="pt-6 border-t border-border/50">
+                    <Button 
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      className="w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-lg shadow-primary/20"
+                    >
+                      {isSavingSettings ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      Save Startup Configuration
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="access" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
