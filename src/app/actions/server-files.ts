@@ -141,3 +141,24 @@ export async function getServerDiskUsage(serverId: string) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Deletes the entire server directory from the storage.
+ */
+export async function decommissionServerFiles(serverId: string) {
+  try {
+    const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+    
+    try {
+      await fs.access(serverDir);
+      await fs.rm(serverDir, { recursive: true, force: true });
+    } catch {
+      // Directory doesn't exist, ignore
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Decommission Error:', error);
+    return { success: false, error: error.message };
+  }
+}

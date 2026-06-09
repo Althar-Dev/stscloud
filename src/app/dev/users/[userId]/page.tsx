@@ -20,7 +20,8 @@ import {
   Database,
   HardDrive,
   Zap,
-  Plus
+  Plus,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -43,11 +44,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUser, useFirestore } from "@/firebase";
-import { doc, onSnapshot, updateDoc, collection, query, where, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, collection, query, where, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
+import { decommissionServerFiles } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -200,6 +213,17 @@ export default function UserDetailPage() {
       toast({ variant: "destructive", title: "Provisioning Failed", description: error.message });
     } finally {
       setIsProvisioning(false);
+    }
+  };
+
+  const handleAdminDeleteServer = async (serverId: string) => {
+    try {
+      const cleanup = await decommissionServerFiles(serverId);
+      if (!cleanup.success) throw new Error(cleanup.error);
+      await deleteDoc(doc(db, "servers", serverId));
+      toast({ title: "Success", description: "Server removed permanently." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Delete Failed", description: error.message });
     }
   };
 
@@ -372,34 +396,66 @@ export default function UserDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {userServers.length > 0 ? (
                     userServers.map(server => (
-                      <Link key={server.id} href={`/servers/${server.id}`}>
-                        <Card className="group border-border/50 bg-card hover:bg-secondary/30 hover:border-primary/30 transition-all duration-300 overflow-hidden">
-                          <CardContent className="p-5 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-xl bg-secondary flex items-center justify-center">
-                                  <ServerIcon className="size-5 text-primary" />
+                      <div key={server.id} className="relative group">
+                        <Link href={`/servers/${server.id}`}>
+                          <Card className="border-border/50 bg-card hover:bg-secondary/30 hover:border-primary/30 transition-all duration-300 overflow-hidden h-full">
+                            <CardContent className="p-5 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="size-10 rounded-xl bg-secondary flex items-center justify-center">
+                                    <ServerIcon className="size-5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-bold truncate pr-12">{server.name}</h4>
+                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">STS {server.plan}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <h4 className="text-sm font-bold truncate pr-4">{server.name}</h4>
-                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">STS {server.plan}</p>
-                                </div>
+                                <Badge variant="outline" className={cn(
+                                  "text-[9px] uppercase",
+                                  server.status === "online" ? "text-green-500 border-green-500/20" : "text-red-500 border-red-500/20"
+                                )}>
+                                  {server.status}
+                                </Badge>
                               </div>
-                              <Badge variant="outline" className={cn(
-                                "text-[9px] uppercase",
-                                server.status === "online" ? "text-green-500 border-green-500/20" : "text-red-500 border-red-500/20"
-                              )}>
-                                {server.status}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-3">
-                               <div className="flex items-center gap-1"><Cpu className="size-3 text-primary" /> {server.resources?.cpu || "--"}</div>
-                               <div className="flex items-center gap-1"><Database className="size-3 text-primary" /> {server.resources?.ram || "--"}</div>
-                               <div className="flex items-center gap-1"><HardDrive className="size-3 text-primary" /> {server.resources?.disk || "--"}</div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-3">
+                                <div className="flex items-center gap-1"><Cpu className="size-3 text-primary" /> {server.resources?.cpu || "--"}</div>
+                                <div className="flex items-center gap-1"><Database className="size-3 text-primary" /> {server.resources?.ram || "--"}</div>
+                                <div className="flex items-center gap-1"><HardDrive className="size-3 text-primary" /> {server.resources?.disk || "--"}</div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="absolute top-4 right-4 size-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="w-[95vw] max-w-lg rounded-lg">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Admin: Delete Server?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to permanently decommission <strong>{server.name}</strong>? All storage data will be wiped.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleAdminDeleteServer(server.id)}
+                                className="bg-destructive text-white"
+                              >
+                                Delete Permanently
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     ))
                   ) : (
                     <div className="col-span-full py-12 text-center bg-secondary/10 rounded-2xl border border-dashed border-border/50">

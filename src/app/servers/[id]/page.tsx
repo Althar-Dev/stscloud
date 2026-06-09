@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -41,7 +40,8 @@ import {
   HardDrive,
   Save,
   Rocket,
-  Zap
+  Zap,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -61,9 +72,9 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { getServerDiskUsage } from "@/app/actions/server-files";
+import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -87,6 +98,7 @@ export default function ServerPage() {
   const [commandRun, setCommandRun] = React.useState("");
   const [entryFile, setEntryFile] = React.useState("");
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
     if (!user?.uid || !id) return;
@@ -109,12 +121,15 @@ export default function ServerPage() {
         setCommandRun(data.commandRun || "node");
         setEntryFile(data.entryFile || "index.js");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Server not found",
-          description: "This instance may have been decommissioned."
-        });
-        router.push("/dashboard");
+        // Only redirect if not already in the middle of a deletion
+        if (!isDeleting) {
+          toast({
+            variant: "destructive",
+            title: "Server not found",
+            description: "This instance may have been decommissioned."
+          });
+          router.push("/dashboard");
+        }
       }
       setLoading(false);
     });
@@ -128,7 +143,7 @@ export default function ServerPage() {
       unsubProfile();
       unsubServer();
     };
-  }, [user, id, db, router, toast]);
+  }, [user, id, db, router, toast, isDeleting]);
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db) return;
@@ -182,6 +197,34 @@ export default function ServerPage() {
       });
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const handleDeleteServer = async () => {
+    if (!id || !db) return;
+    setIsDeleting(true);
+    
+    try {
+      // 1. Clean up storage files
+      const cleanup = await decommissionServerFiles(id as string);
+      if (!cleanup.success) throw new Error(cleanup.error);
+
+      // 2. Delete Firestore Document
+      await deleteDoc(doc(db, "servers", id as string));
+
+      toast({
+        title: "Server Decommissioned",
+        description: "The instance and its data have been permanently removed."
+      });
+
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Decommission Failed",
+        description: error.message
+      });
+      setIsDeleting(false);
     }
   };
 
@@ -534,7 +577,7 @@ export default function ServerPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
                 <h2 className="text-xl md:text-2xl font-headline font-bold mb-6">General Settings</h2>
                 <div className="space-y-6">
@@ -560,6 +603,45 @@ export default function ServerPage() {
                     <Button variant="ghost" className="w-full sm:w-auto h-11 text-sm">Revert to default</Button>
                   </div>
                 </div>
+             </div>
+
+             <div className="max-w-2xl bg-card border border-destructive/20 rounded-xl p-6 md:p-8">
+                <div className="flex items-center gap-3 text-destructive mb-4">
+                  <AlertTriangle className="size-6" />
+                  <h2 className="text-xl md:text-2xl font-headline font-bold">Danger Zone</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Decommissioning a server will permanently delete the instance and all associated data in its storage. This action cannot be undone.
+                </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      className="w-full sm:w-auto h-11 font-bold gap-2"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                      Decommission Server
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="w-[95vw] max-w-lg rounded-lg">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete the server <strong>{server?.name}</strong> and all files in its storage. There is no way to recover this data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteServer}
+                        className="bg-destructive hover:bg-destructive/90 text-white"
+                      >
+                        Yes, Decommission Server
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
              </div>
           </TabsContent>
         </Tabs>
