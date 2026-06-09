@@ -337,24 +337,14 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card border-border/50">
           <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
-                  <FileText className="size-5 text-primary" />
-                  {editingFileName}
-                </DialogTitle>
-                <DialogDescription className="text-xs">
-                  Editing file content in real-time.
-                </DialogDescription>
-              </div>
-              <Button 
-                onClick={handleSaveFile} 
-                className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2"
-                disabled={isSaving}
-              >
-                {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                Save Changes
-              </Button>
+            <div>
+              <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+                <FileText className="size-5 text-primary" />
+                {editingFileName}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Editing file content in real-time.
+              </DialogDescription>
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-0 bg-black/20">
@@ -365,8 +355,16 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
               placeholder="// Write your code here..."
             />
           </div>
-          <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end">
+          <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close Editor</Button>
+            <Button 
+              onClick={handleSaveFile} 
+              className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2"
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              Save Changes
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
