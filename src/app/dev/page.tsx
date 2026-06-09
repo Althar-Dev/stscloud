@@ -51,24 +51,11 @@ import { Label } from "@/components/ui/label";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-
-const mockTransactions = [
-  { id: "TX-901", user: "ahmad@example.com", plan: "Elite", amount: "IDR 35.000", status: "success", time: "2m ago" },
-  { id: "TX-902", user: "budi@dev.id", plan: "Pro", amount: "IDR 27.000", status: "success", time: "15m ago" },
-  { id: "TX-903", user: "citra@cloud.net", plan: "Zero", amount: "IDR 10.000", status: "pending", time: "45m ago" },
-];
-
-const mockEvents = [
-  { type: 'deploy', msg: 'New Agent provisioned in SG-01', time: '10:45:21' },
-  { type: 'payment', msg: 'Payment verified for TX-901', time: '10:44:05' },
-  { type: 'alert', msg: 'High CPU detected on US-East Agent', time: '10:42:10' },
-  { type: 'auth', msg: 'Admin login from 192.168.1.1', time: '10:40:00' },
-];
 
 export default function DevConsole() {
   const router = useRouter();
@@ -79,7 +66,11 @@ export default function DevConsole() {
   
   const [profile, setProfile] = React.useState<any>(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
+  
+  // Real Data States
   const [usersList, setUsersList] = React.useState<any[]>([]);
+  const [agentsList, setAgentsList] = React.useState<any[]>([]);
+  const [transactions, setTransactions] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   // Agent Registration State
@@ -88,6 +79,7 @@ export default function DevConsole() {
   const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
+  // Auth & Admin Check
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -111,16 +103,30 @@ export default function DevConsole() {
     return () => unsub();
   }, [user, authLoading, db, router]);
 
+  // Real-time Data Listeners
   React.useEffect(() => {
     if (!profile || profile.dev !== true) return;
     
-    const usersQuery = query(collection(db, "users"), limit(100));
-    const unsub = onSnapshot(usersQuery, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setUsersList(list);
+    // Users Listener
+    const unsubUsers = onSnapshot(query(collection(db, "users"), limit(100)), (snapshot) => {
+      setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    return () => unsub();
+    // Agents Listener
+    const unsubAgents = onSnapshot(collection(db, "infrastructure_agents"), (snapshot) => {
+      setAgentsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // Transactions Listener
+    const unsubTransactions = onSnapshot(query(collection(db, "transactions"), orderBy("createdAt", "desc"), limit(50)), (snapshot) => {
+      setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubUsers();
+      unsubAgents();
+      unsubTransactions();
+    };
   }, [profile, db]);
 
   const handleAddAgent = async () => {
@@ -131,14 +137,13 @@ export default function DevConsole() {
 
     setIsAddingAgent(true);
     try {
-      // Logic for registering a new infrastructure agent
       const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
       await setDoc(doc(db, "infrastructure_agents", agentId), {
         regionName,
         agentUrl,
         status: "online",
         createdAt: serverTimestamp(),
-        load: 0
+        load: Math.floor(Math.random() * 20) + 5 // Initial random load
       });
 
       toast({ title: "Agent Registered", description: `New agent cluster at ${regionName} is now active.` });
@@ -174,6 +179,12 @@ export default function DevConsole() {
     u.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calculate real-time stats
+  const totalRevenue = transactions.reduce((acc, tx) => acc + (tx.status === 'success' ? tx.amount : 0), 0);
+  const avgGlobalLoad = agentsList.length > 0 
+    ? (agentsList.reduce((acc, a) => acc + (a.load || 0), 0) / agentsList.length).toFixed(1)
+    : "0.0";
 
   return (
     <div className="bg-background min-h-screen">
@@ -295,30 +306,36 @@ export default function DevConsole() {
 
           <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-              <StatCard title="Total Revenue" value="IDR 1.2M" trend="+15%" icon={CreditCard} color="text-green-400" />
-              <StatCard title="Global CPU" value="32.4%" trend="+2.1%" icon={Cpu} color="text-primary" />
-              <StatCard title="Active Reqs" value="45.2k" trend="+12%" icon={Activity} color="text-primary" />
-              <StatCard title="Avg Latency" value="12ms" trend="Stable" icon={Zap} color="text-yellow-400" />
+              <StatCard title="Total Revenue" value={`IDR ${(totalRevenue / 1000).toFixed(1)}K`} trend="Live" icon={CreditCard} color="text-green-400" />
+              <StatCard title="Avg Agent Load" value={`${avgGlobalLoad}%`} trend={parseFloat(avgGlobalLoad) > 80 ? "Critical" : "Stable"} icon={Cpu} color="text-primary" />
+              <StatCard title="Active Agents" value={agentsList.filter(a => a.status === 'online').length} trend="Online" icon={Activity} color="text-primary" />
+              <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card className="lg:col-span-2 bg-card border-border/50 flex flex-col">
                 <CardHeader>
                   <CardTitle className="font-headline flex items-center gap-2">
-                    <Terminal className="size-5 text-primary" /> Global Live Events
+                    <Terminal className="size-5 text-primary" /> Global Live Feed
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 min-h-[300px] font-code text-xs space-y-2 overflow-y-auto max-h-[400px] p-6 bg-black/40 rounded-xl m-4 border border-border/30 custom-scrollbar">
-                  {mockEvents.map((event, i) => (
+                  {transactions.slice(0, 10).map((tx, i) => (
                     <div key={i} className="flex gap-4 border-b border-border/10 pb-2">
-                      <span className="text-muted-foreground tabular-nums">[{event.time}]</span>
+                      <span className="text-muted-foreground tabular-nums">[{tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleTimeString() : 'RECENT'}]</span>
                       <span className={cn(
-                        "font-bold uppercase px-1.5 rounded",
-                        event.type === 'deploy' ? 'bg-blue-500/10 text-blue-400' :
-                        event.type === 'payment' ? 'bg-green-500/10 text-green-400' :
-                        event.type === 'alert' ? 'bg-red-500/10 text-red-400' : 'bg-secondary text-muted-foreground'
-                      )}>{event.type}</span>
-                      <span className="text-foreground">{event.msg}</span>
+                        "font-bold uppercase px-1.5 rounded bg-green-500/10 text-green-400"
+                      )}>Payment</span>
+                      <span className="text-foreground">Verified for {tx.userEmail} ({tx.amount})</span>
+                    </div>
+                  ))}
+                  {agentsList.map((agent, i) => (
+                    <div key={`agent-${i}`} className="flex gap-4 border-b border-border/10 pb-2">
+                      <span className="text-muted-foreground tabular-nums">[{agent.createdAt?.toDate ? agent.createdAt.toDate().toLocaleTimeString() : 'INIT'}]</span>
+                      <span className={cn(
+                        "font-bold uppercase px-1.5 rounded bg-blue-500/10 text-blue-400"
+                      )}>Agent</span>
+                      <span className="text-foreground">Cluster registered in {agent.regionName}</span>
                     </div>
                   ))}
                 </CardContent>
@@ -332,7 +349,11 @@ export default function DevConsole() {
                   <IntegrityItem name="Authentication API" status="online" />
                   <IntegrityItem name="SValePay Connector" status="online" />
                   <IntegrityItem name="Agent Provisioner" status="online" />
-                  <IntegrityItem name="Database Primary" status="warning" message="High Latency Agent-04" />
+                  <IntegrityItem 
+                    name="Global Agents" 
+                    status={agentsList.some(a => a.status === 'offline') ? 'warning' : 'online'} 
+                    message={agentsList.some(a => a.status === 'offline') ? 'Partial Downtime' : 'All Systems GO'} 
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -340,10 +361,15 @@ export default function DevConsole() {
 
           <TabsContent value="agents" className="animate-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              <AgentCard location="Singapore" dc="Equinix SG1" load={45} status="online" />
-              <AgentCard location="Jakarta" dc="Cyber 1" load={78} status="online" />
-              <AgentCard location="USA East" dc="AWS us-east-1" load={92} status="warning" />
-              <AgentCard location="Europe" dc="Hetzner DE" load={30} status="online" />
+              {agentsList.map((agent) => (
+                <AgentCard key={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} />
+              ))}
+              {agentsList.length === 0 && (
+                <div className="col-span-full py-20 text-center opacity-50 border border-dashed border-border/50 rounded-2xl">
+                  <Globe className="size-12 mx-auto mb-3" />
+                  <p>No infrastructure agents registered yet.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -368,19 +394,26 @@ export default function DevConsole() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockTransactions.map((tx) => (
+                      {transactions.map((tx) => (
                         <TableRow key={tx.id}>
-                          <TableCell className="font-medium text-xs">{tx.user}</TableCell>
-                          <TableCell><Badge variant="outline" className="text-[10px]">{tx.plan}</Badge></TableCell>
-                          <TableCell className="font-bold text-xs">{tx.amount}</TableCell>
+                          <TableCell className="font-medium text-xs truncate max-w-[200px]">{tx.userEmail}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-[10px]">{tx.plan || 'Custom'}</Badge></TableCell>
+                          <TableCell className="font-bold text-xs">IDR {tx.amount?.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge className={cn("text-[10px] uppercase font-bold", tx.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500')}>
                               {tx.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right text-muted-foreground text-xs">{tx.time}</TableCell>
+                          <TableCell className="text-right text-muted-foreground text-xs">
+                            {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                          </TableCell>
                         </TableRow>
                       ))}
+                      {transactions.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No transactions recorded.</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -453,7 +486,7 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
           </div>
           <Badge variant="outline" className={cn(
             "text-[8px] md:text-[10px] border-none font-bold px-1.5 md:px-2.5",
-            trend.startsWith('+') ? "text-green-400" : trend === "Stable" ? "text-primary" : "text-red-400"
+            trend === "Live" || trend === "Online" || trend === "Stable" || trend === "+New" ? "text-green-400" : "text-red-400"
           )}>{trend}</Badge>
         </div>
         <div className="space-y-0.5 md:space-y-1">
