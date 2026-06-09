@@ -400,22 +400,24 @@ export default function UserDetailPage() {
                         <Link href={`/servers/${server.id}`}>
                           <Card className="border-border/50 bg-card hover:bg-secondary/30 hover:border-primary/30 transition-all duration-300 overflow-hidden h-full">
                             <CardContent className="p-5 space-y-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="size-10 rounded-xl bg-secondary flex items-center justify-center">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="size-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                                     <ServerIcon className="size-5 text-primary" />
                                   </div>
-                                  <div>
+                                  <div className="min-w-0">
                                     <h4 className="text-sm font-bold truncate pr-12">{server.name}</h4>
-                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">STS {server.plan}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant="outline" className={cn(
+                                        "text-[8px] uppercase font-bold px-1.5 h-4",
+                                        server.status === "online" ? "text-green-500 border-green-500/20" : "text-red-500 border-red-500/20"
+                                      )}>
+                                        {server.status}
+                                      </Badge>
+                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">STS {server.plan}</p>
+                                    </div>
                                   </div>
                                 </div>
-                                <Badge variant="outline" className={cn(
-                                  "text-[9px] uppercase",
-                                  server.status === "online" ? "text-green-500 border-green-500/20" : "text-red-500 border-red-500/20"
-                                )}>
-                                  {server.status}
-                                </Badge>
                               </div>
                               <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-3">
                                 <div className="flex items-center gap-1"><Cpu className="size-3 text-primary" /> {server.resources?.cpu || "--"}</div>
