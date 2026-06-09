@@ -254,7 +254,7 @@ export default function UserDetailPage() {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <CardTitle className="font-headline font-bold">{targetUser.displayName || "Standard User"}</CardTitle>
+              <CardTitle className="font-headline font-bold">{targetUser.displayName || "Standard User"}</CardTitle}
               <CardDescription className="text-xs truncate">{targetUser.email}</CardDescription>
               <div className="pt-4 flex justify-center">
                 {targetUser.dev ? (
@@ -292,7 +292,7 @@ export default function UserDetailPage() {
                       <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] bg-card border-border/50">
+                  <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50">
                     <DialogHeader>
                       <DialogTitle className="font-headline font-bold text-xl">Deploy Server for User</DialogTitle>
                       <DialogDescription>

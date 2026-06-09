@@ -298,7 +298,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
       {/* Creation Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg">
           <DialogHeader>
             <DialogTitle className="capitalize font-headline">Create New {createType}</DialogTitle>
             <DialogDescription>
@@ -335,7 +335,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
       {/* Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card border-border/50">
+        <DialogContent className="sm:max-w-4xl w-[95vw] max-w-6xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card border-border/50">
           <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
             <div>
               <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
