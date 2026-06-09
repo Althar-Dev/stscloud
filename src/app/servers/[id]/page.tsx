@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -52,6 +51,7 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { getServerDiskUsage } from "@/app/actions/server-files";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -63,6 +63,7 @@ export default function ServerPage() {
   
   const [profile, setProfile] = React.useState<any>(null);
   const [server, setServer] = React.useState<any>(null);
+  const [diskUsage, setDiskUsage] = React.useState<number>(0);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState("console");
   const [inviteEmail, setInviteEmail] = React.useState("");
@@ -90,6 +91,11 @@ export default function ServerPage() {
         router.push("/dashboard");
       }
       setLoading(false);
+    });
+
+    // Fetch actual disk usage once
+    getServerDiskUsage(id as string).then(res => {
+      if (res.success) setDiskUsage(res.sizeInMB || 0);
     });
 
     return () => {
@@ -282,7 +288,7 @@ export default function ServerPage() {
 
             <div className="space-y-4">
               <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">System Infrastructure</h2>
-              <PerformanceMetrics resources={server?.resources} />
+              <PerformanceMetrics status={server?.status || "offline"} resources={server?.resources} actualDiskUsageMB={diskUsage} />
             </div>
           </TabsContent>
 

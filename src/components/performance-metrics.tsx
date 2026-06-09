@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -10,21 +9,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cpu, HardDrive, MemoryStick, ArrowUpDown } from "lucide-react";
 
-const generateData = () => {
-  const points = [];
-  const now = new Date();
-  for (let i = 20; i >= 0; i--) {
-    points.push({
-      time: new Date(now.getTime() - i * 5000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      cpu: Math.floor(Math.random() * 15) + 5,
-      memory: Math.floor(Math.random() * 10) + 20,
-      network: Math.floor(Math.random() * 300) + 50,
-    });
-  }
-  return points;
-};
-
 interface PerformanceMetricsProps {
+  status: "online" | "offline" | "starting";
+  actualDiskUsageMB?: number;
   resources?: {
     cpu: string;
     ram: string;
@@ -32,9 +19,26 @@ interface PerformanceMetricsProps {
   };
 }
 
-export function PerformanceMetrics({ resources }: PerformanceMetricsProps) {
+export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }: PerformanceMetricsProps) {
   const [data, setData] = React.useState<any[]>([]);
   const [mounted, setMounted] = React.useState(false);
+
+  // Generate initial zeroed or random data based on status
+  const generateData = React.useCallback(() => {
+    const points = [];
+    const now = new Date();
+    const isOffline = status === "offline";
+    
+    for (let i = 20; i >= 0; i--) {
+      points.push({
+        time: new Date(now.getTime() - i * 5000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        cpu: isOffline ? 0 : (status === "starting" ? Math.floor(Math.random() * 40) + 10 : Math.floor(Math.random() * 15) + 5),
+        memory: isOffline ? 0 : (status === "starting" ? Math.floor(Math.random() * 20) + 5 : Math.floor(Math.random() * 10) + 20),
+        network: isOffline ? 0 : Math.floor(Math.random() * 100) + 10,
+      });
+    }
+    return points;
+  }, [status]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -42,20 +46,39 @@ export function PerformanceMetrics({ resources }: PerformanceMetricsProps) {
 
     const interval = setInterval(() => {
       setData((prev) => {
+        const isOffline = status === "offline";
         if (prev.length === 0) return generateData();
+        
         const nextTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const lastPoint = prev[prev.length - 1];
+        
+        let nextCpu, nextMemory, nextNetwork;
+
+        if (isOffline) {
+          nextCpu = 0;
+          nextMemory = 0;
+          nextNetwork = 0;
+        } else if (status === "starting") {
+          nextCpu = Math.max(10, Math.min(60, lastPoint.cpu + (Math.random() * 10 - 5)));
+          nextMemory = Math.max(5, Math.min(30, lastPoint.memory + (Math.random() * 4 - 2)));
+          nextNetwork = Math.max(0, Math.min(500, lastPoint.network + (Math.random() * 50 - 25)));
+        } else {
+          nextCpu = Math.max(2, Math.min(98, lastPoint.cpu + (Math.random() * 6 - 3)));
+          nextMemory = Math.max(10, Math.min(95, lastPoint.memory + (Math.random() * 2 - 1)));
+          nextNetwork = Math.max(10, Math.min(2000, lastPoint.network + (Math.random() * 150 - 75)));
+        }
+
         const next = {
           time: nextTime,
-          cpu: Math.max(2, Math.min(98, lastPoint.cpu + (Math.random() * 6 - 3))),
-          memory: Math.max(10, Math.min(95, lastPoint.memory + (Math.random() * 2 - 1))),
-          network: Math.max(10, Math.min(2000, lastPoint.network + (Math.random() * 150 - 75))),
+          cpu: nextCpu,
+          memory: nextMemory,
+          network: nextNetwork,
         };
         return [...prev.slice(1), next];
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [generateData, status]);
 
   if (!mounted || data.length === 0) {
     return (
@@ -73,8 +96,8 @@ export function PerformanceMetrics({ resources }: PerformanceMetricsProps) {
 
   const latest = data[data.length - 1];
   const diskLimit = resources?.disk || "2GB";
-  // Simulated usage for disk (usually around 10-20% for a fresh server)
-  const diskUsageStr = (parseFloat(diskLimit) * 0.12).toFixed(1);
+  const diskLimitMB = parseFloat(diskLimit) * (diskLimit.includes("GB") ? 1024 : 1);
+  const diskUsagePercentage = Math.min(100, (actualDiskUsageMB / diskLimitMB) * 100);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -104,10 +127,15 @@ export function PerformanceMetrics({ resources }: PerformanceMetricsProps) {
           <CardTitle className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Disk Usage</CardTitle>
         </CardHeader>
         <CardContent className="relative pb-6">
-          <div className="text-xl md:text-2xl font-bold font-headline text-orange-400">{diskUsageStr} GB</div>
+          <div className="text-xl md:text-2xl font-bold font-headline text-orange-400">
+            {actualDiskUsageMB < 1 ? `${(actualDiskUsageMB * 1024).toFixed(1)} KB` : `${(actualDiskUsageMB / 1024).toFixed(2)} GB`}
+          </div>
           <p className="text-[8px] md:text-[9px] text-muted-foreground font-bold tracking-widest uppercase">OF {diskLimit} TOTAL</p>
           <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-orange-400 transition-all duration-1000" style={{ width: '12%' }} />
+            <div 
+              className="h-full bg-orange-400 transition-all duration-1000" 
+              style={{ width: `${Math.max(2, diskUsagePercentage)}%` }} 
+            />
           </div>
         </CardContent>
       </Card>

@@ -54,3 +54,34 @@ export async function getServerLogs(serverId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getServerDiskUsage(serverId: string) {
+  try {
+    const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
+    
+    let totalSizeBytes = 0;
+    
+    async function calculateSize(dirPath: string) {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          await calculateSize(fullPath);
+        } else {
+          const stats = await fs.stat(fullPath);
+          totalSizeBytes += stats.size;
+        }
+      }
+    }
+
+    try {
+      await calculateSize(serverPath);
+    } catch {
+      return { success: true, sizeInMB: 0 };
+    }
+
+    return { success: true, sizeInMB: totalSizeBytes / (1024 * 1024) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
