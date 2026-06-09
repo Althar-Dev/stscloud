@@ -45,13 +45,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,25 +81,12 @@ export default function DevConsole() {
   const [profileLoading, setProfileLoading] = React.useState(true);
   const [usersList, setUsersList] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [loadingProgress, setLoadingProgress] = React.useState(0);
 
   // Agent Registration State
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
   const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    if (authLoading || profileLoading) {
-      const interval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          if (prev >= 100) return 100;
-          return prev + 2;
-        });
-      }, 30);
-      return () => clearInterval(interval);
-    }
-  }, [authLoading, profileLoading]);
 
   React.useEffect(() => {
     if (authLoading) return;
@@ -179,15 +159,8 @@ export default function DevConsole() {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-full aspect-square mb-2">
-            <Image src="/img/icon.png" alt="STSCloud" fill className="object-contain grayscale opacity-60" priority />
-          </div>
-          <div className="w-full h-[4px] bg-secondary overflow-hidden rounded-full">
-            <div className="h-full bg-primary transition-all duration-300 ease-out" style={{ width: `${loadingProgress}%` }} />
-          </div>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 text-primary animate-spin" />
       </div>
     );
   }
