@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -35,7 +34,6 @@ import {
   History,
   CheckCircle2,
   Info,
-  AlertTriangle,
   Loader2,
   Cpu,
   Database,
@@ -278,7 +276,7 @@ export default function ServerPage() {
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
             <div className="w-full h-[500px] md:h-[600px] lg:h-[650px]">
-              <TerminalConsole externalStatus={server?.status} onPowerAction={handlePower} />
+              <TerminalConsole serverId={id as string} externalStatus={server?.status} onPowerAction={handlePower} />
             </div>
 
             <div className="space-y-4">
@@ -288,7 +286,7 @@ export default function ServerPage() {
           </TabsContent>
 
           <TabsContent value="files" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <FileExplorer />
+            <FileExplorer serverId={id as string} />
           </TabsContent>
 
           <TabsContent value="access" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
@@ -389,7 +387,7 @@ export default function ServerPage() {
                   />
                   <ActivityItem 
                     icon={Info} 
-                    action="Resource Map Updated" 
+                    action={`Instance deployed with ${server?.plan} plan`} 
                     user="System" 
                     time="Recently" 
                     type="info" 
@@ -411,7 +409,7 @@ export default function ServerPage() {
                     <label className="text-sm font-medium">Startup Parameters</label>
                     <textarea 
                       className="w-full h-32 bg-secondary/50 border-none rounded-lg p-3 outline-none ring-1 ring-border focus:ring-primary/50 font-code text-xs md:text-sm" 
-                      defaultValue={`# Config for ${server?.runtime}\n# Plan: ${server?.plan}\n# Status: ${server?.status}`} 
+                      defaultValue={`# Config for ${server?.runtime || 'Generic Runtime'}\n# Plan: ${server?.plan}\n# Status: ${server?.status}`} 
                     />
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">

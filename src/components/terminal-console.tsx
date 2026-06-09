@@ -1,12 +1,12 @@
-
 "use client";
 
 import * as React from "react";
-import { Terminal as TerminalIcon, Send, Play, RotateCcw, Square } from "lucide-react";
+import { Terminal as TerminalIcon, Send, Play, RotateCcw, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getServerLogs } from "@/app/actions/server-files";
 
 interface LogLine {
   id: string;
@@ -16,16 +16,18 @@ interface LogLine {
 }
 
 interface TerminalConsoleProps {
+  serverId?: string;
   externalStatus?: "online" | "offline" | "starting";
   onPowerAction?: (action: "start" | "stop" | "restart") => void;
 }
 
-export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConsoleProps) {
+export function TerminalConsole({ serverId, externalStatus, onPowerAction }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
+  const [initialLoading, setInitialLoading] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const addLog = (message: string, type: LogLine["type"] = "info") => {
+  const addLog = React.useCallback((message: string, type: LogLine["type"] = "info") => {
     const newLine: LogLine = {
       id: Math.random().toString(36).substr(2, 9),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -33,7 +35,29 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
       message,
     };
     setLogs((prev) => [...prev.slice(-99), newLine]);
-  };
+  }, []);
+
+  // Fetch initial logs from file system
+  React.useEffect(() => {
+    if (!serverId) return;
+    
+    const fetchLogs = async () => {
+      const result = await getServerLogs(serverId);
+      if (result.success && result.content) {
+        const lines = result.content.split('\n').filter(l => l.trim());
+        const mappedLogs: LogLine[] = lines.map((line, i) => ({
+          id: `initial-${i}`,
+          timestamp: 'RECENT',
+          type: line.includes('[ERROR]') ? 'error' : 'info',
+          message: line,
+        }));
+        setLogs(mappedLogs);
+      }
+      setInitialLoading(false);
+    };
+
+    fetchLogs();
+  }, [serverId]);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -53,7 +77,7 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
       }
       lastStatus.current = externalStatus;
     }
-  }, [externalStatus]);
+  }, [externalStatus, addLog]);
 
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +103,6 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
     <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl border-border/50">
       <div className="flex items-center justify-between p-2 md:p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Mac-style Window Controls - Removed Glow */}
           <div className="flex items-center gap-1.5 px-2 mr-1">
             <div className="size-2.5 rounded-full bg-red-500" />
             <div className="size-2.5 rounded-full bg-yellow-500" />
@@ -140,7 +163,12 @@ export function TerminalConsole({ externalStatus, onPowerAction }: TerminalConso
         ref={scrollRef}
         className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar bg-[#0c0c0f]"
       >
-        {logs.length === 0 ? (
+        {initialLoading ? (
+          <div className="flex flex-col items-center justify-center h-full opacity-50">
+            <Loader2 className="size-8 animate-spin text-primary mb-2" />
+            <p className="text-xs">Reading terminal output...</p>
+          </div>
+        ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-50">
             <TerminalIcon className="size-8 md:size-10" />
             <p className="text-xs md:text-sm text-center">Console ready. Start server to see logs.</p>
