@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -281,7 +282,7 @@ export default function ServerPage() {
 
             <div className="space-y-4">
               <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">System Infrastructure</h2>
-              <PerformanceMetrics />
+              <PerformanceMetrics resources={server?.resources} />
             </div>
           </TabsContent>
 
