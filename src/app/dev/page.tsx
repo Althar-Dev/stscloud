@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,22 +6,17 @@ import {
   Terminal, 
   Cpu, 
   Activity, 
-  Zap, 
   ShieldAlert, 
   Globe, 
   Settings,
   ArrowLeft,
-  Database,
-  Lock,
   User,
   LogOut,
   CreditCard,
   Users,
   Search,
   ChevronRight,
-  Plus,
-  Loader2,
-  Server as ServerIcon
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +53,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { Loader } from "@/components/loader";
 
 export default function DevConsole() {
   const router = useRouter();
@@ -211,11 +208,7 @@ export default function DevConsole() {
   };
 
   if (authLoading || profileLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 text-primary animate-spin" />
-      </div>
-    );
+    return <Loader />;
   }
 
   if (!profile || profile.dev !== true) return null;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   Terminal, 
-  Settings, 
   FolderOpen, 
   ArrowLeft,
   Globe,
@@ -27,26 +27,20 @@ import {
   LogOut,
   Settings as SettingsIcon,
   Users as UsersIcon,
-  ShieldCheck,
   UserPlus,
   Trash2,
   Mail,
   History,
   CheckCircle2,
   Info,
-  Loader2,
-  Cpu,
-  Database,
-  HardDrive,
   Save,
   Rocket,
-  Zap,
   AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -75,6 +69,7 @@ import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
+import { Loader } from "@/components/loader";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -245,11 +240,7 @@ export default function ServerPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 text-primary animate-spin" />
-      </div>
-    );
+    return <Loader />;
   }
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";

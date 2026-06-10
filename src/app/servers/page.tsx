@@ -16,10 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   Plus, 
-  ExternalLink,
   Activity,
   Search,
-  Filter,
   Server as ServerIcon,
   Headset,
   User,
@@ -29,8 +27,7 @@ import {
   Cpu,
   Database,
   HardDrive,
-  ArrowLeft,
-  Loader2
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,6 +37,7 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { Loader } from "@/components/loader";
 
 export default function ServersPage() {
   const { user, loading: authLoading } = useUser();
@@ -93,11 +91,7 @@ export default function ServersPage() {
   );
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 text-primary animate-spin" />
-      </div>
-    );
+    return <Loader />;
   }
 
   return (

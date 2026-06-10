@@ -25,8 +25,7 @@ import {
   LogOut,
   Cpu,
   Database,
-  HardDrive,
-  Loader2
+  HardDrive
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,6 +35,7 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where, limit } from "firebase/firestore";
+import { Loader } from "@/components/loader";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useUser();
@@ -87,11 +87,7 @@ export default function Dashboard() {
   const activeServers = servers.filter(s => s.status === "online").length;
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 text-primary animate-spin" />
-      </div>
-    );
+    return <Loader />;
   }
 
   return (

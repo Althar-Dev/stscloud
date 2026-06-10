@@ -10,13 +10,10 @@ import {
   User, 
   Mail, 
   Calendar, 
-  Shield, 
   Server as ServerIcon, 
   Activity, 
-  ChevronRight,
   ShieldCheck,
   ShieldAlert,
-  Loader2,
   Cpu,
   Database,
   HardDrive,
@@ -67,6 +64,7 @@ import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { decommissionServerFiles } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Loader } from "@/components/loader";
 
 const resourcePresets = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
@@ -105,7 +103,6 @@ export default function UserDetailPage() {
   const [userServers, setUserServers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
-  const [loadingProgress, setLoadingProgress] = React.useState(0);
 
   // Provisioning State
   const [isProvisioning, setIsProvisioning] = React.useState(false);
@@ -137,19 +134,6 @@ export default function UserDetailPage() {
     
     return () => unsub();
   }, [currentUser, authLoading, db, router]);
-
-  // Loading animation simulation
-  React.useEffect(() => {
-    if (loading) {
-      const interval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          if (prev >= 100) return 100;
-          return prev + 2;
-        });
-      }, 30);
-      return () => clearInterval(interval);
-    }
-  }, [loading]);
 
   // Fetch Target User Data
   React.useEffect(() => {
@@ -255,18 +239,7 @@ export default function UserDetailPage() {
   const availableRuntimes = runtimesByTemplate[provisionTemplate] || [];
 
   if (loading || authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-full aspect-square mb-2">
-            <Image src="/img/icon.png" alt="STSCloud" fill className="object-contain grayscale opacity-60" priority />
-          </div>
-          <div className="w-full h-[4px] bg-secondary overflow-hidden rounded-full">
-            <div className="h-full bg-primary transition-all duration-300 ease-out" style={{ width: `${loadingProgress}%` }} />
-          </div>
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (!targetUser) return null;
@@ -428,7 +401,7 @@ export default function UserDetailPage() {
                         onClick={handleAdminProvision}
                         disabled={isProvisioning}
                       >
-                        {isProvisioning ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
+                        {isProvisioning ? <span className="flex items-center gap-2"><Plus className="size-4 animate-spin" /> Provisioning...</span> : <Zap className="size-4 mr-2" />}
                         Finalize Provisioning
                       </Button>
                     </DialogFooter>
@@ -441,7 +414,7 @@ export default function UserDetailPage() {
                   onClick={toggleDevStatus}
                   disabled={updating}
                 >
-                  {updating ? <Loader2 className="size-4 animate-spin" /> : (
+                  {updating ? <Plus className="size-4 animate-spin" /> : (
                     targetUser.dev ? <ShieldAlert className="size-4" /> : <ShieldCheck className="size-4" />
                   )}
                   {targetUser.dev ? "Revoke Dev Role" : "Promote to Dev"}
