@@ -36,8 +36,7 @@ import {
   Save,
   Rocket,
   AlertTriangle,
-  Loader2,
-  ExternalLink
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,7 +71,6 @@ import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
 import { Loader } from "@/components/loader";
-import { AIConfigTool } from "@/components/ai-config-tool";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -419,7 +417,7 @@ export default function ServerPage() {
                         <SelectContent className="max-h-60">
                           {nodeVersions.map(v => (
                             <SelectItem key={v} value={v}>
-                              Node.js {v} {v === '18' || v === '20' ? '(LTS)' : v === '22' ? '(Current)' : ''}
+                              Node.js {v}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -456,16 +454,6 @@ export default function ServerPage() {
                     </Button>
                   </div>
                 </CardContent>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <SettingsIcon className="size-4" />
-                  </div>
-                  <h3 className="font-headline font-bold text-lg">AI Optimization</h3>
-                </div>
-                <AIConfigTool initialVersion={nodeVersion} />
               </div>
             </TabsContent>
           )}

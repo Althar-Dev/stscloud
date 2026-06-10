@@ -1,4 +1,3 @@
-import { config } from 'dotenv';
-config();
 
-import '@/ai/flows/generate-optimized-server-configs.ts';
+// AI features have been disabled.
+export {};
