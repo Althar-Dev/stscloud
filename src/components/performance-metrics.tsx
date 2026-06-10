@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,7 @@ export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }:
   const [data, setData] = React.useState<any[]>([]);
   const [mounted, setMounted] = React.useState(false);
 
-  // Generate initial zeroed or random data based on status
+  // Generate initial data based on status
   const generateData = React.useCallback(() => {
     const points = [];
     const now = new Date();
@@ -63,6 +64,7 @@ export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }:
           nextMemory = Math.max(5, Math.min(30, lastPoint.memory + (Math.random() * 4 - 2)));
           nextNetwork = Math.max(0, Math.min(500, lastPoint.network + (Math.random() * 50 - 25)));
         } else {
+          // Subtle fluctuations for online server
           nextCpu = Math.max(2, Math.min(98, lastPoint.cpu + (Math.random() * 6 - 3)));
           nextMemory = Math.max(10, Math.min(95, lastPoint.memory + (Math.random() * 2 - 1)));
           nextNetwork = Math.max(10, Math.min(2000, lastPoint.network + (Math.random() * 150 - 75)));
@@ -95,9 +97,22 @@ export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }:
   }
 
   const latest = data[data.length - 1];
-  const diskLimit = resources?.disk || "2GB";
-  const diskLimitMB = parseFloat(diskLimit) * (diskLimit.includes("GB") ? 1024 : 1);
+  const diskLimitStr = resources?.disk || "2GB";
+  // Simple parser for limit string to MB
+  const parseDiskToMB = (str: string) => {
+    const val = parseFloat(str);
+    if (str.toUpperCase().includes("GB")) return val * 1024;
+    return val;
+  };
+  
+  const diskLimitMB = parseDiskToMB(diskLimitStr);
   const diskUsagePercentage = Math.min(100, (actualDiskUsageMB / diskLimitMB) * 100);
+
+  // Format display for disk
+  const formatDisk = (mb: number) => {
+    if (mb < 1024) return `${mb.toFixed(1)} MB`;
+    return `${(mb / 1024).toFixed(2)} GB`;
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -119,6 +134,7 @@ export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }:
         data={data} 
         dataKey="memory"
       />
+      
       <Card className="bg-card border-border/50 overflow-hidden relative group h-full">
         <div className="absolute top-2 right-2 p-3">
           <HardDrive className="size-6 md:size-8 text-orange-400 opacity-20 group-hover:opacity-100 transition-opacity" />
@@ -128,17 +144,18 @@ export function PerformanceMetrics({ status, resources, actualDiskUsageMB = 0 }:
         </CardHeader>
         <CardContent className="relative pb-6">
           <div className="text-xl md:text-2xl font-bold font-headline text-orange-400">
-            {actualDiskUsageMB < 1 ? `${(actualDiskUsageMB * 1024).toFixed(1)} KB` : `${(actualDiskUsageMB / 1024).toFixed(2)} GB`}
+            {formatDisk(actualDiskUsageMB)}
           </div>
-          <p className="text-[8px] md:text-[9px] text-muted-foreground font-bold tracking-widest uppercase">OF {diskLimit} TOTAL</p>
+          <p className="text-[8px] md:text-[9px] text-muted-foreground font-bold tracking-widest uppercase">OF {diskLimitStr} TOTAL</p>
           <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
             <div 
               className="h-full bg-orange-400 transition-all duration-1000" 
-              style={{ width: `${Math.max(2, diskUsagePercentage)}%` }} 
+              style={{ width: `${Math.max(1, diskUsagePercentage)}%` }} 
             />
           </div>
         </CardContent>
       </Card>
+
       <MetricCard 
         title="Network" 
         value={`${latest.network.toFixed(0)} KB/s`} 
