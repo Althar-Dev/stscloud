@@ -36,7 +36,8 @@ import {
   Save,
   Rocket,
   AlertTriangle,
-  Loader2
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,7 @@ import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
 import { Loader } from "@/components/loader";
+import { AIConfigTool } from "@/components/ai-config-tool";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -99,14 +101,12 @@ export default function ServerPage() {
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
-    // User Profile Listener
     const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
     });
 
-    // Specific Server Listener
     const unsubServer = onSnapshot(doc(db, "servers", id as string), (doc) => {
       if (doc.exists()) {
         const data = doc.data();
@@ -117,7 +117,6 @@ export default function ServerPage() {
         setCommandRun(data.commandRun || "node");
         setEntryFile(data.entryFile || "index.js");
       } else {
-        // Only redirect if not already in the middle of a deletion
         if (!isDeleting) {
           toast({
             variant: "destructive",
@@ -130,7 +129,6 @@ export default function ServerPage() {
       setLoading(false);
     });
 
-    // Fetch actual disk usage
     getServerDiskUsage(id as string).then(res => {
       if (res.success) setDiskUsage(res.sizeInMB || 0);
     });
@@ -201,11 +199,8 @@ export default function ServerPage() {
     setIsDeleting(true);
     
     try {
-      // 1. Clean up storage files
       const cleanup = await decommissionServerFiles(id as string);
       if (!cleanup.success) throw new Error(cleanup.error);
-
-      // 2. Delete Firestore Document
       await deleteDoc(doc(db, "servers", id as string));
 
       toast({
@@ -246,8 +241,10 @@ export default function ServerPage() {
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
-
   const isNodeJS = server?.runtime === "nodejs";
+
+  // Generate Node.js version options from 15 to 22
+  const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
 
   return (
     <div className="bg-background min-h-screen">
@@ -391,7 +388,7 @@ export default function ServerPage() {
           </TabsContent>
 
           {isNodeJS && (
-            <TabsContent value="startup" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <TabsContent value="startup" className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
               <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
                   <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -399,7 +396,7 @@ export default function ServerPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-headline font-bold">StartUp Configuration</h2>
-                    <p className="text-xs text-muted-foreground">Manage how your NodeJS application boots and runs.</p>
+                    <p className="text-xs text-muted-foreground">Manage how your NodeJS application boots and runs. Ensure your project is compatible with the selected version.</p>
                   </div>
                 </div>
                 <CardContent className="p-8 space-y-8">
@@ -419,10 +416,12 @@ export default function ServerPage() {
                         <SelectTrigger className="bg-secondary/50 border-none h-11">
                           <SelectValue placeholder="Select version" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="18">Node.js 18 (LTS)</SelectItem>
-                          <SelectItem value="20">Node.js 20 (Stable)</SelectItem>
-                          <SelectItem value="22">Node.js 22 (Current)</SelectItem>
+                        <SelectContent className="max-h-60">
+                          {nodeVersions.map(v => (
+                            <SelectItem key={v} value={v}>
+                              Node.js {v} {v === '18' || v === '20' ? '(LTS)' : v === '22' ? '(Current)' : ''}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -457,6 +456,16 @@ export default function ServerPage() {
                     </Button>
                   </div>
                 </CardContent>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <SettingsIcon className="size-4" />
+                  </div>
+                  <h3 className="font-headline font-bold text-lg">AI Optimization</h3>
+                </div>
+                <AIConfigTool initialVersion={nodeVersion} />
               </div>
             </TabsContent>
           )}

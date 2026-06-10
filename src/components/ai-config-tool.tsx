@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,17 +9,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateOptimizedServerConfigs, type GenerateOptimizedServerConfigsOutput } from "@/ai/flows/generate-optimized-server-configs";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-export function AIConfigTool() {
+interface AIConfigToolProps {
+  initialVersion?: string;
+}
+
+export function AIConfigTool({ initialVersion }: AIConfigToolProps) {
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<GenerateOptimizedServerConfigsOutput | null>(null);
   const [formData, setFormData] = React.useState({
-    gameName: "Next.js Website",
+    gameName: "Node.js Application",
     playerCount: 1000,
     resourceUsage: "medium" as const,
-    performanceGoals: "Fast load times, SEO optimized, edge caching"
+    performanceGoals: "Fast load times, low memory footprint",
+    nodeVersion: initialVersion || "20"
   });
 
   const handleGenerate = async () => {
@@ -28,7 +34,7 @@ export function AIConfigTool() {
       setResult(output);
       toast({
         title: "Optimization Complete",
-        description: "AI has generated optimized settings for your server.",
+        description: "AI has generated optimized settings for your version.",
       });
     } catch (error) {
       toast({
@@ -41,6 +47,8 @@ export function AIConfigTool() {
     }
   };
 
+  const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="bg-card border-border/50">
@@ -49,11 +57,11 @@ export function AIConfigTool() {
             <BrainCircuit className="size-5 text-primary" />
             Config Intelligence
           </CardTitle>
-          <CardDescription className="text-sm">Tell STS AI about your needs to get optimized parameters.</CardDescription>
+          <CardDescription className="text-sm">Tell STS AI about your needs to get optimized parameters for Node.js 15-22.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="game">App/Bot Type</Label>
+            <Label htmlFor="game">App/Project Type</Label>
             <Input 
               id="game" 
               value={formData.gameName}
@@ -86,6 +94,22 @@ export function AIConfigTool() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="node-v">Selected Version</Label>
+            <Select 
+              value={formData.nodeVersion}
+              onValueChange={(v) => setFormData(p => ({ ...p, nodeVersion: v }))}
+            >
+              <SelectTrigger id="node-v">
+                <SelectValue placeholder="Select Node.js version" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {nodeVersions.map(v => (
+                  <SelectItem key={v} value={v}>Node.js {v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="goals">Performance Goals</Label>
@@ -121,7 +145,7 @@ export function AIConfigTool() {
         )}
         <CardHeader>
           <CardTitle className="font-headline flex items-center justify-between text-lg md:text-xl">
-            Result
+            Optimized Recommendation
             <Button size="sm" variant="ghost" className="h-8 gap-2 text-[10px] md:text-xs">
               <Save className="size-3" /> Apply Config
             </Button>
@@ -129,13 +153,13 @@ export function AIConfigTool() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Runtime Arguments</h4>
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Launch Flags (v{formData.nodeVersion})</h4>
             <pre className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-accent border border-primary/20 overflow-x-auto">
               {result?.launchParameters || "npm run start -- --optimize"}
             </pre>
           </div>
           <div>
-            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Optimized Config</h4>
+            <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mb-3">Environment Variables</h4>
             <div className="p-3 bg-black/40 rounded-lg text-[10px] md:text-xs font-code text-slate-300 border border-border whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar">
               {result?.optimizedSettings || "NODE_ENV=production\nMEMORY_LIMIT=1024\nCACHE_TTL=3600"}
             </div>

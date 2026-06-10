@@ -91,6 +91,8 @@ const runtimesByTemplate: Record<string, { id: string; name: string }[]> = {
   ],
 };
 
+const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
+
 export default function UserDetailPage() {
   const { userId } = useParams();
   const router = useRouter();
@@ -109,6 +111,7 @@ export default function UserDetailPage() {
   const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
   const [provisionTemplate, setProvisionTemplate] = React.useState("website");
   const [provisionRuntime, setProvisionRuntime] = React.useState("nodejs");
+  const [provisionNodeVersion, setProvisionNodeVersion] = React.useState("20");
   const [provisionServerName, setProvisionServerName] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -206,6 +209,7 @@ export default function UserDetailPage() {
         plan: plan?.name,
         template: provisionTemplate,
         runtime: provisionRuntime,
+        nodeVersion: provisionRuntime === 'nodejs' ? provisionNodeVersion : null,
         status: "online",
         createdAt: serverTimestamp(),
         resources: {
@@ -268,7 +272,6 @@ export default function UserDetailPage() {
 
       <main className="p-4 md:p-8 space-y-8 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* User Profile Card */}
           <Card className="lg:col-span-1 border-border/50 bg-card">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
@@ -339,7 +342,6 @@ export default function UserDetailPage() {
                           <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Template</Label>
                           <Select value={provisionTemplate} onValueChange={(val) => {
                             setProvisionTemplate(val);
-                            // Auto reset runtime if not compatible
                             if (val === 'bots' && provisionRuntime === 'php') {
                               setProvisionRuntime('nodejs');
                             }
@@ -376,6 +378,25 @@ export default function UserDetailPage() {
                           </Select>
                         </div>
                       </div>
+                      
+                      {provisionRuntime === 'nodejs' && (
+                        <div className="grid gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Node.js Version</Label>
+                          <Select value={provisionNodeVersion} onValueChange={setProvisionNodeVersion}>
+                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                              <SelectValue placeholder="Select version" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              {nodeVersions.map(v => (
+                                <SelectItem key={v} value={v}>
+                                  Node.js {v}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
                       <div className="grid gap-2">
                         <Label htmlFor="plan" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
                         <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
@@ -426,7 +447,6 @@ export default function UserDetailPage() {
             </CardContent>
           </Card>
 
-          {/* User Data & Tabs */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="servers" className="w-full">
               <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto border border-border/50">
@@ -461,7 +481,7 @@ export default function UserDetailPage() {
                                       )}>
                                         {server.status}
                                       </Badge>
-                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">STS {server.plan}</p>
+                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">STS {server.plan} | Node {server.nodeVersion || '--'}</p>
                                     </div>
                                   </div>
                                 </div>
