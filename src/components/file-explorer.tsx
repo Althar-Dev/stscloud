@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -19,7 +18,8 @@ import {
   FileText,
   FolderPlus,
   Save,
-  Archive
+  Archive,
+  FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -272,7 +272,16 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     handleUploadFiles(e.dataTransfer.files);
   };
 
-  const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter and Sort: Folders first, then alphabetically
+  const filteredFiles = files
+    .filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      // 1. Folders before files
+      if (a.type === "folder" && b.type !== "folder") return -1;
+      if (a.type !== "folder" && b.type === "folder") return 1;
+      // 2. Alphabetical sorting within the same type
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    });
 
   return (
     <div 
@@ -523,6 +532,3 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     </div>
   );
 }
-
-// Added icons used in dropdown but missing from previous imports
-import { FolderOpen } from "lucide-react";
