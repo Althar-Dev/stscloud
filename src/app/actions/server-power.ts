@@ -1,4 +1,3 @@
-
 'use server';
 
 import { promises as fs } from 'fs';
@@ -28,13 +27,15 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
     if (action === 'start' || action === 'restart') {
       // CLEAR LOGS: Start with a fresh buffer for start/restart actions
-      let logBuffer = action === 'restart' 
-        ? `${timestamp()} [SYSTEM] Restart signal received. Re-initializing container...\n` 
-        : `${timestamp()} [SYSTEM] Starting container...\n`;
+      let logBuffer = `${timestamp()} [STS] Welcome to STSCloud.\n`;
+      
+      logBuffer += action === 'restart' 
+        ? `${timestamp()} [STS] Restart signal received. Re-initializing container...\n` 
+        : `${timestamp()} [STS] Starting container...\n`;
       
       // 1. Check Disk Usage
       const disk = await getServerDiskUsage(serverId);
-      logBuffer += `${timestamp()} [SYSTEM] Checking allocated disk space... ${disk.success ? disk.sizeInMB?.toFixed(2) + 'MB used' : 'Error checking disk'}\n`;
+      logBuffer += `${timestamp()} [STS] Checking allocated disk space... ${disk.success ? disk.sizeInMB?.toFixed(2) + 'MB used' : 'Error checking disk'}\n`;
 
       // 2. Validate Project Files (package.json and Entry File)
       const packageJsonPath = path.join(filesDir, 'package.json');
@@ -46,22 +47,22 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       try {
         await fs.access(packageJsonPath);
         packageExists = true;
-        logBuffer += `${timestamp()} [SYSTEM] Found package.json. Dependency check passed.\n`;
-      } catch {
+        logBuffer += `${timestamp()} [STS] Found package.json. Dependency check passed.\n`;
+      } catch (error) {
         logBuffer += `${timestamp()} [ERROR] package.json NOT FOUND. Server cannot determine dependencies.\n`;
       }
 
       try {
         await fs.access(entryFilePath);
         entryExists = true;
-        logBuffer += `${timestamp()} [SYSTEM] Entry file '${config.entryFile}' located.\n`;
-      } catch {
+        logBuffer += `${timestamp()} [STS] Entry file '${config.entryFile}' located.\n`;
+      } catch (error) {
         logBuffer += `${timestamp()} [ERROR] ENTRY FILE '${config.entryFile}' NOT FOUND.\n`;
       }
 
       // 3. Logic: If files don't exist, terminate boot
       if (!packageExists || !entryExists) {
-        logBuffer += `${timestamp()} [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.\n`;
+        logBuffer += `${timestamp()} [STS] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.\n`;
         // Write the failure log (overwriting previous logs)
         await fs.writeFile(logPath, logBuffer);
         return { 
@@ -75,19 +76,19 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       logBuffer += `${timestamp()} [DOCKER] Image node:${config.nodeVersion}-alpine pulled successfully.\n`;
       logBuffer += `${timestamp()} [DOCKER] Creating container with ${config.nodeVersion} environment...\n`;
       
-      logBuffer += `${timestamp()} [SYSTEM] Running: npm install --production\n`;
+      logBuffer += `${timestamp()} [STS] Running: npm install --production\n`;
       logBuffer += `${timestamp()} [INFO] added 142 packages, and audited 143 packages in 4s\n`;
       
-      logBuffer += `${timestamp()} [SYSTEM] Executing startup command: ${config.startupCommand}\n`;
+      logBuffer += `${timestamp()} [STS] Executing startup command: ${config.startupCommand}\n`;
       logBuffer += `${timestamp()} [SUCCESS] Application is now online and listening on port 8080.\n`;
-      logBuffer += `${timestamp()} [LOG] Server reachable at http://${serverId}.stscloud.net\n`;
+      logBuffer += `${timestamp()} [STS] Server reachable at http://${serverId}.stscloud.net\n`;
 
       // USE writeFile TO CLEAR PREVIOUS LOGS FOR START/RESTART
       await fs.writeFile(logPath, logBuffer);
     } else if (action === 'stop') {
-      const stopMsg = `\n${timestamp()} [SYSTEM] SIGTERM received. Stopping Docker container...
+      const stopMsg = `\n${timestamp()} [STS] SIGTERM received. Stopping Docker container...
 ${timestamp()} [INFO] Processes exited with code 0.
-${timestamp()} [SYSTEM] Node is now offline. Project data is preserved in storage.\n`;
+${timestamp()} [STS] Node is now offline. Project data is preserved in storage.\n`;
       // For STOP, we append so users can see the shutdown logs after the session logs
       await fs.appendFile(logPath, stopMsg);
     }

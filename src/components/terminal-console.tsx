@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,7 +48,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         let type: LogLine["type"] = "info";
         if (line.includes('[ERROR]')) type = "error";
         if (line.includes('[SUCCESS]')) type = "success";
-        if (line.includes('[SYSTEM]')) type = "info";
+        if (line.includes('[SYSTEM]') || line.includes('[STS]')) type = "info";
         if (line.includes('[DEBUG]')) type = "warn";
 
         // Parse timestamp from line if it exists (Format: [2026-06-10T...])
