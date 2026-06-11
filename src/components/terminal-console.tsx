@@ -24,7 +24,7 @@ interface TerminalConsoleProps {
 export function TerminalConsole({ serverId, externalStatus, onPowerAction }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
-  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [isInitializing, setIsInitializing] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const addLog = React.useCallback((message: string, type: LogLine["type"] = "info") => {
@@ -37,7 +37,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setLogs((prev) => [...prev.slice(-199), newLine]);
   }, []);
 
-  // Fetch logs from file system periodically
+  // Fetch logs from file system
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
     
@@ -51,14 +51,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         if (line.includes('[SYSTEM]') || line.includes('[STS]')) type = "info";
         if (line.includes('[DEBUG]')) type = "warn";
 
-        // Parse timestamp from line if it exists (Format: [2026-06-10T...])
         let timestamp = "LIVE";
         let displayMessage = line;
         
         const timestampMatch = line.match(/^\[(.*?)\]/);
         if (timestampMatch) {
           const rawTime = timestampMatch[1];
-          // Shorten ISO string for cleaner UI
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
         }
@@ -70,14 +68,17 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           message: displayMessage,
         };
       });
+      
       setLogs(mappedLogs);
     }
-    setInitialLoading(false);
+    setIsInitializing(false);
   }, [serverId]);
 
   React.useEffect(() => {
+    // Initial fetch
     fetchLogs();
-    // Poll logs every 500ms if server is online/starting for better responsiveness
+    
+    // Fast polling for real-time feel
     const pollInterval = setInterval(() => {
       if (externalStatus !== 'offline') {
         fetchLogs();
@@ -114,7 +115,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl border-border/50">
+    <div className="flex flex-col h-full overflow-hidden rounded-xl terminal-container shadow-2xl border-border/50 bg-[#0c0c0f]">
       <div className="flex items-center justify-between p-2 md:p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-1 md:gap-2">
           <div className="flex items-center gap-1.5 px-2 mr-1">
@@ -175,21 +176,21 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
       <div 
         ref={scrollRef}
-        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar bg-[#0c0c0f]"
+        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar"
       >
-        {initialLoading ? (
-          <div className="flex flex-col items-center justify-center h-full opacity-50">
-            <Loader2 className="size-8 animate-spin text-primary mb-2" />
-            <p className="text-xs">Connecting to node...</p>
+        {isInitializing && logs.length === 0 ? (
+          <div className="flex items-center gap-2 opacity-50">
+            <Loader2 className="size-3 animate-spin text-primary" />
+            <span className="text-xs">Connecting to node...</span>
           </div>
         ) : logs.length === 0 ? (
-          <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-50">
+          <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm text-center">Console ready. Start server to see production logs.</p>
+            <p className="text-xs md:text-sm text-center">Terminal ready. Start server to see logs.</p>
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-1.5 animate-in fade-in slide-in-from-left-1 duration-300 flex items-start gap-3">
+            <div key={log.id} className="mb-1.5 animate-in fade-in slide-in-from-left-1 duration-200 flex items-start gap-3">
               <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] md:text-xs shrink-0 mt-0.5">[{log.timestamp}]</span>
               <span className={cn(
                 "break-all",
