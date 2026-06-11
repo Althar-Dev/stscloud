@@ -19,8 +19,7 @@ import {
   FileText,
   FolderPlus,
   Save,
-  Archive,
-  Zap
+  Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +69,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [currentPath, setCurrentPath] = React.useState<string[]>([]); // Array of folder names
   const { toast } = useToast();
 
   // Create Modal State
@@ -87,10 +87,12 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   // Drag and Drop State
   const [isDragging, setIsDragging] = React.useState(false);
 
+  const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
+
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
     setLoading(true);
-    const result = await getServerFiles(serverId);
+    const result = await getServerFiles(serverId, getSubPathString());
     if (result.success) {
       setFiles(result.files || []);
     } else {
@@ -101,7 +103,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       });
     }
     setLoading(false);
-  }, [serverId, toast]);
+  }, [serverId, getSubPathString, toast]);
 
   React.useEffect(() => {
     fetchFiles();
@@ -114,8 +116,8 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     setIsCreating(true);
     try {
       const result = createType === "file" 
-        ? await createServerFile(serverId, newItemName)
-        : await createServerFolder(serverId, newItemName);
+        ? await createServerFile(serverId, newItemName, getSubPathString())
+        : await createServerFolder(serverId, newItemName, getSubPathString());
 
       if (result.success) {
         toast({
@@ -158,7 +160,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           reader.readAsDataURL(file);
         });
 
-        const result = await uploadServerFile(serverId, file.name, base64);
+        const result = await uploadServerFile(serverId, file.name, base64, getSubPathString());
         if (!result.success) throw new Error(result.error);
       }
 
@@ -182,7 +184,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     if (!serverId) return;
     setLoading(true);
     try {
-      const result = await unarchiveServerFile(serverId, fileName);
+      const result = await unarchiveServerFile(serverId, fileName, getSubPathString());
       if (result.success) {
         toast({
           title: "Extraction Complete",
@@ -205,7 +207,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const handleDelete = async (name: string) => {
     if (!serverId) return;
-    const result = await deleteServerPath(serverId, name);
+    const result = await deleteServerPath(serverId, name, getSubPathString());
     if (result.success) {
       toast({ title: "Deleted", description: `${name} has been removed.` });
       fetchFiles();
@@ -217,7 +219,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const handleEditFile = async (name: string) => {
     if (!serverId) return;
     setLoading(true);
-    const result = await readFileContent(serverId, name);
+    const result = await readFileContent(serverId, name, getSubPathString());
     if (result.success) {
       setEditingFileName(name);
       setEditingContent(result.content || "");
@@ -231,7 +233,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const handleSaveFile = async () => {
     if (!serverId || !editingFileName) return;
     setIsSaving(true);
-    const result = await updateFileContent(serverId, editingFileName, editingContent);
+    const result = await updateFileContent(serverId, editingFileName, editingContent, getSubPathString());
     if (result.success) {
       toast({ title: "Saved", description: `${editingFileName} updated successfully.` });
       setIsEditorOpen(false);
@@ -239,6 +241,18 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       toast({ variant: "destructive", title: "Save Error", description: result.error });
     }
     setIsSaving(false);
+  };
+
+  const navigateTo = (index: number) => {
+    setCurrentPath(currentPath.slice(0, index + 1));
+  };
+
+  const navigateToRoot = () => {
+    setCurrentPath([]);
+  };
+
+  const handleFolderClick = (folderName: string) => {
+    setCurrentPath([...currentPath, folderName]);
   };
 
   // Drag and Drop handlers
@@ -279,14 +293,28 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       )}
 
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto max-w-full pb-1 whitespace-nowrap">
-          <span className="hover:text-primary cursor-pointer">/root</span>
-          <ChevronRight className="size-3 flex-shrink-0" />
-          <span className="text-foreground font-semibold">files</span>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto max-w-full pb-1 whitespace-nowrap scrollbar-hide">
+          <button 
+            onClick={navigateToRoot}
+            className={cn("hover:text-primary transition-colors", currentPath.length === 0 && "text-foreground font-bold")}
+          >
+            /root
+          </button>
+          {currentPath.map((folder, i) => (
+            <React.Fragment key={i}>
+              <ChevronRight className="size-3 flex-shrink-0 opacity-50" />
+              <button 
+                onClick={() => navigateTo(i)}
+                className={cn("hover:text-primary transition-colors", i === currentPath.length - 1 && "text-foreground font-bold")}
+              >
+                {folder}
+              </button>
+            </React.Fragment>
+          ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <Button size="sm" variant="ghost" className="h-9 px-2" onClick={fetchFiles} disabled={loading}>
-            <RefreshCw className={loading ? "animate-spin" : ""} />
+          <Button size="sm" variant="ghost" className="size-9 p-0" onClick={fetchFiles} disabled={loading}>
+            <RefreshCw className={cn("size-4", loading && "animate-spin")} />
           </Button>
           <div className="relative flex-1 md:w-64 min-w-[160px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -347,13 +375,13 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-20">
                     <Loader2 className="size-6 animate-spin mx-auto text-primary" />
-                    <p className="text-xs text-muted-foreground mt-2">Processing...</p>
+                    <p className="text-xs text-muted-foreground mt-2">Reading directory...</p>
                   </TableCell>
                 </TableRow>
               ) : filteredFiles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-20 opacity-50">
-                    <p className="text-sm">No items found. Drag and drop files here to upload.</p>
+                    <p className="text-sm">Folder is empty. Drag and drop files here to upload.</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -368,7 +396,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                         )}
                         <span 
                           className="cursor-pointer hover:text-primary transition-colors truncate"
-                          onClick={() => file.type === "file" && handleEditFile(file.name)}
+                          onClick={() => file.type === "folder" ? handleFolderClick(file.name) : handleEditFile(file.name)}
                         >
                           {file.name}
                         </span>
@@ -387,6 +415,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                           {file.type === "file" && (
                             <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}>
                               <Edit2 className="size-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
+                          {file.type === "folder" && (
+                            <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}>
+                              <FolderOpen className="size-4" /> Open Folder
                             </DropdownMenuItem>
                           )}
                           {file.name.toLowerCase().endsWith('.zip') && (
@@ -421,7 +454,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           <DialogHeader>
             <DialogTitle className="capitalize font-headline">Create New {createType}</DialogTitle>
             <DialogDescription>
-              Enter a name for your new {createType}.
+              Enter a name for your new {createType} in <code>/root{getSubPathString() ? '/' + getSubPathString() : ''}</code>.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateItem}>
@@ -462,7 +495,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                 {editingFileName}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Editing file content in real-time.
+                Editing file in <code>/root{getSubPathString() ? '/' + getSubPathString() : ''}</code>.
               </DialogDescription>
             </div>
           </DialogHeader>
@@ -490,3 +523,6 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     </div>
   );
 }
+
+// Added icons used in dropdown but missing from previous imports
+import { FolderOpen } from "lucide-react";

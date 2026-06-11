@@ -1,5 +1,5 @@
-[2026-06-11T06:21:49.474Z] [SYSTEM] Starting container...
-[2026-06-11T06:21:49.474Z] [SYSTEM] Checking allocated disk space... 0.00MB used
-[2026-06-11T06:21:49.475Z] [ERROR] package.json NOT FOUND. Server cannot determine dependencies.
-[2026-06-11T06:21:49.476Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
-[2026-06-11T06:21:49.476Z] [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.
+[2026-06-11T06:27:28.520Z] [SYSTEM] Starting container...
+[2026-06-11T06:27:28.521Z] [SYSTEM] Checking allocated disk space... 0.02MB used
+[2026-06-11T06:27:28.521Z] [ERROR] package.json NOT FOUND. Server cannot determine dependencies.
+[2026-06-11T06:27:28.522Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
+[2026-06-11T06:27:28.522Z] [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.
