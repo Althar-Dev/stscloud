@@ -236,6 +236,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       if (result.success) {
         toast({ title: "Move Success", description: `Moved items to /${targetPathInput}` });
         setIsMoveOpen(false);
+        setTargetPathInput("");
         fetchFiles();
       } else throw new Error(result.error);
     } catch (error: any) {
@@ -467,9 +468,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           <DialogHeader><DialogTitle className="font-headline">Move Selected Items</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Path (Relative to root)</Label>
-              <Input value={targetPathInput} onChange={(e) => setTargetPathInput(e.target.value)} placeholder="path/to/destination" className="bg-secondary/30 border-none h-11" />
-              <p className="text-[10px] text-muted-foreground italic">Leave empty to move to root.</p>
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Path (Relative to current folder)</Label>
+              <Input value={targetPathInput} onChange={(e) => setTargetPathInput(e.target.value)} placeholder="../destination" className="bg-secondary/30 border-none h-11" />
+              <p className="text-[10px] text-muted-foreground italic">Use '../' to go up. Target is pinned to root server.</p>
             </div>
           </div>
           <DialogFooter><Button className="w-full bg-primary text-white font-bold h-11" onClick={handleBulkMove} disabled={isMoving}>{isMoving ? <Loader2 className="size-4 animate-spin mr-2" /> : <ArrowRightLeft className="size-4 mr-2" />} Move Items</Button></DialogFooter>

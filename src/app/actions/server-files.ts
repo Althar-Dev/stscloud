@@ -9,12 +9,14 @@ import AdmZip from 'adm-zip';
  */
 
 function getSafePath(serverId: string, subPath: string = '') {
-  const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
-  const finalPath = path.join(baseDir, subPath);
+  const baseDir = path.resolve(process.cwd(), 'storage', 'servers', serverId, 'files');
   
-  // Basic security check to prevent directory traversal
+  // path.resolve interprets relative path segments like '..'
+  const finalPath = path.resolve(baseDir, subPath);
+  
+  // Security check: if the user tries to go above the base directory, pin them to the base directory
   if (!finalPath.startsWith(baseDir)) {
-    throw new Error('Invalid path access');
+    return baseDir;
   }
   return finalPath;
 }
@@ -155,7 +157,10 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
 export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
   try {
     const sourceDir = getSafePath(serverId, currentSubPath);
-    const targetDir = getSafePath(serverId, targetSubPath);
+    
+    // Resolve target path relative to current folder
+    const resolvedTargetSubPath = path.join(currentSubPath, targetSubPath);
+    const targetDir = getSafePath(serverId, resolvedTargetSubPath);
     
     // Ensure target exists
     try {
@@ -167,6 +172,12 @@ export async function moveServerPaths(serverId: string, names: string[], current
     for (const name of names) {
       const oldPath = path.join(sourceDir, name);
       const newPath = path.join(targetDir, name);
+      
+      // Prevent moving a directory into itself
+      if (newPath.startsWith(oldPath + path.sep) || newPath === oldPath) {
+        continue;
+      }
+      
       await fs.rename(oldPath, newPath);
     }
     return { success: true };
