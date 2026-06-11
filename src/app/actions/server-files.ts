@@ -1,4 +1,3 @@
-
 'use server';
 
 import { promises as fs } from 'fs';
@@ -107,6 +106,68 @@ export async function deleteServerPath(serverId: string, name: string, subPath: 
       await fs.rm(targetPath, { recursive: true, force: true });
     } else {
       await fs.unlink(targetPath);
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Bulk actions
+ */
+
+export async function deleteServerPaths(serverId: string, names: string[], subPath: string = '') {
+  try {
+    for (const name of names) {
+      const targetPath = path.join(getSafePath(serverId, subPath), name);
+      await fs.rm(targetPath, { recursive: true, force: true });
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function archiveServerPaths(serverId: string, names: string[], zipName: string, subPath: string = '') {
+  try {
+    const currentPath = getSafePath(serverId, subPath);
+    const zip = new AdmZip();
+    
+    for (const name of names) {
+      const fullPath = path.join(currentPath, name);
+      const stats = await fs.stat(fullPath);
+      if (stats.isDirectory()) {
+        zip.addLocalFolder(fullPath, name);
+      } else {
+        zip.addLocalFile(fullPath);
+      }
+    }
+    
+    const finalZipName = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`;
+    zip.writeZip(path.join(currentPath, finalZipName));
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
+  try {
+    const sourceDir = getSafePath(serverId, currentSubPath);
+    const targetDir = getSafePath(serverId, targetSubPath);
+    
+    // Ensure target exists
+    try {
+      await fs.access(targetDir);
+    } catch {
+      await fs.mkdir(targetDir, { recursive: true });
+    }
+
+    for (const name of names) {
+      const oldPath = path.join(sourceDir, name);
+      const newPath = path.join(targetDir, name);
+      await fs.rename(oldPath, newPath);
     }
     return { success: true };
   } catch (error: any) {

@@ -19,11 +19,14 @@ import {
   FolderPlus,
   Save,
   Archive,
-  FolderOpen
+  FolderOpen,
+  ArrowRightLeft,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +56,9 @@ import {
   createServerFile, 
   createServerFolder, 
   deleteServerPath,
+  deleteServerPaths,
+  archiveServerPaths,
+  moveServerPaths,
   readFileContent,
   updateFileContent,
   uploadServerFile,
@@ -69,8 +75,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [currentPath, setCurrentPath] = React.useState<string[]>([]); // Array of folder names
+  const [currentPath, setCurrentPath] = React.useState<string[]>([]);
   const { toast } = useToast();
+
+  // Selection state
+  const [selectedItems, setSelectedItems] = React.useState<Set<string>>(new Set());
 
   // Create Modal State
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -84,6 +93,16 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [editingContent, setEditingContent] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
+  // Bulk Archive Modal
+  const [isArchiveOpen, setIsArchiveOpen] = React.useState(false);
+  const [zipName, setZipName] = React.useState("archive.zip");
+  const [isArchiving, setIsArchiving] = React.useState(false);
+
+  // Bulk Move Modal
+  const [isMoveOpen, setIsMoveOpen] = React.useState(false);
+  const [targetPathInput, setTargetPathInput] = React.useState("");
+  const [isMoving, setIsMoving] = React.useState(false);
+
   // Drag and Drop State
   const [isDragging, setIsDragging] = React.useState(false);
 
@@ -95,6 +114,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     const result = await getServerFiles(serverId, getSubPathString());
     if (result.success) {
       setFiles(result.files || []);
+      setSelectedItems(new Set()); // Reset selection
     } else {
       toast({
         variant: "destructive",
@@ -109,6 +129,22 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     fetchFiles();
   }, [fetchFiles]);
 
+  // Selection handlers
+  const toggleSelect = (name: string) => {
+    const next = new Set(selectedItems);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    setSelectedItems(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === files.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(files.map(f => f.name)));
+    }
+  };
+
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!serverId || !newItemName.trim()) return;
@@ -120,10 +156,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         : await createServerFolder(serverId, newItemName, getSubPathString());
 
       if (result.success) {
-        toast({
-          title: "Created",
-          description: `Successfully created ${createType}: ${newItemName}`,
-        });
+        toast({ title: "Created", description: `Successfully created ${createType}: ${newItemName}` });
         setIsCreateOpen(false);
         setNewItemName("");
         fetchFiles();
@@ -131,11 +164,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Creation Failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Creation Failed", description: error.message });
     } finally {
       setIsCreating(false);
     }
@@ -143,40 +172,76 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const handleUploadFiles = async (inputFiles: FileList | null) => {
     if (!serverId || !inputFiles || inputFiles.length === 0) return;
-
     setLoading(true);
     try {
       for (let i = 0; i < inputFiles.length; i++) {
         const file = inputFiles[i];
         const reader = new FileReader();
-        
         const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-          };
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-
         const result = await uploadServerFile(serverId, file.name, base64, getSubPathString());
         if (!result.success) throw new Error(result.error);
       }
-
-      toast({
-        title: "Upload Success",
-        description: `${inputFiles.length} file(s) have been uploaded.`
-      });
+      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) have been uploaded.` });
       fetchFiles();
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Upload Failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Upload Failed", description: error.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Bulk Actions
+  const handleBulkDelete = async () => {
+    if (!serverId || selectedItems.size === 0) return;
+    setLoading(true);
+    try {
+      const result = await deleteServerPaths(serverId, Array.from(selectedItems), getSubPathString());
+      if (result.success) {
+        toast({ title: "Bulk Delete Success", description: `Removed ${selectedItems.size} items.` });
+        fetchFiles();
+      } else throw new Error(result.error);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Delete Error", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    if (!serverId || selectedItems.size === 0) return;
+    setIsArchiving(true);
+    try {
+      const result = await archiveServerPaths(serverId, Array.from(selectedItems), zipName, getSubPathString());
+      if (result.success) {
+        toast({ title: "Archive Success", description: `Created ${zipName}` });
+        setIsArchiveOpen(false);
+        fetchFiles();
+      } else throw new Error(result.error);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Archive Error", description: error.message });
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleBulkMove = async () => {
+    if (!serverId || selectedItems.size === 0) return;
+    setIsMoving(true);
+    try {
+      const result = await moveServerPaths(serverId, Array.from(selectedItems), getSubPathString(), targetPathInput);
+      if (result.success) {
+        toast({ title: "Move Success", description: `Moved items to /${targetPathInput}` });
+        setIsMoveOpen(false);
+        fetchFiles();
+      } else throw new Error(result.error);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Move Error", description: error.message });
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -186,33 +251,13 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     try {
       const result = await unarchiveServerFile(serverId, fileName, getSubPathString());
       if (result.success) {
-        toast({
-          title: "Extraction Complete",
-          description: `Extracted ${fileName} successfully.`
-        });
+        toast({ title: "Extraction Complete", description: `Extracted ${fileName} successfully.` });
         fetchFiles();
-      } else {
-        throw new Error(result.error);
-      }
+      } else throw new Error(result.error);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Unarchive Error",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Unarchive Error", description: error.message });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (name: string) => {
-    if (!serverId) return;
-    const result = await deleteServerPath(serverId, name, getSubPathString());
-    if (result.success) {
-      toast({ title: "Deleted", description: `${name} has been removed.` });
-      fetchFiles();
-    } else {
-      toast({ variant: "destructive", title: "Delete Error", description: result.error });
     }
   };
 
@@ -224,9 +269,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       setEditingFileName(name);
       setEditingContent(result.content || "");
       setIsEditorOpen(true);
-    } else {
-      toast({ variant: "destructive", title: "Read Error", description: result.error });
-    }
+    } else toast({ variant: "destructive", title: "Read Error", description: result.error });
     setLoading(false);
   };
 
@@ -237,87 +280,63 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     if (result.success) {
       toast({ title: "Saved", description: `${editingFileName} updated successfully.` });
       setIsEditorOpen(false);
-    } else {
-      toast({ variant: "destructive", title: "Save Error", description: result.error });
-    }
+    } else toast({ variant: "destructive", title: "Save Error", description: result.error });
     setIsSaving(false);
   };
 
-  const navigateTo = (index: number) => {
-    setCurrentPath(currentPath.slice(0, index + 1));
-  };
+  const navigateTo = (index: number) => setCurrentPath(currentPath.slice(0, index + 1));
+  const navigateToRoot = () => setCurrentPath([]);
+  const handleFolderClick = (folderName: string) => setCurrentPath([...currentPath, folderName]);
 
-  const navigateToRoot = () => {
-    setCurrentPath([]);
-  };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); handleUploadFiles(e.dataTransfer.files); };
 
-  const handleFolderClick = (folderName: string) => {
-    setCurrentPath([...currentPath, folderName]);
-  };
-
-  // Drag and Drop handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleUploadFiles(e.dataTransfer.files);
-  };
-
-  // Filter and Sort: Folders first, then alphabetically
   const filteredFiles = files
     .filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
-      // 1. Folders before files
       if (a.type === "folder" && b.type !== "folder") return -1;
       if (a.type !== "folder" && b.type === "folder") return 1;
-      // 2. Alphabetical sorting within the same type
       return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
     });
 
   return (
-    <div 
-      className={cn(
-        "flex flex-col gap-4 relative transition-all duration-300",
-        isDragging && "ring-4 ring-primary/20 bg-primary/5 rounded-2xl p-4"
-      )}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className={cn("flex flex-col gap-4 relative transition-all duration-300", isDragging && "ring-4 ring-primary/20 bg-primary/5 rounded-2xl p-4")} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
       {isDragging && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl pointer-events-none">
           <Upload className="size-12 text-primary animate-bounce mb-4" />
           <p className="text-xl font-bold font-headline text-primary">Drop files to upload</p>
-          <p className="text-sm text-muted-foreground mt-2">Support ZIP and multiple files</p>
+        </div>
+      )}
+
+      {/* Bulk Action Toolbar */}
+      {selectedItems.size > 0 && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/30 p-2 rounded-lg animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3 px-2">
+            <X className="size-4 cursor-pointer text-primary" onClick={() => setSelectedItems(new Set())} />
+            <span className="text-xs font-bold font-headline">{selectedItems.size} selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost" className="h-8 gap-2 hover:bg-primary/20" onClick={() => setIsArchiveOpen(true)}>
+              <Archive className="size-3.5" /> Archive
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 gap-2 hover:bg-primary/20" onClick={() => setIsMoveOpen(true)}>
+              <ArrowRightLeft className="size-3.5" /> Move
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleBulkDelete}>
+              <Trash2 className="size-3.5" /> Delete
+            </Button>
+          </div>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto max-w-full pb-1 whitespace-nowrap scrollbar-hide">
-          <button 
-            onClick={navigateToRoot}
-            className={cn("hover:text-primary transition-colors", currentPath.length === 0 && "text-foreground font-bold")}
-          >
-            /root
-          </button>
+          <button onClick={navigateToRoot} className={cn("hover:text-primary transition-colors", currentPath.length === 0 && "text-foreground font-bold")}>/root</button>
           {currentPath.map((folder, i) => (
             <React.Fragment key={i}>
               <ChevronRight className="size-3 flex-shrink-0 opacity-50" />
-              <button 
-                onClick={() => navigateTo(i)}
-                className={cn("hover:text-primary transition-colors", i === currentPath.length - 1 && "text-foreground font-bold")}
-              >
-                {folder}
-              </button>
+              <button onClick={() => navigateTo(i)} className={cn("hover:text-primary transition-colors", i === currentPath.length - 1 && "text-foreground font-bold")}>{folder}</button>
             </React.Fragment>
           ))}
         </div>
@@ -327,22 +346,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           </Button>
           <div className="relative flex-1 md:w-64 min-w-[160px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search files..."
-              className="h-9 pl-8 bg-secondary/30 border-none"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <Input type="search" placeholder="Search files..." className="h-9 pl-8 bg-secondary/30 border-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           
           <div className="relative">
-            <input 
-              type="file" 
-              multiple 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
-              onChange={(e) => handleUploadFiles(e.target.files)}
-            />
+            <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleUploadFiles(e.target.files)} />
             <Button size="sm" variant="outline" className="h-9 gap-2 pointer-events-none">
               <Upload className="size-4" />
               <span className="hidden xs:inline">Upload</span>
@@ -373,6 +381,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           <Table>
             <TableHeader className="bg-secondary/20">
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox checked={files.length > 0 && selectedItems.size === files.length} onCheckedChange={toggleSelectAll} />
+                </TableHead>
                 <TableHead className="min-w-[160px] md:min-w-[200px]">Name</TableHead>
                 <TableHead className="hidden sm:table-cell">Size</TableHead>
                 <TableHead className="hidden md:table-cell">Modified</TableHead>
@@ -381,71 +392,32 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-20">
-                    <Loader2 className="size-6 animate-spin mx-auto text-primary" />
-                    <p className="text-xs text-muted-foreground mt-2">Reading directory...</p>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="size-6 animate-spin mx-auto text-primary" /><p className="text-xs text-muted-foreground mt-2">Reading directory...</p></TableCell></TableRow>
               ) : filteredFiles.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-20 opacity-50">
-                    <p className="text-sm">Folder is empty. Drag and drop files here to upload.</p>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-50"><p className="text-sm">Folder is empty.</p></TableCell></TableRow>
               ) : (
                 filteredFiles.map((file) => (
-                  <TableRow key={file.name} className="group hover:bg-secondary/10">
+                  <TableRow key={file.name} className={cn("group hover:bg-secondary/10", selectedItems.has(file.name) && "bg-primary/5")}>
+                    <TableCell>
+                      <Checkbox checked={selectedItems.has(file.name)} onCheckedChange={() => toggleSelect(file.name)} />
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        {file.type === "folder" ? (
-                          <Folder className="size-4 text-accent fill-accent/10 flex-shrink-0" />
-                        ) : (
-                          <File className="size-4 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <span 
-                          className="cursor-pointer hover:text-primary transition-colors truncate"
-                          onClick={() => file.type === "folder" ? handleFolderClick(file.name) : handleEditFile(file.name)}
-                        >
-                          {file.name}
-                        </span>
+                        {file.type === "folder" ? <Folder className="size-4 text-accent fill-accent/10" /> : <File className="size-4 text-muted-foreground" />}
+                        <span className="cursor-pointer hover:text-primary transition-colors truncate" onClick={() => file.type === "folder" ? handleFolderClick(file.name) : handleEditFile(file.name)}>{file.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap hidden sm:table-cell">{file.size}</TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell whitespace-nowrap">{file.modified}</TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">{file.size}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{file.modified}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8 md:opacity-0 md:group-hover:opacity-100"><MoreVertical className="size-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          {file.type === "file" && (
-                            <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}>
-                              <Edit2 className="size-4" /> Edit
-                            </DropdownMenuItem>
-                          )}
-                          {file.type === "folder" && (
-                            <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}>
-                              <FolderOpen className="size-4" /> Open Folder
-                            </DropdownMenuItem>
-                          )}
-                          {file.name.toLowerCase().endsWith('.zip') && (
-                            <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}>
-                              <Archive className="size-4" /> Unarchive
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="gap-2">
-                            <Download className="size-4" /> Download
-                          </DropdownMenuItem>
+                          {file.type === "file" && <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}><Edit2 className="size-4" /> Edit</DropdownMenuItem>}
+                          {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
+                          {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="gap-2 text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(file.name)}
-                          >
-                            <Trash2 className="size-4" /> Delete
-                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={() => { setSelectedItems(new Set([file.name])); handleBulkDelete(); }}><Trash2 className="size-4" /> Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -459,73 +431,63 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
       {/* Creation Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg rounded-lg">
+        <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
           <DialogHeader>
             <DialogTitle className="capitalize font-headline">Create New {createType}</DialogTitle>
-            <DialogDescription>
-              Enter a name for your new {createType} in <code>/root{getSubPathString() ? '/' + getSubPathString() : ''}</code>.
-            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateItem}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Name</Label>
-                <Input
-                  id="name"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder={createType === "file" ? "index.js" : "my-folder"}
-                  className="bg-secondary/30 border-none h-11"
-                  autoFocus
-                />
+                <Input id="name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder={createType === "file" ? "index.js" : "my-folder"} className="bg-secondary/30 border-none h-11" autoFocus />
               </div>
             </div>
-            <DialogFooter>
-              <Button 
-                type="submit" 
-                className="w-full bg-primary text-white font-bold h-11"
-                disabled={isCreating || !newItemName.trim()}
-              >
-                {isCreating ? <Loader2 className="size-4 animate-spin mr-2" /> : <PlusCircle className="size-4 mr-2" />}
-                Create {createType}
-              </Button>
-            </DialogFooter>
+            <DialogFooter><Button type="submit" className="w-full bg-primary text-white font-bold h-11" disabled={isCreating || !newItemName.trim()}>{isCreating ? <Loader2 className="size-4 animate-spin mr-2" /> : <PlusCircle className="size-4 mr-2" />}Create {createType}</Button></DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive Dialog */}
+      <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
+        <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
+          <DialogHeader><DialogTitle className="font-headline">Archive Selected Items</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Zip File Name</Label>
+              <Input value={zipName} onChange={(e) => setZipName(e.target.value)} placeholder="archive.zip" className="bg-secondary/30 border-none h-11" />
+            </div>
+          </div>
+          <DialogFooter><Button className="w-full bg-primary text-white font-bold h-11" onClick={handleBulkArchive} disabled={isArchiving}>{isArchiving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Archive className="size-4 mr-2" />} Create Zip</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Dialog */}
+      <Dialog open={isMoveOpen} onOpenChange={setIsMoveOpen}>
+        <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
+          <DialogHeader><DialogTitle className="font-headline">Move Selected Items</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Path (Relative to root)</Label>
+              <Input value={targetPathInput} onChange={(e) => setTargetPathInput(e.target.value)} placeholder="path/to/destination" className="bg-secondary/30 border-none h-11" />
+              <p className="text-[10px] text-muted-foreground italic">Leave empty to move to root.</p>
+            </div>
+          </div>
+          <DialogFooter><Button className="w-full bg-primary text-white font-bold h-11" onClick={handleBulkMove} disabled={isMoving}>{isMoving ? <Loader2 className="size-4 animate-spin mr-2" /> : <ArrowRightLeft className="size-4 mr-2" />} Move Items</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="sm:max-w-4xl w-[95vw] max-w-6xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card border-border/50 rounded-lg">
+        <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] flex flex-col p-0 bg-card border-border/50 rounded-lg">
           <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
-            <div>
-              <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
-                <FileText className="size-5 text-primary" />
-                {editingFileName}
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                Editing file in <code>/root{getSubPathString() ? '/' + getSubPathString() : ''}</code>.
-              </DialogDescription>
-            </div>
+            <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2"><FileText className="size-5 text-primary" />{editingFileName}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-0 bg-black/20">
-            <Textarea 
-              value={editingContent}
-              onChange={(e) => setEditingContent(e.target.value)}
-              className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300"
-              placeholder="// Write your code here..."
-            />
+            <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300" placeholder="// Write your code here..." />
           </div>
           <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close Editor</Button>
-            <Button 
-              onClick={handleSaveFile} 
-              className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2"
-              disabled={isSaving}
-            >
-              {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Save Changes
-            </Button>
+            <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close</Button>
+            <Button onClick={handleSaveFile} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2" disabled={isSaving}>{isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}Save</Button>
           </div>
         </DialogContent>
       </Dialog>
