@@ -21,6 +21,10 @@ function getSafePath(serverId: string, subPath: string = '') {
   return finalPath;
 }
 
+function getLogPath(serverId: string) {
+  return path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'example.txt');
+}
+
 export async function getServerFiles(serverId: string, subPath: string = '') {
   try {
     const targetPath = getSafePath(serverId, subPath);
@@ -115,10 +119,6 @@ export async function deleteServerPath(serverId: string, name: string, subPath: 
   }
 }
 
-/**
- * Bulk actions
- */
-
 export async function deleteServerPaths(serverId: string, names: string[], subPath: string = '') {
   try {
     for (const name of names) {
@@ -157,12 +157,9 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
 export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
   try {
     const sourceDir = getSafePath(serverId, currentSubPath);
-    
-    // Resolve target path relative to current folder
     const resolvedTargetSubPath = path.join(currentSubPath, targetSubPath);
     const targetDir = getSafePath(serverId, resolvedTargetSubPath);
     
-    // Ensure target exists
     try {
       await fs.access(targetDir);
     } catch {
@@ -172,12 +169,7 @@ export async function moveServerPaths(serverId: string, names: string[], current
     for (const name of names) {
       const oldPath = path.join(sourceDir, name);
       const newPath = path.join(targetDir, name);
-      
-      // Prevent moving a directory into itself
-      if (newPath.startsWith(oldPath + path.sep) || newPath === oldPath) {
-        continue;
-      }
-      
+      if (newPath.startsWith(oldPath + path.sep) || newPath === oldPath) continue;
       await fs.rename(oldPath, newPath);
     }
     return { success: true };
@@ -208,15 +200,29 @@ export async function updateFileContent(serverId: string, fileName: string, cont
 
 export async function getServerLogs(serverId: string) {
   try {
-    const logPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'logs', 'example.txt');
+    const logPath = getLogPath(serverId);
     
     try {
       await fs.access(logPath);
       const content = await fs.readFile(logPath, 'utf8');
       return { success: true, content };
     } catch {
-      return { success: true, content: '[SYSTEM] No logs available yet.' };
+      return { success: true, content: `[${new Date().toISOString()}] [STS] Welcome to STSCloud.\n` };
     }
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function clearServerLogs(serverId: string) {
+  try {
+    const logPath = getLogPath(serverId);
+    const isoTime = new Date().toISOString();
+    const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.\n[${isoTime}] [STS] Console cleared on refresh.\n`;
+    
+    await fs.mkdir(path.dirname(logPath), { recursive: true });
+    await fs.writeFile(logPath, initialLogs);
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -225,7 +231,6 @@ export async function getServerLogs(serverId: string) {
 export async function getServerDiskUsage(serverId: string) {
   try {
     const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
-    
     let totalSizeBytes = 0;
     
     async function calculateSize(dirPath: string) {
@@ -240,9 +245,7 @@ export async function getServerDiskUsage(serverId: string) {
             totalSizeBytes += stats.size;
           }
         }
-      } catch (e) {
-        // Folder maybe empty or not exists yet
-      }
+      } catch (e) {}
     }
 
     await calculateSize(serverPath);
@@ -255,14 +258,10 @@ export async function getServerDiskUsage(serverId: string) {
 export async function decommissionServerFiles(serverId: string) {
   try {
     const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
-    
     try {
       await fs.access(serverDir);
       await fs.rm(serverDir, { recursive: true, force: true });
-    } catch {
-      // Directory doesn't exist, ignore
-    }
-
+    } catch {}
     return { success: true };
   } catch (error: any) {
     console.error('Decommission Error:', error);

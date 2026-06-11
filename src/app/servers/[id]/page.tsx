@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -67,9 +66,9 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
+import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower } from "@/app/actions/server-power";
 import { Loader } from "@/components/loader";
 
@@ -96,6 +95,20 @@ export default function ServerPage() {
   const [entryFile, setEntryFile] = React.useState("");
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  // Initialize and clear logs if offline on mount
+  React.useEffect(() => {
+    if (!id || !db) return;
+    
+    const checkAndClearLogs = async () => {
+      const snap = await getDoc(doc(db, "servers", id as string));
+      if (snap.exists() && snap.data().status === "offline") {
+        await clearServerLogs(id as string);
+      }
+    };
+    
+    checkAndClearLogs();
+  }, [id, db]);
 
   React.useEffect(() => {
     if (!user?.uid || !id) return;
@@ -147,12 +160,10 @@ export default function ServerPage() {
     if (action === "restart") newStatus = "starting";
 
     try {
-      // 1. Update Firestore Status for visual feedback
       await updateDoc(doc(db, "servers", id as string), {
         status: newStatus
       });
 
-      // 2. Execute Real-Time Logic (Filesystem check & Boot)
       const result = await executeServerPower(id as string, action, {
         nodeVersion: server.nodeVersion || "20",
         commandRun: server.commandRun || "node",
@@ -161,16 +172,13 @@ export default function ServerPage() {
       });
 
       if (!result.success) {
-        // If files missing or other errors, revert status to offline
         await updateDoc(doc(db, "servers", id as string), {
           status: "offline"
         });
-        // We no longer throw error here to avoid the toast, the error is already in logs.
         return;
       }
 
       if (action === "start" || action === "restart") {
-        // Reduced timeout for snappier feedback
         setTimeout(async () => {
           await updateDoc(doc(db, "servers", id as string), {
             status: "online"
@@ -182,7 +190,6 @@ export default function ServerPage() {
         }, 1500);
       }
     } catch (error: any) {
-      // General error handling without specific Docker Boot Error toast
       console.error("Power action failed", error);
     }
   };
@@ -261,8 +268,6 @@ export default function ServerPage() {
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
   const isNodeJS = server?.runtime === "nodejs";
-
-  // Node.js version options (15-22)
   const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
 
   return (
@@ -415,7 +420,7 @@ export default function ServerPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-headline font-bold">StartUp Configuration</h2>
-                    <p className="text-xs text-muted-foreground">Manage how your NodeJS application boots and runs. Ensure your project is compatible with the selected version.</p>
+                    <p className="text-xs text-muted-foreground">Manage how your NodeJS application boots and runs.</p>
                   </div>
                 </div>
                 <CardContent className="p-8 space-y-8">
@@ -463,7 +468,6 @@ export default function ServerPage() {
                       />
                     </div>
                   </div>
-
                   <div className="pt-6 border-t border-border/50">
                     <Button 
                       onClick={handleSaveSettings}
@@ -536,24 +540,6 @@ export default function ServerPage() {
                       </div>
                       <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Full Control</div>
                     </div>
-
-                    <div className="p-4 flex items-center justify-between group">
-                      <div className="flex items-center gap-3 opacity-60">
-                        <Avatar className="size-10">
-                          <AvatarFallback className="bg-secondary text-muted-foreground font-bold">ST</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="text-sm font-bold flex items-center gap-2">
-                            Support Team
-                            <Badge variant="outline" className="text-[8px] uppercase tracking-widest px-1.5 h-4">Member</Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground">support@stscloud.net</div>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -564,7 +550,7 @@ export default function ServerPage() {
             <Card className="border-border/50 bg-card">
               <CardHeader>
                 <CardTitle className="text-lg font-headline font-bold">Recent Activity</CardTitle>
-                <CardDescription>A log of all significant events and actions performed on this node.</CardDescription>
+                <CardDescription>A log of all significant events performed on this node.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-border/50">
@@ -600,7 +586,6 @@ export default function ServerPage() {
                       onChange={(e) => setServerName(e.target.value)}
                     />
                   </div>
-
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button 
                       onClick={handleSaveSettings}
@@ -614,14 +599,13 @@ export default function ServerPage() {
                   </div>
                 </div>
              </div>
-
              <div className="max-w-2xl bg-card border border-destructive/20 rounded-xl p-6 md:p-8">
                 <div className="flex items-center gap-3 text-destructive mb-4">
                   <AlertTriangle className="size-6" />
                   <h2 className="text-xl md:text-2xl font-headline font-bold">Danger Zone</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Decommissioning a server will permanently delete the instance and all associated data in its storage. This action cannot be undone.
+                  Decommissioning a server will permanently delete the instance and all associated data.
                 </p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -638,7 +622,7 @@ export default function ServerPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete the server <strong>{server?.name}</strong> and all files in its storage. There is no way to recover this data.
+                        This will permanently delete the server <strong>{server?.name}</strong>.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
