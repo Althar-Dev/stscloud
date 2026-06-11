@@ -70,6 +70,7 @@ import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
+import { executeServerPower } from "@/app/actions/server-power";
 import { Loader } from "@/components/loader";
 
 export default function ServerPage() {
@@ -138,7 +139,7 @@ export default function ServerPage() {
   }, [user, id, db, router, toast, isDeleting]);
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
-    if (!id || !db) return;
+    if (!id || !db || !server) return;
     
     let newStatus = server?.status;
     if (action === "start") newStatus = "starting";
@@ -146,22 +147,33 @@ export default function ServerPage() {
     if (action === "restart") newStatus = "starting";
 
     try {
+      // 1. Update Firestore Status
       await updateDoc(doc(db, "servers", id as string), {
         status: newStatus
       });
+
+      // 2. Execute Actual Power Logic
+      const result = await executeServerPower(id as string, action, {
+        nodeVersion: server.nodeVersion || "20",
+        commandRun: server.commandRun || "node",
+        entryFile: server.entryFile || "index.js",
+        startupCommand: server.startupCommand || "npm start"
+      });
+
+      if (!result.success) throw new Error(result.error);
 
       if (action === "start" || action === "restart") {
         setTimeout(async () => {
           await updateDoc(doc(db, "servers", id as string), {
             status: "online"
           });
-        }, 2000);
+        }, 3000);
       }
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "System Error",
-        description: "Failed to communicate with agent node."
+        title: "Execution Error",
+        description: error.message || "Failed to communicate with agent node."
       });
     }
   };
@@ -241,7 +253,7 @@ export default function ServerPage() {
   const userInitial = displayName.charAt(0).toUpperCase();
   const isNodeJS = server?.runtime === "nodejs";
 
-  // Generate Node.js version options from 15 to 22
+  // Node.js version options
   const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
 
   return (

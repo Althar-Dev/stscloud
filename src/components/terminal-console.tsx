@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -34,50 +35,52 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       type,
       message,
     };
-    setLogs((prev) => [...prev.slice(-99), newLine]);
+    setLogs((prev) => [...prev.slice(-199), newLine]);
   }, []);
 
-  // Fetch initial logs from file system
-  React.useEffect(() => {
+  // Fetch logs from file system periodically
+  const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
     
-    const fetchLogs = async () => {
-      const result = await getServerLogs(serverId);
-      if (result.success && result.content) {
-        const lines = result.content.split('\n').filter(l => l.trim());
-        const mappedLogs: LogLine[] = lines.map((line, i) => ({
-          id: `initial-${i}`,
-          timestamp: 'RECENT',
-          type: line.includes('[ERROR]') ? 'error' : 'info',
-          message: line,
-        }));
-        setLogs(mappedLogs);
-      }
-      setInitialLoading(false);
-    };
+    const result = await getServerLogs(serverId);
+    if (result.success && result.content) {
+      const lines = result.content.split('\n').filter(l => l.trim());
+      const mappedLogs: LogLine[] = lines.map((line, i) => {
+        let type: LogLine["type"] = "info";
+        if (line.includes('[ERROR]')) type = "error";
+        if (line.includes('[SUCCESS]')) type = "success";
+        if (line.includes('[SYSTEM]')) type = "info";
+        if (line.includes('[DEBUG]')) type = "warn";
 
-    fetchLogs();
+        return {
+          id: `fs-${i}-${line.length}`,
+          timestamp: 'LIVE',
+          type,
+          message: line,
+        };
+      });
+      setLogs(mappedLogs);
+    }
+    setInitialLoading(false);
   }, [serverId]);
+
+  React.useEffect(() => {
+    fetchLogs();
+    // Poll logs every 2 seconds if server is online/starting
+    const pollInterval = setInterval(() => {
+      if (externalStatus !== 'offline') {
+        fetchLogs();
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [fetchLogs, externalStatus]);
 
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs]);
-
-  const lastStatus = React.useRef(externalStatus);
-  React.useEffect(() => {
-    if (externalStatus !== lastStatus.current) {
-      if (externalStatus === "starting") {
-        addLog("Initializing server boot sequence...", "info");
-      } else if (externalStatus === "online") {
-        addLog("Server successfully initialized and listening on port 8080", "success");
-      } else if (externalStatus === "offline") {
-        addLog("Server process exited with code 0", "info");
-      }
-      lastStatus.current = externalStatus;
-    }
-  }, [externalStatus, addLog]);
 
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,13 +91,13 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
       if (cmd === "help") {
-        addLog("Available commands: help, status, list, stop, restart", "success");
+        addLog("Available commands: help, status, list, clear", "success");
       } else if (cmd === "status") {
-        addLog(`Current status: ${externalStatus || "offline"}`, "info");
-      } else if (cmd === "list") {
-        addLog("No active processes found.", "warn");
+        addLog(`Instance Status: ${externalStatus || "offline"}`, "info");
+      } else if (cmd === "clear") {
+        setLogs([]);
       } else {
-        addLog(`Unknown command: ${inputValue}. Type 'help' for options.`, "error");
+        addLog(`Unknown command: ${inputValue}. Local terminal only.`, "error");
       }
     }, 400);
   };
@@ -166,12 +169,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         {initialLoading ? (
           <div className="flex flex-col items-center justify-center h-full opacity-50">
             <Loader2 className="size-8 animate-spin text-primary mb-2" />
-            <p className="text-xs">Reading terminal output...</p>
+            <p className="text-xs">Connecting to node...</p>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-50">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm text-center">Console ready. Start server to see logs.</p>
+            <p className="text-xs md:text-sm text-center">Console ready. Start server to see production logs.</p>
           </div>
         ) : (
           logs.map((log) => (
@@ -197,7 +200,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Run command..." 
+            placeholder="Run console command..." 
             className="h-9 md:h-10 bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7"
           />
         </div>
