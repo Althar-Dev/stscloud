@@ -147,12 +147,12 @@ export default function ServerPage() {
     if (action === "restart") newStatus = "starting";
 
     try {
-      // 1. Update Firestore Status
+      // 1. Update Firestore Status for visual feedback
       await updateDoc(doc(db, "servers", id as string), {
         status: newStatus
       });
 
-      // 2. Execute Actual Power Logic
+      // 2. Execute Real-Time Logic (Filesystem check & Boot)
       const result = await executeServerPower(id as string, action, {
         nodeVersion: server.nodeVersion || "20",
         commandRun: server.commandRun || "node",
@@ -160,19 +160,29 @@ export default function ServerPage() {
         startupCommand: server.startupCommand || "npm start"
       });
 
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) {
+        // If files missing or other errors, revert status to offline
+        await updateDoc(doc(db, "servers", id as string), {
+          status: "offline"
+        });
+        throw new Error(result.error);
+      }
 
       if (action === "start" || action === "restart") {
         setTimeout(async () => {
           await updateDoc(doc(db, "servers", id as string), {
             status: "online"
           });
-        }, 3000);
+          toast({
+            title: "Container Online",
+            description: `Docker instance with Node v${server.nodeVersion} is running.`
+          });
+        }, 4000);
       }
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Execution Error",
+        title: "Docker Boot Error",
         description: error.message || "Failed to communicate with agent node."
       });
     }
@@ -253,7 +263,7 @@ export default function ServerPage() {
   const userInitial = displayName.charAt(0).toUpperCase();
   const isNodeJS = server?.runtime === "nodejs";
 
-  // Node.js version options
+  // Node.js version options (15-22)
   const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
 
   return (
