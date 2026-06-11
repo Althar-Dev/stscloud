@@ -78,12 +78,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   React.useEffect(() => {
     fetchLogs();
-    // Poll logs every 2 seconds if server is online/starting
+    // Poll logs every 500ms if server is online/starting for better responsiveness
     const pollInterval = setInterval(() => {
       if (externalStatus !== 'offline') {
         fetchLogs();
       }
-    }, 2000);
+    }, 500);
 
     return () => clearInterval(pollInterval);
   }, [fetchLogs, externalStatus]);

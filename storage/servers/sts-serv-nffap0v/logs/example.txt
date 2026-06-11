@@ -1,10 +1,5 @@
-[2026-06-10T08:14:28.901Z] Node provisioned successfully.
-[2026-06-10T08:14:28.901Z] Welcome to STSCloud.[2026-06-11T06:07:53.688Z] [SYSTEM] Checking allocated disk space... 0.00MB used
-[2026-06-11T06:07:53.690Z] [ERROR] package.json NOT FOUND. Server cannot determine dependencies.
-[2026-06-11T06:07:53.690Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
-[2026-06-11T06:07:53.690Z] [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.
-
-[2026-06-11T06:17:14.797Z] [SYSTEM] Checking allocated disk space... 0.00MB used
-[2026-06-11T06:17:14.797Z] [ERROR] package.json NOT FOUND. Server cannot determine dependencies.
-[2026-06-11T06:17:14.798Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
-[2026-06-11T06:17:14.798Z] [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.
+[2026-06-11T06:21:49.474Z] [SYSTEM] Starting container...
+[2026-06-11T06:21:49.474Z] [SYSTEM] Checking allocated disk space... 0.00MB used
+[2026-06-11T06:21:49.475Z] [ERROR] package.json NOT FOUND. Server cannot determine dependencies.
+[2026-06-11T06:21:49.476Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
+[2026-06-11T06:21:49.476Z] [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.

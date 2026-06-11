@@ -165,10 +165,12 @@ export default function ServerPage() {
         await updateDoc(doc(db, "servers", id as string), {
           status: "offline"
         });
-        throw new Error(result.error);
+        // We no longer throw error here to avoid the toast, the error is already in logs.
+        return;
       }
 
       if (action === "start" || action === "restart") {
+        // Reduced timeout for snappier feedback
         setTimeout(async () => {
           await updateDoc(doc(db, "servers", id as string), {
             status: "online"
@@ -177,14 +179,11 @@ export default function ServerPage() {
             title: "Container Online",
             description: `Docker instance with Node v${server.nodeVersion} is running.`
           });
-        }, 4000);
+        }, 1500);
       }
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Docker Boot Error",
-        description: error.message || "Failed to communicate with agent node."
-      });
+      // General error handling without specific Docker Boot Error toast
+      console.error("Power action failed", error);
     }
   };
 
