@@ -27,7 +27,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     await fs.mkdir(path.dirname(logPath), { recursive: true });
 
     if (action === 'start' || action === 'restart') {
-      let logBuffer = action === 'restart' ? `\n${timestamp()} [SYSTEM] Restart signal received. Re-initializing container...\n` : '\n';
+      // CLEAR LOGS: Start with a fresh buffer for start/restart actions
+      let logBuffer = action === 'restart' 
+        ? `${timestamp()} [SYSTEM] Restart signal received. Re-initializing container...\n` 
+        : `${timestamp()} [SYSTEM] Starting container...\n`;
       
       // 1. Check Disk Usage
       const disk = await getServerDiskUsage(serverId);
@@ -59,7 +62,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // 3. Logic: If files don't exist, terminate boot
       if (!packageExists || !entryExists) {
         logBuffer += `${timestamp()} [SYSTEM] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.\n`;
-        await fs.appendFile(logPath, logBuffer);
+        // Write the failure log (overwriting previous logs)
+        await fs.writeFile(logPath, logBuffer);
         return { 
           success: false, 
           error: `Missing mandatory files: ${!packageExists ? 'package.json ' : ''}${!entryExists ? config.entryFile : ''}` 
@@ -78,12 +82,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       logBuffer += `${timestamp()} [SUCCESS] Application is now online and listening on port 8080.\n`;
       logBuffer += `${timestamp()} [LOG] Server reachable at http://${serverId}.stscloud.net\n`;
 
-      // Always append to logs to preserve history, but ensured starting on new line
-      await fs.appendFile(logPath, logBuffer);
+      // USE writeFile TO CLEAR PREVIOUS LOGS FOR START/RESTART
+      await fs.writeFile(logPath, logBuffer);
     } else if (action === 'stop') {
       const stopMsg = `\n${timestamp()} [SYSTEM] SIGTERM received. Stopping Docker container...
 ${timestamp()} [INFO] Processes exited with code 0.
 ${timestamp()} [SYSTEM] Node is now offline. Project data is preserved in storage.\n`;
+      // For STOP, we append so users can see the shutdown logs after the session logs
       await fs.appendFile(logPath, stopMsg);
     }
 
