@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -17,10 +18,13 @@ export async function provisionServerFiles(serverId: string) {
     await fs.mkdir(filesDir, { recursive: true });
     await fs.mkdir(logsDir, { recursive: true });
 
-    // Create example log file
+    // Create initial provisioning log
     const exampleLogPath = path.join(logsDir, 'example.txt');
-    const timestamp = new Date().toISOString();
-    await fs.writeFile(exampleLogPath, `[${timestamp}] Node provisioned successfully.\n[${timestamp}] Welcome to STSCloud.`);
+    const isoTime = new Date().toISOString();
+    const initialLogs = `[${isoTime}] [SYSTEM] Node provisioned successfully.
+[${isoTime}] [SYSTEM] Welcome to STSCloud Infrastructure.\n`;
+    
+    await fs.writeFile(exampleLogPath, initialLogs);
 
     return { success: true, path: baseDir };
   } catch (error: any) {

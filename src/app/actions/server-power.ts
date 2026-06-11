@@ -27,7 +27,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     await fs.mkdir(path.dirname(logPath), { recursive: true });
 
     if (action === 'start' || action === 'restart') {
-      let logBuffer = action === 'restart' ? `\n${timestamp()} [SYSTEM] Restart signal received. Re-initializing container...\n` : '';
+      let logBuffer = action === 'restart' ? `\n${timestamp()} [SYSTEM] Restart signal received. Re-initializing container...\n` : '\n';
       
       // 1. Check Disk Usage
       const disk = await getServerDiskUsage(serverId);
@@ -78,16 +78,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       logBuffer += `${timestamp()} [SUCCESS] Application is now online and listening on port 8080.\n`;
       logBuffer += `${timestamp()} [LOG] Server reachable at http://${serverId}.stscloud.net\n`;
 
-      if (action === 'start') {
-        await fs.writeFile(logPath, logBuffer);
-      } else {
-        await fs.appendFile(logPath, logBuffer);
-      }
+      // Always append to logs to preserve history, but ensured starting on new line
+      await fs.appendFile(logPath, logBuffer);
     } else if (action === 'stop') {
       const stopMsg = `\n${timestamp()} [SYSTEM] SIGTERM received. Stopping Docker container...
 ${timestamp()} [INFO] Processes exited with code 0.
-${timestamp()} [SYSTEM] Node is now offline. Project data is preserved in storage.
-`;
+${timestamp()} [SYSTEM] Node is now offline. Project data is preserved in storage.\n`;
       await fs.appendFile(logPath, stopMsg);
     }
 

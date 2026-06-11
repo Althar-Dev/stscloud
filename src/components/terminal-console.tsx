@@ -52,11 +52,23 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         if (line.includes('[SYSTEM]')) type = "info";
         if (line.includes('[DEBUG]')) type = "warn";
 
+        // Parse timestamp from line if it exists (Format: [2026-06-10T...])
+        let timestamp = "LIVE";
+        let displayMessage = line;
+        
+        const timestampMatch = line.match(/^\[(.*?)\]/);
+        if (timestampMatch) {
+          const rawTime = timestampMatch[1];
+          // Shorten ISO string for cleaner UI
+          timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
+          displayMessage = line.replace(timestampMatch[0], '').trim();
+        }
+
         return {
           id: `fs-${i}-${line.length}`,
-          timestamp: 'LIVE',
+          timestamp,
           type,
-          message: line,
+          message: displayMessage,
         };
       });
       setLogs(mappedLogs);
@@ -178,12 +190,13 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-1.5 animate-in fade-in slide-in-from-left-1 duration-300">
-              <span className="text-muted-foreground opacity-40 mr-3 tabular-nums text-[10px] md:text-xs">[{log.timestamp}]</span>
+            <div key={log.id} className="mb-1.5 animate-in fade-in slide-in-from-left-1 duration-300 flex items-start gap-3">
+              <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] md:text-xs shrink-0 mt-0.5">[{log.timestamp}]</span>
               <span className={cn(
-                log.type === "error" ? "text-red-400" :
+                "break-all",
+                log.type === "error" ? "text-red-400 font-bold" :
                 log.type === "warn" ? "text-yellow-400" :
-                log.type === "success" ? "text-green-400" : "text-slate-300"
+                log.type === "success" ? "text-green-400 font-semibold" : "text-slate-300"
               )}>
                 {log.message}
               </span>
