@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,9 @@ import {
   Plus,
   FileText,
   FolderPlus,
-  Save
+  Save,
+  Archive,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +55,9 @@ import {
   createServerFolder, 
   deleteServerPath,
   readFileContent,
-  updateFileContent
+  updateFileContent,
+  uploadServerFile,
+  unarchiveServerFile
 } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -78,6 +83,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [editingFileName, setEditingFileName] = React.useState("");
   const [editingContent, setEditingContent] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+
+  // Drag and Drop State
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
@@ -131,6 +139,70 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     }
   };
 
+  const handleUploadFiles = async (inputFiles: FileList | null) => {
+    if (!serverId || !inputFiles || inputFiles.length === 0) return;
+
+    setLoading(true);
+    try {
+      for (let i = 0; i < inputFiles.length; i++) {
+        const file = inputFiles[i];
+        const reader = new FileReader();
+        
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const result = await uploadServerFile(serverId, file.name, base64);
+        if (!result.success) throw new Error(result.error);
+      }
+
+      toast({
+        title: "Upload Success",
+        description: `${inputFiles.length} file(s) have been uploaded.`
+      });
+      fetchFiles();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnarchive = async (fileName: string) => {
+    if (!serverId) return;
+    setLoading(true);
+    try {
+      const result = await unarchiveServerFile(serverId, fileName);
+      if (result.success) {
+        toast({
+          title: "Extraction Complete",
+          description: `Extracted ${fileName} successfully.`
+        });
+        fetchFiles();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Unarchive Error",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (name: string) => {
     if (!serverId) return;
     const result = await deleteServerPath(serverId, name);
@@ -169,10 +241,43 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     setIsSaving(false);
   };
 
+  // Drag and Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleUploadFiles(e.dataTransfer.files);
+  };
+
   const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div 
+      className={cn(
+        "flex flex-col gap-4 relative transition-all duration-300",
+        isDragging && "ring-4 ring-primary/20 bg-primary/5 rounded-2xl p-4"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl pointer-events-none">
+          <Upload className="size-12 text-primary animate-bounce mb-4" />
+          <p className="text-xl font-bold font-headline text-primary">Drop files to upload</p>
+          <p className="text-sm text-muted-foreground mt-2">Support ZIP and multiple files</p>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto max-w-full pb-1 whitespace-nowrap">
           <span className="hover:text-primary cursor-pointer">/root</span>
@@ -193,10 +298,19 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button size="sm" variant="outline" className="h-9 gap-2">
-            <Upload className="size-4" />
-            <span className="hidden xs:inline">Upload</span>
-          </Button>
+          
+          <div className="relative">
+            <input 
+              type="file" 
+              multiple 
+              className="absolute inset-0 opacity-0 cursor-pointer" 
+              onChange={(e) => handleUploadFiles(e.target.files)}
+            />
+            <Button size="sm" variant="outline" className="h-9 gap-2 pointer-events-none">
+              <Upload className="size-4" />
+              <span className="hidden xs:inline">Upload</span>
+            </Button>
+          </div>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -217,7 +331,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+      <div className="rounded-xl border border-border/50 bg-card overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-secondary/20">
@@ -233,13 +347,13 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-20">
                     <Loader2 className="size-6 animate-spin mx-auto text-primary" />
-                    <p className="text-xs text-muted-foreground mt-2">Accessing storage...</p>
+                    <p className="text-xs text-muted-foreground mt-2">Processing...</p>
                   </TableCell>
                 </TableRow>
               ) : filteredFiles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-20 opacity-50">
-                    <p className="text-sm">No items found in this directory.</p>
+                    <p className="text-sm">No items found. Drag and drop files here to upload.</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -269,10 +383,15 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                             <MoreVertical className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuContent align="end" className="w-44">
                           {file.type === "file" && (
                             <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}>
                               <Edit2 className="size-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
+                          {file.name.toLowerCase().endsWith('.zip') && (
+                            <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}>
+                              <Archive className="size-4" /> Unarchive
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem className="gap-2">

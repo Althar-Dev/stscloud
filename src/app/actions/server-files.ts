@@ -1,7 +1,9 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import AdmZip from 'adm-zip';
 
 /**
  * @fileOverview Server actions for managing server-specific files and logs.
@@ -45,6 +47,32 @@ export async function createServerFile(serverId: string, fileName: string) {
     await fs.writeFile(filePath, '');
     return { success: true };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function uploadServerFile(serverId: string, fileName: string, base64Content: string) {
+  try {
+    const filePath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', fileName);
+    const buffer = Buffer.from(base64Content, 'base64');
+    await fs.writeFile(filePath, buffer);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function unarchiveServerFile(serverId: string, fileName: string) {
+  try {
+    const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
+    const filePath = path.join(serverPath, fileName);
+    
+    const zip = new AdmZip(filePath);
+    zip.extractAllTo(serverPath, true);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('Unarchive Error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -142,9 +170,6 @@ export async function getServerDiskUsage(serverId: string) {
   }
 }
 
-/**
- * Deletes the entire server directory from the storage.
- */
 export async function decommissionServerFiles(serverId: string) {
   try {
     const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
