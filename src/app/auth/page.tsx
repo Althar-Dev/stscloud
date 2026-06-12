@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -17,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useAuth, useFirestore, useUser } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
@@ -39,7 +37,6 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [loadingProgress, setLoadingProgress] = React.useState(0);
 
   const isLogin = type === "login" || type === "signin";
 
@@ -49,19 +46,6 @@ export default function AuthPage() {
       router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
-
-  // Simulate progress for Cloudflare-like effect
-  React.useEffect(() => {
-    if (authLoading || user) {
-      const interval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          if (prev >= 100) return 100;
-          return prev + 2;
-        });
-      }, 30);
-      return () => clearInterval(interval);
-    }
-  }, [authLoading, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,33 +91,6 @@ export default function AuthPage() {
       setSubmitting(false);
     }
   };
-
-  // Minimalist branded loading without text, matched width icon and bar
-  if (authLoading || user) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 sm:p-8">
-        <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
-          <div className="relative w-full aspect-square mb-2">
-            <Image 
-              src="/img/icon.png" 
-              alt="STSCloud" 
-              fill 
-              className="object-contain grayscale opacity-60" 
-              priority
-            />
-          </div>
-          <div className="w-full">
-            <div className="h-[4px] w-full bg-secondary overflow-hidden rounded-full">
-              <div 
-                className="h-full bg-primary transition-all duration-300 ease-out" 
-                style={{ width: `${loadingProgress}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -228,7 +185,11 @@ export default function AuthPage() {
             <div className="text-center text-xs text-muted-foreground">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
               <Link 
-                href={`/auth?type=${isLogin ? "signup" : "login"}`}
+                href={`/auth?type=login`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(`/auth?type=${isLogin ? "signup" : "login"}`);
+                }}
                 className="text-primary font-bold hover:underline"
               >
                 {isLogin ? "Create one" : "Sign in instead"}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,17 +36,15 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
-import { Loader } from "@/components/loader";
 
 export default function ServersPage() {
-  const { user, loading: authLoading } = useUser();
+  const { user } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const [profile, setProfile] = React.useState<any>(null);
   const [servers, setServers] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -68,7 +65,6 @@ export default function ServersPage() {
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setServers(list);
-      setLoading(false);
     });
 
     return () => {
@@ -89,10 +85,6 @@ export default function ServersPage() {
     server.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (server.plan && server.plan.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  if (authLoading || loading) {
-    return <Loader />;
-  }
 
   return (
     <div className="bg-background min-h-screen">

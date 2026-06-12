@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -22,7 +21,8 @@ import {
   Trash2,
   Globe,
   Bot,
-  Code2
+  Code2,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -64,7 +64,6 @@ import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { decommissionServerFiles } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Loader } from "@/components/loader";
 
 const resourcePresets = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
@@ -103,7 +102,6 @@ export default function UserDetailPage() {
   const [profile, setProfile] = React.useState<any>(null);
   const [targetUser, setTargetUser] = React.useState<any>(null);
   const [userServers, setUserServers] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
 
   // Provisioning State
@@ -153,7 +151,6 @@ export default function UserDetailPage() {
         });
         router.push("/dev");
       }
-      setLoading(false);
     });
 
     const serversQuery = query(collection(db, "servers"), where("ownerId", "==", userId));
@@ -241,10 +238,6 @@ export default function UserDetailPage() {
   };
 
   const availableRuntimes = runtimesByTemplate[provisionTemplate] || [];
-
-  if (loading || authLoading) {
-    return <Loader />;
-  }
 
   if (!targetUser) return null;
 

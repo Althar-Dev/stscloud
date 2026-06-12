@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -16,7 +15,8 @@ import {
   Users,
   Search,
   ChevronRight,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,6 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { Loader } from "@/components/loader";
 
 export default function DevConsole() {
   const router = useRouter();
@@ -63,7 +62,6 @@ export default function DevConsole() {
   const { toast } = useToast();
   
   const [profile, setProfile] = React.useState<any>(null);
-  const [profileLoading, setProfileLoading] = React.useState(true);
   
   // Real Data States
   const [usersList, setUsersList] = React.useState<any[]>([]);
@@ -97,7 +95,6 @@ export default function DevConsole() {
         } else {
           router.replace("/dashboard");
         }
-        setProfileLoading(false);
       },
       async (err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -206,10 +203,6 @@ export default function DevConsole() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
-
-  if (authLoading || profileLoading) {
-    return <Loader />;
-  }
 
   if (!profile || profile.dev !== true) return null;
 

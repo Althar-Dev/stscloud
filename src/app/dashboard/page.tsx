@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,28 +34,24 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where, limit } from "firebase/firestore";
-import { Loader } from "@/components/loader";
 
 export default function Dashboard() {
-  const { user, loading: authLoading } = useUser();
+  const { user } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const [profile, setProfile] = React.useState<any>(null);
   const [servers, setServers] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user?.uid) return;
     
-    // User Profile Listener
     const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
     });
 
-    // Recent Servers Listener
     const serversQuery = query(
       collection(db, "servers"),
       where("ownerId", "==", user.uid),
@@ -66,7 +61,6 @@ export default function Dashboard() {
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setServers(list);
-      setLoading(false);
     });
 
     return () => {
@@ -85,10 +79,6 @@ export default function Dashboard() {
 
   const totalServers = servers.length;
   const activeServers = servers.filter(s => s.status === "online").length;
-
-  if (authLoading || loading) {
-    return <Loader />;
-  }
 
   return (
     <div className="bg-background min-h-screen">

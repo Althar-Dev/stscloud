@@ -63,7 +63,6 @@ import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
-import { Loader } from "@/components/loader";
 
 export default function ServerPage() {
   const { id } = useParams();
@@ -76,7 +75,6 @@ export default function ServerPage() {
   const [profile, setProfile] = React.useState<any>(null);
   const [server, setServer] = React.useState<any>(null);
   const [diskUsage, setDiskUsage] = React.useState<number>(0);
-  const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState("console");
 
   const [serverName, setServerName] = React.useState("");
@@ -109,7 +107,6 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Instance removed", description: "The server instance is no longer available." });
         router.push("/dashboard");
       }
-      setLoading(false);
     });
 
     return () => {
@@ -228,8 +225,6 @@ export default function ServerPage() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
-
-  if (loading) return <Loader />;
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
