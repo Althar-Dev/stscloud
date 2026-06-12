@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -12,17 +13,7 @@ import AnsiFilter from "ansi-to-html";
 const ansiConverter = new AnsiFilter({
   newline: false,
   escapeXML: true,
-  stream: true,
-  colors: {
-    0: "#000000",
-    1: "#ff5555", // Red
-    2: "#50fa7b", // Green
-    3: "#f1fa8c", // Yellow
-    4: "#bd93f9", // Purple
-    5: "#ff79c6", // Pink
-    6: "#8be9fd", // Cyan
-    7: "#f8f8f2"  // White
-  }
+  stream: true
 });
 
 interface LogLine {

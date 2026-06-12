@@ -1,8 +1,10 @@
+
 'use server';
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import gradient from 'gradient-string';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
@@ -42,9 +44,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
   const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
   const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-  const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-  const purple = (s: string) => `\x1b[34m${s}\x1b[0m`;
-  const pink = (s: string) => `\x1b[35m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -81,7 +80,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       
-      const ascii = `${cyan('░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄')}\n${purple('░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█')}\n${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}`;
+      const asciiRaw = `░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
+░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
+░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
+      
+      // Generate gradient ASCII
+      const ascii = gradient(['#bd93f9', '#ff79c6', '#ffb86c']).multiline(asciiRaw);
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
