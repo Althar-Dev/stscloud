@@ -80,11 +80,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // 1. Prepare Environment
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       // Clear logs on fresh start/restart
-      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence for Node.js v${config.nodeVersion}...\n`);
+      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing environment for Node.js v${config.nodeVersion}...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
-      // 2. Dependency Check & Real-time Install
+      // 2. Dependency Check & Version-Specific Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       try {
         await fs.access(nodeModulesPath);
@@ -93,8 +93,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         logStream.write(`${timestamp()} [STS] Node_modules not found. Installing dependencies using Node.js v${config.nodeVersion} context...\n`);
         
         await new Promise((resolve, reject) => {
-          // Note: Using standard 'npm' but logging the configured version context
-          const installProcess = spawn('npm', ['install', '--production'], {
+          // Wrap with npx -p node@version to force the requested runtime
+          const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
             cwd: filesDir,
             env: { ...process.env, NODE_ENV: 'production' }
           });
@@ -121,14 +121,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       // 3. Prepare Command
       const commandParts = config.startupCommand.split(' ');
-      const mainCmd = commandParts[0];
-      const args = commandParts.slice(1);
-
-      logStream.write(`${timestamp()} [STS] Activating application environment (Node.js v${config.nodeVersion})...\n`);
+      
+      logStream.write(`${timestamp()} [STS] Activating virtual environment (Node.js v${config.nodeVersion})...\n`);
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
-      // 4. REAL SPAWN FOR USER SCRIPT
-      const child = spawn(mainCmd, args, {
+      // 4. REAL SPAWN WITH VERSION WRAPPER
+      // We use npx to ensure the 'node' or 'npm' command inside config.startupCommand uses the right version
+      const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
         cwd: filesDir,
         detached: true, // Crucial for process group killing
         stdio: ['ignore', 'pipe', 'pipe'],
