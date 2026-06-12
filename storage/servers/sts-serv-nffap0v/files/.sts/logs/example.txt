@@ -1,17 +1,19 @@
-[2026-06-12T01:51:56.383Z] [STS] Welcome to STSCloud.
-[2026-06-12T01:51:56.383Z] [STS] Starting container...
-[2026-06-12T01:51:56.422Z] [STS] Checking allocated disk space... 0.02MB used
-[2026-06-12T01:51:56.422Z] [STS] Found package.json. Dependency check passed.
-[2026-06-12T01:51:56.422Z] [STS] Entry file 'main.js' located.
-[2026-06-12T01:51:56.422Z] [DOCKER] Pulling image: node:20-alpine...
-[2026-06-12T01:51:56.422Z] [DOCKER] Image node:20-alpine pulled successfully.
-[2026-06-12T01:51:56.422Z] [DOCKER] Creating container with 20 environment...
-[2026-06-12T01:51:56.422Z] [STS] Running: npm install --production
-[2026-06-12T01:51:56.422Z] [INFO] added 142 packages, and audited 143 packages in 4s
-[2026-06-12T01:51:56.422Z] [STS] Executing startup command: npm start
-[2026-06-12T01:51:56.422Z] [SUCCESS] Application is now online and listening on port 8080.
-[2026-06-12T01:51:56.422Z] [STS] Server reachable at http://sts-serv-nffap0v.stscloud.net
+[2026-06-12T02:00:39.531Z] [STS] Welcome to STSCloud.
+[2026-06-12T02:00:39.531Z] [STS] Starting container...
+[2026-06-12T02:00:39.531Z] [DOCKER] Pulling image: node:20-alpine...
+[2026-06-12T02:00:39.531Z] [DOCKER] Image node:20-alpine pulled successfully.
+[2026-06-12T02:00:39.531Z] [DOCKER] Creating network isolation... done.
+[2026-06-12T02:00:39.559Z] [STS] Checking allocated disk space... 0.02MB used
+[2026-06-12T02:00:39.562Z] [STS] Found package.json. Name: telegram-STS, Version: 1.0.0
+[2026-06-12T02:00:39.563Z] [STS] Entry file 'main.js' located.
+[2026-06-12T02:00:39.563Z] [DOCKER] Mounting local volumes for node_modules...
+[2026-06-12T02:00:39.563Z] [STS] Environment: NODE_ENV=production
+[2026-06-12T02:00:39.563Z] [STS] Running: npm install --production
+[2026-06-12T02:00:39.563Z] [INFO] added 142 packages, and audited 143 packages in 3.8s
+[2026-06-12T02:00:39.563Z] [STS] Executing startup command: npm start
+[2026-06-12T02:00:39.563Z] [SUCCESS] Application is now online and listening on port 8080.
+[2026-06-12T02:00:39.563Z] [STS] Server reachable at http://sts-serv-nffap0v.stscloud.net
 
-[2026-06-12T01:52:18.270Z] [STS] SIGTERM received. Stopping Docker container...
-[2026-06-12T01:52:18.270Z] [INFO] Processes exited with code 0.
-[2026-06-12T01:52:18.270Z] [STS] Node is now offline. Project data is preserved in storage.
+[2026-06-12T02:00:48.243Z] [STS] SIGTERM received. Stopping Docker container...
+[2026-06-12T02:00:48.243Z] [INFO] Processes exited with code 0.
+[2026-06-12T02:00:48.243Z] [STS] Node is now offline. Project data is preserved in storage.

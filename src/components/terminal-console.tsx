@@ -11,7 +11,7 @@ import { getServerLogs } from "@/app/actions/server-files";
 interface LogLine {
   id: string;
   timestamp: string;
-  type: "info" | "error" | "warn" | "success";
+  type: "info" | "error" | "warn" | "success" | "user";
   message: string;
 }
 
@@ -50,6 +50,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         if (line.includes('[SUCCESS]')) type = "success";
         if (line.includes('[SYSTEM]') || line.includes('[STS]')) type = "info";
         if (line.includes('[DEBUG]')) type = "warn";
+        if (line.includes('[USER]')) type = "user";
 
         let timestamp = "LIVE";
         let displayMessage = line;
@@ -60,6 +61,9 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
         }
+
+        // Clean labels from message
+        displayMessage = displayMessage.replace('[STS]', '').replace('[USER]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
 
         return {
           id: `fs-${i}-${line.length}`,
@@ -75,16 +79,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   }, [serverId]);
 
   React.useEffect(() => {
-    // Initial fetch
     fetchLogs();
-    
-    // Fast polling for real-time feel
     const pollInterval = setInterval(() => {
       if (externalStatus !== 'offline') {
         fetchLogs();
       }
     }, 500);
-
     return () => clearInterval(pollInterval);
   }, [fetchLogs, externalStatus]);
 
@@ -103,7 +103,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
       if (cmd === "help") {
-        addLog("Available commands: help, status, list, clear", "success");
+        addLog("Available commands: help, status, clear", "success");
       } else if (cmd === "status") {
         addLog(`Instance Status: ${externalStatus || "offline"}`, "info");
       } else if (cmd === "clear") {
@@ -144,40 +144,19 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         </div>
 
         <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/50">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="size-7 md:size-8 hover:bg-green-500/10 hover:text-green-500 transition-colors" 
-            onClick={() => onPowerAction?.("start")} 
-            disabled={externalStatus !== "offline"}
-          >
+          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-green-500/10 hover:text-green-500" onClick={() => onPowerAction?.("start")} disabled={externalStatus !== "offline"}>
             <Play className="size-3.5 md:size-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="size-7 md:size-8 hover:bg-blue-500/10 hover:text-blue-500 transition-colors" 
-            onClick={() => onPowerAction?.("restart")}
-            disabled={externalStatus === "offline"}
-          >
+          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-blue-500/10 hover:text-blue-500" onClick={() => onPowerAction?.("restart")} disabled={externalStatus === "offline"}>
             <RotateCcw className="size-3.5 md:size-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="size-7 md:size-8 hover:bg-red-500/10 hover:text-red-500 transition-colors" 
-            onClick={() => onPowerAction?.("stop")} 
-            disabled={externalStatus === "offline"}
-          >
+          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-red-500/10 hover:text-red-500" onClick={() => onPowerAction?.("stop")} disabled={externalStatus === "offline"}>
             <Square className="size-3.5 md:size-4" />
           </Button>
         </div>
       </div>
 
-      <div 
-        ref={scrollRef}
-        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar"
-      >
+      <div ref={scrollRef} className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar">
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
@@ -196,7 +175,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
                 "break-all",
                 log.type === "error" ? "text-red-400 font-bold" :
                 log.type === "warn" ? "text-yellow-400" :
-                log.type === "success" ? "text-green-400 font-semibold" : "text-slate-300"
+                log.type === "success" ? "text-green-400 font-semibold" : 
+                log.type === "user" ? "text-slate-100" : "text-slate-400"
               )}>
                 {log.message}
               </span>
@@ -207,9 +187,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
       <form onSubmit={handleCommand} className="p-2 md:p-3 border-t border-border/50 bg-secondary/20 flex gap-2">
         <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-xs pointer-events-none">
-            $
-          </span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-xs pointer-events-none">$</span>
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
