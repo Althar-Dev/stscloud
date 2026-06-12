@@ -1,6 +1,17 @@
-[2026-06-11T07:15:35.359Z] [STS] Welcome to STSCloud.
-[2026-06-11T07:15:35.359Z] [STS] Starting container...
-[2026-06-11T07:15:35.388Z] [STS] Checking allocated disk space... 0.02MB used
-[2026-06-11T07:15:35.390Z] [STS] Found package.json. Dependency check passed.
-[2026-06-11T07:15:35.391Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
-[2026-06-11T07:15:35.391Z] [STS] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.
+[2026-06-12T01:51:56.383Z] [STS] Welcome to STSCloud.
+[2026-06-12T01:51:56.383Z] [STS] Starting container...
+[2026-06-12T01:51:56.422Z] [STS] Checking allocated disk space... 0.02MB used
+[2026-06-12T01:51:56.422Z] [STS] Found package.json. Dependency check passed.
+[2026-06-12T01:51:56.422Z] [STS] Entry file 'main.js' located.
+[2026-06-12T01:51:56.422Z] [DOCKER] Pulling image: node:20-alpine...
+[2026-06-12T01:51:56.422Z] [DOCKER] Image node:20-alpine pulled successfully.
+[2026-06-12T01:51:56.422Z] [DOCKER] Creating container with 20 environment...
+[2026-06-12T01:51:56.422Z] [STS] Running: npm install --production
+[2026-06-12T01:51:56.422Z] [INFO] added 142 packages, and audited 143 packages in 4s
+[2026-06-12T01:51:56.422Z] [STS] Executing startup command: npm start
+[2026-06-12T01:51:56.422Z] [SUCCESS] Application is now online and listening on port 8080.
+[2026-06-12T01:51:56.422Z] [STS] Server reachable at http://sts-serv-nffap0v.stscloud.net
+
+[2026-06-12T01:52:18.270Z] [STS] SIGTERM received. Stopping Docker container...
+[2026-06-12T01:52:18.270Z] [INFO] Processes exited with code 0.
+[2026-06-12T01:52:18.270Z] [STS] Node is now offline. Project data is preserved in storage.
