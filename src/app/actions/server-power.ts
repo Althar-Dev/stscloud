@@ -20,8 +20,9 @@ export async function getServerProcessStatus(serverId: string) {
     
     // Signal 0 checks for process existence without killing it
     process.kill(pid, 0);
-    return { running: true };
+    return { running: true, pid };
   } catch (e) {
+    // If PID file missing or process not found
     return { running: false };
   }
 }
@@ -47,19 +48,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       if (pidStr) {
         const pid = parseInt(pidStr.trim());
         try {
-          // Send signal to the entire process group (negative PID)
-          // This ensures that child processes (like node started by npm) are also killed
+          // Send SIGTERM to the process group (negative PID)
+          // This requires process to have been started with detached: true
           process.kill(-pid, 'SIGTERM');
+          
+          // Wait a bit for graceful shutdown then force if needed
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
         } catch (e) {
-          // If group kill fails, try killing the specific PID
-          try {
-            process.kill(pid, 'SIGTERM');
-          } catch (e2) {}
+          // Fallback to single PID kill if group kill fails
+          try { process.kill(pid, 'SIGTERM'); } catch (e2) {}
         }
         await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {
-      // PID file not found
+      // PID file not found or already gone
     }
   };
 
@@ -81,13 +84,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       // 2. Dependency Check & Real-time Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
+      let installNeeded = false;
       try {
         await fs.access(nodeModulesPath);
         logStream.write(`${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
+        installNeeded = true;
         logStream.write(`${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
         
-        // Spawn npm install and wait for it
         await new Promise((resolve, reject) => {
           const installProcess = spawn('npm', ['install', '--production'], {
             cwd: filesDir,
@@ -124,10 +128,15 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // 4. REAL SPAWN FOR USER SCRIPT
       const child = spawn(mainCmd, args, {
         cwd: filesDir,
-        detached: true, // Crucial for process group killing later
+        detached: true, // Crucial for process group killing
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, NODE_ENV: 'production' }
       });
+
+      // Save PID immediately
+      if (child.pid) {
+        await fs.writeFile(pidPath, child.pid.toString());
+      }
 
       // Stream output directly
       child.stdout?.on('data', (data) => logStream.write(data));
@@ -136,17 +145,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       child.on('error', (err) => {
         const errLog = `\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`;
         fs.appendFile(logPath, errLog).catch(() => {});
+        fs.unlink(pidPath).catch(() => {});
       });
 
       child.on('close', (code) => {
         const exitLog = `\n${timestamp()} [STS] Process exited with code ${code}\n`;
         fs.appendFile(logPath, exitLog).catch(() => {});
+        fs.unlink(pidPath).catch(() => {});
       });
-
-      // Save PID
-      if (child.pid) {
-        await fs.writeFile(pidPath, child.pid.toString());
-      }
 
       // Detach so it keeps running
       child.unref();
