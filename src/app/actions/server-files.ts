@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -6,6 +7,7 @@ import AdmZip from 'adm-zip';
 
 /**
  * @fileOverview Server actions for managing server-specific files and logs with sub-directory support.
+ * Enhanced to ensure process termination during decommissioning.
  */
 
 function getSafePath(serverId: string, subPath: string = '') {
@@ -236,10 +238,22 @@ export async function getServerDiskUsage(serverId: string) {
 export async function decommissionServerFiles(serverId: string) {
   try {
     const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+    const pidPath = path.join(serverDir, 'files', '.sts', 'run.pid');
+    
+    // Safety Kill: Ensure process is dead before deletion
+    try {
+      const pidStr = await fs.readFile(pidPath, 'utf8');
+      const pid = parseInt(pidStr.trim());
+      if (!isNaN(pid)) {
+        try { process.kill(-pid, 'SIGKILL'); } catch (e) { try { process.kill(pid, 'SIGKILL'); } catch (e2) {} }
+      }
+    } catch (e) {}
+
     try {
       await fs.access(serverDir);
       await fs.rm(serverDir, { recursive: true, force: true });
     } catch {}
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
