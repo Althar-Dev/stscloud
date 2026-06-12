@@ -1,18 +1,2 @@
-[2026-06-12T02:55:03.686Z] [STS] Welcome to STSCloud.
-[2026-06-12T02:55:03.686Z] [STS] Initializing boot sequence...
-[2026-06-12T02:55:03.691Z] [STS] Dependencies found. Skipping install.
-[2026-06-12T02:55:03.691Z] [STS] Executing: npm start
-
-
-> telegram-STS@1.0.0 start
-> node main.js
-
-✓ Loaded 3 command handler(s)
-✓ Message handlers loaded
-✓ Loaded 10 callback handler(s)
-✓ Error handlers loaded
-STS started successfully! 🤖
-
-[2026-06-12T02:56:10.053Z] [STS] Process exited with code 0
-
-[2026-06-12T02:56:10.393Z] [STS] SIGTERM received. Node is now offline.
+[2026-06-12T02:58:06.494Z] [STS] Welcome to STSCloud.
+[2026-06-12T02:58:06.494Z] [STS] Console cleared on refresh.

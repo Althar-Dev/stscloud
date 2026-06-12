@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -142,10 +143,6 @@ export default function ServerPage() {
       setLoading(false);
     });
 
-    getServerDiskUsage(id as string).then(res => {
-      if (res.success) setDiskUsage(res.sizeInMB || 0);
-    });
-
     return () => {
       unsubProfile();
       unsubServer();
@@ -178,6 +175,20 @@ export default function ServerPage() {
 
     return () => clearInterval(monitorInterval);
   }, [id, server, db, toast]);
+
+  // Periodic Disk Usage Watcher
+  React.useEffect(() => {
+    if (!id) return;
+    
+    const updateUsage = async () => {
+      const res = await getServerDiskUsage(id as string);
+      if (res.success) setDiskUsage(res.sizeInMB || 0);
+    };
+
+    updateUsage(); // Initial call
+    const interval = setInterval(updateUsage, 10000); // Update disk usage every 10s
+    return () => clearInterval(interval);
+  }, [id]);
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;

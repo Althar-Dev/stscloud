@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -231,6 +232,13 @@ export async function clearServerLogs(serverId: string) {
 export async function getServerDiskUsage(serverId: string) {
   try {
     const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
+    
+    try {
+      await fs.access(serverPath);
+    } catch {
+      return { success: true, sizeInMB: 0 };
+    }
+
     let totalSizeBytes = 0;
     
     async function calculateSize(dirPath: string) {
@@ -238,11 +246,15 @@ export async function getServerDiskUsage(serverId: string) {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
         for (const entry of entries) {
           const fullPath = path.join(dirPath, entry.name);
-          if (entry.isDirectory()) {
-            await calculateSize(fullPath);
-          } else {
+          try {
             const stats = await fs.stat(fullPath);
-            totalSizeBytes += stats.size;
+            if (entry.isDirectory()) {
+              await calculateSize(fullPath);
+            } else {
+              totalSizeBytes += stats.size;
+            }
+          } catch (e) {
+            // Skip files that might be deleted during walk
           }
         }
       } catch (e) {}
@@ -251,6 +263,7 @@ export async function getServerDiskUsage(serverId: string) {
     await calculateSize(serverPath);
     return { success: true, sizeInMB: totalSizeBytes / (1024 * 1024) };
   } catch (error: any) {
+    console.error('Disk Usage Error:', error);
     return { success: false, error: error.message };
   }
 }
