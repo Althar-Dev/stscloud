@@ -6,7 +6,7 @@ import { spawn } from 'child_process';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Optimized to prevent NextJS Server Action timeouts by running execution asynchronously.
+ * Optimized with the requested [STS] [timestamp] format.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -73,7 +73,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       
-      // ASCII Art for STSCloud
       const ascii = `
   ____ _____ ____  ____ _                     _ 
  / ___|_   _/ ___|/ ___| | ___  _   _  __| |
@@ -83,7 +82,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
                                               
 `;
       
-      // Initial Checks
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
       try {
@@ -92,7 +90,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         modulesStatus = 'No';
       }
 
-      // Check Disk (basic check if directory is accessible)
       let diskStatus = 'Ok';
       try {
         await fs.access(filesDir);
@@ -109,7 +106,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // Always overwrite logs on START to clean previous session
       await fs.writeFile(logPath, initialLogs);
 
-      // ASYNC EXECUTION
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         

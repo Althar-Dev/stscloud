@@ -5,6 +5,7 @@ import path from 'path';
 
 /**
  * @fileOverview Server provisioning logic for creating local directory structures.
+ * Uses the consistent [STS] [timestamp] format.
  */
 
 export async function provisionServerFiles(serverId: string) {
@@ -13,17 +14,15 @@ export async function provisionServerFiles(serverId: string) {
     const filesDir = path.join(baseDir, 'files');
     const logsDir = path.join(filesDir, '.sts', 'logs');
 
-    // Create directories
     await fs.mkdir(filesDir, { recursive: true });
     await fs.mkdir(logsDir, { recursive: true });
 
-    // Create initial provisioning log with branding
     const logPath = path.join(logsDir, 'logs.sts');
-    const isoTime = new Date().toISOString();
-    const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.
-[${isoTime}] [STS] Node provisioned successfully.
-[${isoTime}] [STS] Ready for deployment.
-[${isoTime}] [STS] Use Start button to boot the application.\n`;
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const initialLogs = `[STS] [${time}] Welcome to STSCloud.
+[STS] [${time}] Node provisioned successfully.
+[STS] [${time}] Ready for deployment.
+[STS] [${time}] Use Start button to boot the application.\n`;
     
     await fs.writeFile(logPath, initialLogs);
 

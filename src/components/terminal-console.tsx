@@ -59,14 +59,15 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         let timestamp = "";
         let displayMessage = line;
 
-        // Detect [STS] [timestamp] pattern
-        const stsMatch = line.match(/^\[STS\]\s+\[(.*?)\]/);
+        // Pattern matching for [STS] [HH:MM:SS]
+        const stsMatch = line.match(/^\[STS\]\s*\[(.*?)\]/);
         
         if (stsMatch) {
           isSystem = true;
           type = "info";
           timestamp = stsMatch[1];
-          displayMessage = line.replace(/^\[STS\]\s+\[.*?\]/, '').trim();
+          // Strip the prefix to get the message
+          displayMessage = line.replace(/^\[STS\]\s*\[.*?\]/, '').trim();
           
           if (displayMessage.includes('[ERROR]')) type = "error";
           else if (displayMessage.includes('[SUCCESS]')) type = "success";
@@ -178,7 +179,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.isSystem ? (
                 <>
                   <span className="text-primary font-bold shrink-0">[STS]</span>
-                  <span className="text-muted-foreground opacity-50 tabular-nums shrink-0">[{log.timestamp}]</span>
+                  <span className="text-neutral-500 tabular-nums shrink-0"> [{log.timestamp}] </span>
                 </>
               ) : null}
               {log.html ? (

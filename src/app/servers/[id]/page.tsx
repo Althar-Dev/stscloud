@@ -115,7 +115,6 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // SYNC OS Process -> Database Status
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 

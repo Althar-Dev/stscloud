@@ -6,18 +6,17 @@
  |____/ |_| |____/ \____|_|\___/ \__,_|\__,_|
                                               
 
-[STS] [17:44:44] Checking available disk... Ok
-[STS] [17:44:44] Checking node_modules... Ok
-[STS] [17:44:44] Starting with Node.Js v20
-[STS] [17:44:44] Executing npm start
+[STS] [17:50:04] Checking available disk... Ok
+[STS] [17:50:04] Checking node_modules... Ok
+[STS] [17:50:04] Starting with Node.Js v20
+[STS] [17:50:04] Executing npm start
 
 
 > telegram-custom-emoji-code@1.0.0 start
 > node index.js
 
 Bot aktif
+[STS] [17:50:09] Terminating process (SIGINT)...
+[STS] [17:50:09] Server stopped. Status: Offline.
 
-[17:44:58] [STS] Terminating process (SIGINT)...
-[17:44:58] [STS] Server stopped. Status: Offline.
-
-[17:44:58] [STS] Process exited with code null
+[STS] [17:50:09] Process exited with code null
