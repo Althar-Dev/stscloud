@@ -36,7 +36,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const logPath = path.join(stsDir, 'logs', 'logs.sts');
   const pidPath = path.join(stsDir, 'run.pid');
   
-  const timestamp = () => `[${new Date().toISOString()}]`;
+  const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
 
   const killExisting = async () => {
     try {
@@ -61,10 +61,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n${timestamp()} [STS] Terminating process (SIGINT)...\n`);
+    await fs.appendFile(logPath, `\n[${timestamp()}] [STS] Terminating process (SIGINT)...\n`);
     await killExisting();
     if (action === 'stop') {
-      await fs.appendFile(logPath, `${timestamp()} [STS] Server stopped. Status: Offline.\n`);
+      await fs.appendFile(logPath, `[${timestamp()}] [STS] Server stopped. Status: Offline.\n`);
       return { success: true };
     }
   }
@@ -72,23 +72,47 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'start' || action === 'restart') {
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
-      await fs.writeFile(logPath, `${timestamp()} [STS] Starting with Node.js v${config.nodeVersion}...\n`);
+      
+      // ASCII Art for STSCloud
+      const ascii = `
+  ____ _____ ____  ____ _                     _ 
+ / ___|_   _/ ___|/ ___| | ___  _   _  __| |
+ \\___ \\ | | \\___ \\ |   | |/ _ \\| | | |/ _\` |
+  ___) || |  ___) | |___| | (_) | |_| | (_| |
+ |____/ |_| |____/ \\____|_|\\___/ \\__,_|\\__,_|
+                                              
+`;
+      
+      // Initial Checks
+      const nodeModulesPath = path.join(filesDir, 'node_modules');
+      let modulesStatus = 'No';
+      try {
+        await fs.access(nodeModulesPath);
+        modulesStatus = 'Ok';
+      } catch (e) {}
 
-      // ASYNC EXECUTION: Fire and forget to avoid NextJS Server Action Timeout
+      // Check Disk (basic check if directory is accessible)
+      let diskStatus = 'Bad';
+      try {
+        await fs.access(filesDir);
+        diskStatus = 'Ok';
+      } catch (e) {}
+
+      const initialLogs = `${ascii}
+[STS] [${timestamp()}] Checking available disk... ${diskStatus}
+[STS] [${timestamp()}] Checking node_modules... ${modulesStatus}
+[STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}
+[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
+
+      // Always overwrite logs on START to clean previous session
+      await fs.writeFile(logPath, initialLogs);
+
+      // ASYNC EXECUTION
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        // 1. Dependency Check
-        const nodeModulesPath = path.join(filesDir, 'node_modules');
-        let needsInstall = false;
-        try {
-          await fs.access(nodeModulesPath);
-        } catch {
-          needsInstall = true;
-        }
-
-        if (needsInstall) {
-          logStream.write(`${timestamp()} [STS] Installing dependencies (npm install)...\n`);
+        if (modulesStatus === 'No') {
+          logStream.write(`[${timestamp()}] [STS] Installing dependencies (npm install)...\n`);
           
           await new Promise((resolve) => {
             const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
@@ -96,8 +120,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               env: { 
                 ...process.env, 
                 NODE_ENV: 'production',
-                FORCE_COLOR: '1',
-                NPM_CONFIG_COLOR: 'always'
+                FORCE_COLOR: '1'
               }
             });
 
@@ -107,19 +130,15 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           });
         }
 
-        // 2. Start Application with Node Version Wrapper
-        logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
         const commandParts = config.startupCommand.split(' ');
-        
         const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
           cwd: filesDir,
-          detached: true, // Create a process group
+          detached: true,
           stdio: ['ignore', 'pipe', 'pipe'],
           env: { 
             ...process.env, 
             NODE_ENV: 'production',
-            FORCE_COLOR: '1',
-            NPM_CONFIG_COLOR: 'always'
+            FORCE_COLOR: '1'
           }
         });
 
@@ -131,14 +150,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         child.stderr?.on('data', (data) => logStream.write(data));
 
         child.on('close', (code) => {
-          const exitLog = `\n${timestamp()} [STS] Process exited with code ${code}\n`;
+          const exitLog = `\n[${timestamp()}] [STS] Process exited with code ${code}\n`;
           fs.appendFile(logPath, exitLog).catch(() => {});
           fs.unlink(pidPath).catch(() => {});
         });
 
         child.unref();
       })().catch(err => {
-        fs.appendFile(logPath, `\n${timestamp()} [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
+        fs.appendFile(logPath, `\n[${timestamp()}] [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
       });
 
       return { success: true };

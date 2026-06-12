@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -286,13 +285,13 @@ export default function ServerPage() {
               </TabsList>
             </div>
 
-            <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-full md:w-auto">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-full md:w-auto">
+            <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-auto">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50">
                 <Globe className="size-3.5 text-primary" />
                 <div className="flex flex-col">
                   <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>
                   <span className="text-[10px] md:text-xs font-code text-primary font-medium whitespace-nowrap">
-                    {server?.id}.stscloud.id
+                    {id}.stscloud.id
                   </span>
                 </div>
               </div>
