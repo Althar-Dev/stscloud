@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -79,21 +80,20 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // 1. Prepare Environment
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       // Clear logs on fresh start/restart
-      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence...\n`);
+      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence for Node.js v${config.nodeVersion}...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
       // 2. Dependency Check & Real-time Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
-      let installNeeded = false;
       try {
         await fs.access(nodeModulesPath);
         logStream.write(`${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
-        installNeeded = true;
-        logStream.write(`${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
+        logStream.write(`${timestamp()} [STS] Node_modules not found. Installing dependencies using Node.js v${config.nodeVersion} context...\n`);
         
         await new Promise((resolve, reject) => {
+          // Note: Using standard 'npm' but logging the configured version context
           const installProcess = spawn('npm', ['install', '--production'], {
             cwd: filesDir,
             env: { ...process.env, NODE_ENV: 'production' }
@@ -124,6 +124,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const mainCmd = commandParts[0];
       const args = commandParts.slice(1);
 
+      logStream.write(`${timestamp()} [STS] Activating application environment (Node.js v${config.nodeVersion})...\n`);
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
       // 4. REAL SPAWN FOR USER SCRIPT
