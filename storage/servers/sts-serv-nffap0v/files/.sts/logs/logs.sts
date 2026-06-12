@@ -1,22 +1,19 @@
 
-  ____ _____ ____  ____ _                     _ 
- / ___|_   _/ ___|/ ___| | ___  _   _  __| |
- \___ \ | | \___ \ |   | |/ _ \| | | |/ _` |
-  ___) || |  ___) | |___| | (_) | |_| | (_| |
- |____/ |_| |____/ \____|_|\___/ \__,_|\__,_|
-                                              
+[36m░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄[0m
+[34m░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█[0m
+[35m░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
 
-[STS] [17:53:14] Checking available disk... Ok
-[STS] [17:53:14] Checking node_modules... Ok
-[STS] [17:53:14] Starting with Node.Js v20
-[STS] [17:53:14] Executing npm start
+[STS] [17:57:37] Checking available disk... [32mOk[0m
+[STS] [17:57:37] Checking node_modules... [32mOk[0m
+[STS] [17:57:37] Starting with Node.Js v20
+[STS] [17:57:37] Executing npm start
 
 
 > telegram-custom-emoji-code@1.0.0 start
 > node index.js
 
 Bot aktif
-[STS] [17:53:18] Terminating process (SIGINT)...
-[STS] [17:53:18] Server stopped. Status: Offline.
+[STS] [17:57:48] Terminating process (SIGINT)...
+[STS] [17:57:48] Server stopped. Status: Offline.
 
-[STS] [17:53:18] Process exited with code null
+[STS] [17:57:48] Process exited with code null

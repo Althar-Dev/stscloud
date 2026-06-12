@@ -84,8 +84,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const ascii = `
 ${cyan('░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄')}
 ${purple('░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█')}
-${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}
-`;
+${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}`;
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
