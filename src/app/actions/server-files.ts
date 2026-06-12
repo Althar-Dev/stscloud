@@ -219,7 +219,7 @@ export async function clearServerLogs(serverId: string) {
   try {
     const logPath = getLogPath(serverId);
     const isoTime = new Date().toISOString();
-    const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.\n[${isoTime}] [STS] Console cleared on refresh.\n`;
+    const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.\n`;
     
     await fs.mkdir(path.dirname(logPath), { recursive: true });
     await fs.writeFile(logPath, initialLogs);

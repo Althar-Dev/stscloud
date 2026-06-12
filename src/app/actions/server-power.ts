@@ -67,10 +67,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n${timestamp()} [STS] Sending SIGINT (Ctrl+C) to process group...\n`);
+    await fs.appendFile(logPath, `\n${timestamp()} [STS] Terminate process...\n`);
     await killExisting();
     if (action === 'stop') {
-      await fs.appendFile(logPath, `${timestamp()} [STS] Process group terminated. Application is now offline.\n`);
+      await fs.appendFile(logPath, `${timestamp()} [STS] Process terminated. Server is now offline.\n`);
       return { success: true };
     }
   }
