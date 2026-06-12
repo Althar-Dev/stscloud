@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,12 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getServerLogs } from "@/app/actions/server-files";
+import AnsiFilter from "ansi-to-html";
+
+const ansiConverter = new AnsiFilter({
+  newline: false,
+  escapeXML: true,
+  stream: true,
+  colors: {
+    0: "#000000",
+    1: "#ff5555",
+    2: "#50fa7b",
+    3: "#f1fa8c",
+    4: "#bd93f9",
+    5: "#ff79c6",
+    6: "#8be9fd",
+    7: "#f8f8f2"
+  }
+});
 
 interface LogLine {
   id: string;
   timestamp: string;
   type: "info" | "error" | "warn" | "success" | "user";
   message: string;
+  html?: string;
 }
 
 interface TerminalConsoleProps {
@@ -43,7 +62,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         else if (line.includes('[STS]')) type = "info";
         else if (line.includes('[DEBUG]')) type = "warn";
 
-        let timestamp = "LIVE";
+        let timestamp = "";
         let displayMessage = line;
         
         const timestampMatch = line.match(/^\[(.*?)\]/);
@@ -51,10 +70,11 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           const rawTime = timestampMatch[1];
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
+          
+          // System labels removal for cleaner display, ANSI will handle script colors
           displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
         } else {
           type = "user";
-          timestamp = "";
         }
 
         return {
@@ -62,6 +82,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           timestamp,
           type,
           message: displayMessage,
+          html: ansiConverter.toHtml(displayMessage)
         };
       });
       
@@ -89,7 +110,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    // If user is within 20px of the bottom, keep it sticky
     const atBottom = scrollHeight - clientHeight <= scrollTop + 20;
     setIsSticky(atBottom);
   };
@@ -103,15 +123,16 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       timestamp: "",
       type: "info",
       message: `$ ${inputValue}`,
+      html: ansiConverter.toHtml(`$ ${inputValue}`)
     };
     setLogs((prev) => [...prev, newLine]);
     setInputValue("");
-    setIsSticky(true); // Force sticky on manual command
+    setIsSticky(true);
     
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
       if (cmd === "help") {
-        setLogs(prev => [...prev, { id: Date.now().toString(), timestamp: "", type: "success", message: "Available: help, status, clear" }]);
+        setLogs(prev => [...prev, { id: Date.now().toString(), timestamp: "", type: "success", message: "Available: help, status, clear", html: ansiConverter.toHtml("Available: help, status, clear") }]);
       } else if (cmd === "clear") {
         setLogs([]);
       }
@@ -181,14 +202,17 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
-              <span className={cn(
-                "break-all",
-                log.type === "error" ? "text-red-400 font-bold" :
-                log.type === "warn" ? "text-yellow-400" :
-                log.type === "success" ? "text-green-400 font-semibold" : 
-                log.type === "user" ? "text-slate-100" : "text-slate-400"
-              )}>
-                {log.message}
+              <span 
+                className={cn(
+                  "break-all",
+                  log.type === "error" ? "text-red-400 font-bold" :
+                  log.type === "warn" ? "text-yellow-400" :
+                  log.type === "success" ? "text-green-400 font-semibold" : 
+                  log.type === "user" ? "text-slate-100" : "text-slate-400"
+                )}
+                dangerouslySetInnerHTML={log.html ? { __html: log.html } : undefined}
+              >
+                {!log.html && log.message}
               </span>
             </div>
           ))

@@ -93,10 +93,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         logStream.write(`${timestamp()} [STS] Node_modules not found. Installing dependencies using Node.js v${config.nodeVersion} context...\n`);
         
         await new Promise((resolve, reject) => {
-          // Wrap with npx -p node@version to force the requested runtime
           const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
             cwd: filesDir,
-            env: { ...process.env, NODE_ENV: 'production' }
+            env: { 
+              ...process.env, 
+              NODE_ENV: 'production',
+              FORCE_COLOR: '1',
+              NPM_CONFIG_COLOR: 'always'
+            }
           });
 
           installProcess.stdout?.on('data', (data) => logStream.write(data));
@@ -126,12 +130,16 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
       // 4. REAL SPAWN WITH VERSION WRAPPER
-      // We use npx to ensure the 'node' or 'npm' command inside config.startupCommand uses the right version
       const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
         cwd: filesDir,
-        detached: true, // Crucial for process group killing
+        detached: true,
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, NODE_ENV: 'production' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'production',
+          FORCE_COLOR: '1',
+          NPM_CONFIG_COLOR: 'always'
+        }
       });
 
       // Save PID immediately
