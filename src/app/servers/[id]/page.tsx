@@ -116,6 +116,7 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
+  // Real-time status monitor
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
@@ -133,6 +134,7 @@ export default function ServerPage() {
     return () => clearInterval(monitorInterval);
   }, [id, server, db, powerActionActive]);
 
+  // Disk usage update
   React.useEffect(() => {
     if (!id) return;
     const updateUsage = async () => {
@@ -168,11 +170,12 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
       }
       
+      // Extended check for restarts/npm installs
       setTimeout(async () => {
         const check = await getServerProcessStatus(id as string);
         await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
         setPowerActionActive(false);
-      }, 5000);
+      }, 7000);
       
     } catch (error: any) {
       setPowerActionActive(false);

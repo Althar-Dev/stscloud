@@ -15,7 +15,11 @@ export async function getServerProcessStatus(serverId: string) {
   const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
     const pidStr = await fs.readFile(pidPath, 'utf8');
-    const pid = parseInt(pidStr.trim());
+    const content = pidStr.trim();
+    
+    if (content === 'BOOTING') return { running: true, booting: true };
+    
+    const pid = parseInt(content);
     if (isNaN(pid)) return { running: false };
     
     // Check if process group exists (using signal 0)
@@ -48,7 +52,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
-      if (pidStr) {
+      if (pidStr && pidStr.trim() !== 'BOOTING') {
         const pid = parseInt(pidStr.trim());
         try {
           // SIGINT to process group (negative PID) for Ctrl+C behavior
@@ -63,6 +67,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           try { process.kill(pid, 'SIGINT'); } catch (e2) {}
           await fs.unlink(pidPath).catch(() => {});
         }
+      } else {
+        await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {}
   };
@@ -70,6 +76,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'stop' || action === 'restart') {
     await fs.appendFile(logPath, `[STS] [${timestamp()}] Terminating process (SIGINT)...\n`);
     await killExisting();
+    
+    if (action === 'restart') {
+      // Give the OS a moment to release ports and file handles
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     if (action === 'stop') {
       await fs.appendFile(logPath, `[STS] [${timestamp()}] Server stopped. Status: Offline.\n`);
       return { success: true };
@@ -79,13 +91,17 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'start' || action === 'restart') {
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
+      await fs.mkdir(path.dirname(pidPath), { recursive: true });
       
+      // Mark as booting to prevent status check from flipping to offline
+      await fs.writeFile(pidPath, 'BOOTING');
+
       const asciiRaw = `░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
       
-      // Generate gradient ASCII
-      const ascii = gradient(['#bd93f9', '#ff79c6', '#ffb86c']).multiline(asciiRaw);
+      // Generate gradient ASCII (Cyan to Blue)
+      const ascii = gradient(['#00f2fe', '#4facfe'])(asciiRaw);
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
