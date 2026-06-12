@@ -1,2 +1,0 @@
-[2026-06-12T02:58:06.494Z] [STS] Welcome to STSCloud.
-[2026-06-12T02:58:06.494Z] [STS] Console cleared on refresh.

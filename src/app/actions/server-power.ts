@@ -49,7 +49,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const pid = parseInt(pidStr.trim());
         try {
           // Send SIGTERM to the process group (negative PID)
-          // This requires process to have been started with detached: true
           process.kill(-pid, 'SIGTERM');
           
           // Wait a bit for graceful shutdown then force if needed
@@ -67,9 +66,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
+    await fs.appendFile(logPath, `\n${timestamp()} [STS] Initiating shutdown sequence...\n`);
     await killExisting();
     if (action === 'stop') {
-      await fs.appendFile(logPath, `\n${timestamp()} [STS] SIGTERM received. Node is now offline.\n`);
+      await fs.appendFile(logPath, `${timestamp()} [STS] SIGTERM received. Application is now offline.\n`);
       return { success: true };
     }
   }
@@ -78,6 +78,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       // 1. Prepare Environment
       await fs.mkdir(path.dirname(logPath), { recursive: true });
+      // Clear logs on fresh start/restart
       await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });

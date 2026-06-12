@@ -35,9 +35,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     if (result.success && result.content) {
       const lines = result.content.split('\n').filter(l => l.trim());
       const mappedLogs: LogLine[] = lines.map((line, i) => {
-        let type: LogLine["type"] = "user"; // Default to user for raw application output
+        let type: LogLine["type"] = "user";
         
-        // System detection
         if (line.includes('[ERROR]')) type = "error";
         else if (line.includes('[SUCCESS]')) type = "success";
         else if (line.includes('[STS]')) type = "info";
@@ -46,20 +45,15 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         let timestamp = "LIVE";
         let displayMessage = line;
         
-        // Extract system timestamp if present
         const timestampMatch = line.match(/^\[(.*?)\]/);
         if (timestampMatch) {
           const rawTime = timestampMatch[1];
-          // Simple check to see if it's an ISO date or just a string
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
-          
-          // If it was a system log, clean the label
           displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
         } else {
-          // It's raw output from user script
           type = "user";
-          timestamp = ""; // No system timestamp for raw user logs to keep it clean
+          timestamp = "";
         }
 
         return {
@@ -77,13 +71,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   React.useEffect(() => {
     fetchLogs();
+    // Always poll regardless of status to ensure we catch exit logs or stop logs
     const pollInterval = setInterval(() => {
-      if (externalStatus !== 'offline') {
-        fetchLogs();
-      }
+      fetchLogs();
     }, 500);
     return () => clearInterval(pollInterval);
-  }, [fetchLogs, externalStatus]);
+  }, [fetchLogs]);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -104,7 +97,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setLogs((prev) => [...prev, newLine]);
     setInputValue("");
     
-    // Commands here are local terminal helpers
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
       if (cmd === "help") {
