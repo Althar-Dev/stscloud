@@ -61,10 +61,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n[${timestamp()}] [STS] Terminating process (SIGINT)...\n`);
+    await fs.appendFile(logPath, `[STS] [${timestamp()}] Terminating process (SIGINT)...\n`);
     await killExisting();
     if (action === 'stop') {
-      await fs.appendFile(logPath, `[${timestamp()}] [STS] Server stopped. Status: Offline.\n`);
+      await fs.appendFile(logPath, `[STS] [${timestamp()}] Server stopped. Status: Offline.\n`);
       return { success: true };
     }
   }
@@ -85,18 +85,20 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       
       // Initial Checks
       const nodeModulesPath = path.join(filesDir, 'node_modules');
-      let modulesStatus = 'No';
+      let modulesStatus = 'Ok';
       try {
         await fs.access(nodeModulesPath);
-        modulesStatus = 'Ok';
-      } catch (e) {}
+      } catch (e) {
+        modulesStatus = 'No';
+      }
 
       // Check Disk (basic check if directory is accessible)
-      let diskStatus = 'Bad';
+      let diskStatus = 'Ok';
       try {
         await fs.access(filesDir);
-        diskStatus = 'Ok';
-      } catch (e) {}
+      } catch (e) {
+        diskStatus = 'Bad';
+      }
 
       const initialLogs = `${ascii}
 [STS] [${timestamp()}] Checking available disk... ${diskStatus}
@@ -112,7 +114,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
         if (modulesStatus === 'No') {
-          logStream.write(`[${timestamp()}] [STS] Installing dependencies (npm install)...\n`);
+          logStream.write(`[STS] [${timestamp()}] Installing dependencies (npm install)...\n`);
           
           await new Promise((resolve) => {
             const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
@@ -150,14 +152,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         child.stderr?.on('data', (data) => logStream.write(data));
 
         child.on('close', (code) => {
-          const exitLog = `\n[${timestamp()}] [STS] Process exited with code ${code}\n`;
+          const exitLog = `\n[STS] [${timestamp()}] Process exited with code ${code}\n`;
           fs.appendFile(logPath, exitLog).catch(() => {});
           fs.unlink(pidPath).catch(() => {});
         });
 
         child.unref();
       })().catch(err => {
-        fs.appendFile(logPath, `\n[${timestamp()}] [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
+        fs.appendFile(logPath, `\n[STS] [${timestamp()}] [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
       });
 
       return { success: true };

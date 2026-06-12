@@ -27,7 +27,8 @@ const ansiConverter = new AnsiFilter({
 
 interface LogLine {
   id: string;
-  timestamp: string;
+  timestamp?: string;
+  isSystem: boolean;
   type: "info" | "error" | "warn" | "success" | "user";
   message: string;
   html?: string;
@@ -54,35 +55,34 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       const lines = result.content.split('\n').filter(l => l.trim());
       const mappedLogs: LogLine[] = lines.map((line, i) => {
         let type: LogLine["type"] = "user";
-        
-        if (line.includes('[ERROR]')) type = "error";
-        else if (line.includes('[SUCCESS]')) type = "success";
-        else if (line.includes('[STS]')) type = "info";
-        else if (line.includes('[DEBUG]')) type = "warn";
-
+        let isSystem = false;
         let timestamp = "";
         let displayMessage = line;
+
+        // Detect [STS] [timestamp] pattern
+        const stsMatch = line.match(/^\[STS\]\s+\[(.*?)\]/);
         
-        const timestampMatch = line.match(/^\[(.*?)\]/);
-        if (timestampMatch) {
-          const rawTime = timestampMatch[1];
-          timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
-          displayMessage = line.replace(timestampMatch[0], '').trim();
-          displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
-        } else {
-          type = "user";
+        if (stsMatch) {
+          isSystem = true;
+          type = "info";
+          timestamp = stsMatch[1];
+          displayMessage = line.replace(/^\[STS\]\s+\[.*?\]/, '').trim();
+          
+          if (displayMessage.includes('[ERROR]')) type = "error";
+          else if (displayMessage.includes('[SUCCESS]')) type = "success";
+          else if (displayMessage.includes('[DEBUG]')) type = "warn";
         }
 
         return {
           id: `log-${i}-${line.length}`,
           timestamp,
+          isSystem,
           type,
           message: displayMessage,
           html: ansiConverter.toHtml(displayMessage)
         };
       });
       
-      // Limit to 200 lines for stability
       setLogs(mappedLogs.slice(-200));
     } else if (result.success && !result.content) {
       setLogs([]);
@@ -174,10 +174,13 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-2 whitespace-pre">
-              {log.timestamp && (
-                <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
-              )}
+            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-1 whitespace-pre">
+              {log.isSystem ? (
+                <>
+                  <span className="text-primary font-bold shrink-0">[STS]</span>
+                  <span className="text-muted-foreground opacity-50 tabular-nums shrink-0">[{log.timestamp}]</span>
+                </>
+              ) : null}
               {log.html ? (
                 <span 
                   className={cn(
