@@ -173,6 +173,13 @@ export async function getServerLogs(serverId: string) {
     try {
       await fs.access(logPath);
       const content = await fs.readFile(logPath, 'utf8');
+      
+      // Implement maximum 200 lines tail for performance
+      const lines = content.split('\n');
+      if (lines.length > 200) {
+        return { success: true, content: lines.slice(-200).join('\n') };
+      }
+      
       return { success: true, content };
     } catch {
       return { success: true, content: `[${new Date().toISOString()}] [STS] Initializing logs.sts...\n` };

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -85,7 +84,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         };
       });
       
-      setLogs(mappedLogs);
+      // Limit to 200 lines for UI performance
+      setLogs(mappedLogs.slice(-200));
     }
     setIsInitializing(false);
   }, [serverId]);
@@ -105,6 +105,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    // Tolerance of 30px for determining if we are at bottom
     const atBottom = scrollHeight - clientHeight <= scrollTop + 30;
     setIsSticky(atBottom);
   };
@@ -112,6 +113,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
+    // Command execution logic could be added here
     setInputValue("");
   };
 

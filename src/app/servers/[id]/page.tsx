@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -92,18 +91,6 @@ export default function ServerPage() {
   
   // Power Action Lock: Prevent auto-restart sync for 5 seconds after manual actions
   const [powerActionActive, setPowerActionActive] = React.useState(false);
-
-  // Initial Log Cleanup
-  React.useEffect(() => {
-    if (!id || !db) return;
-    const checkAndClearLogs = async () => {
-      const snap = await getDoc(doc(db, "servers", id as string));
-      if (snap.exists() && snap.data().status === "offline") {
-        await clearServerLogs(id as string);
-      }
-    };
-    checkAndClearLogs();
-  }, [id, db]);
 
   // Data Listeners
   React.useEffect(() => {
