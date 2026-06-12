@@ -1,15 +1,37 @@
-[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
-[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
-[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [21:07:10] Checking available disk... [32mOk[0m
-[STS] [21:07:10] Checking node_modules... [32mOk[0m
-[STS] [21:07:10] Starting with Node.Js v20
-[STS] [21:07:10] Executing npm start
+[96m░[39m[96m█[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m█[39m[96m▀[39m[96m░[39m[96m█[39m[96m▀[39m[96m▀[39m[96m░[39m[96m█[39m[96m▀[39m[96m▀[39m[96m░[39m[96m█[39m[96m░[39m[96m░[39m[96m░[39m[96m█[39m[96m▀[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m▀[39m[96m▄[39m
+[96m░[39m[96m▀[39m[96m▀[39m[96m█[39m[96m░[39m[96m░[39m[96m█[39m[96m░[39m[96m░[39m[96m▀[39m[96m▀[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m░[39m[96m░[39m[96m█[39m[96m░[39m[96m░[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m[96m░[39m[96m█[39m
+[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m░[39m[96m▀[39m[96m░[39m[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m▀[39m[96m▀[39m[96m░[39m[96m▀[39m[96m▀[39m[96m░[39m
+[STS] [21:11:46] Checking available disk... [32mOk[0m
+[STS] [21:11:46] Checking node_modules... [32mOk[0m
+[STS] [21:11:46] Starting with Node.Js v20
+[STS] [21:11:46] Executing npm start
 
-
-[STS] [21:07:10] Process exited with code null
 
 > telegram-custom-emoji-code@1.0.0 start
 > node index.js
 
 Bot aktif
+/home/user/studio/storage/servers/sts-serv-nffap0v/files/node_modules/telegraf/lib/core/network/client.js:315
+            throw new error_1.default(data, { method, payload });
+                  ^
+
+TelegramError: 409: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+    at Telegram.callApi [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/core/network/client.js:315:19[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at async [Symbol.asyncIterator] [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/core/network/polling.js:30:33[90m)[39m
+    at async Polling.loop [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/core/network/polling.js:73:30[90m)[39m
+    at async Telegraf.launch [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/telegraf.js:194:13[90m)[39m {
+  response: {
+    ok: [33mfalse[39m,
+    error_code: [33m409[39m,
+    description: [32m'Conflict: terminated by other getUpdates request; make sure that only one bot instance is running'[39m
+  },
+  on: {
+    method: [32m'getUpdates'[39m,
+    payload: { timeout: [33m50[39m, offset: [33m0[39m, allowed_updates: [] }
+  }
+}
+
+Node.js v20.20.2
+
+[STS] [21:11:48] Process exited with code 1

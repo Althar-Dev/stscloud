@@ -99,11 +99,13 @@ export default function ServerPage() {
       if (doc.exists()) {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
-        setServerName(data.name || "");
-        setNodeVersion(data.nodeVersion || "20");
-        setStartupCommand(data.startupCommand || "npm start");
-        setCommandRun(data.commandRun || "node");
-        setEntryFile(data.entryFile || "index.js");
+        
+        // Hanya update input jika berbeda untuk menghindari flickering saat user mengetik
+        setServerName(prev => prev === data.name ? prev : (data.name || ""));
+        setNodeVersion(prev => prev === data.nodeVersion ? prev : (data.nodeVersion || "20"));
+        setStartupCommand(prev => prev === data.startupCommand ? prev : (data.startupCommand || "npm start"));
+        setCommandRun(prev => prev === data.commandRun ? prev : (data.commandRun || "node"));
+        setEntryFile(prev => prev === data.entryFile ? prev : (data.entryFile || "index.js"));
       } else if (!isDeleting) {
         toast({ variant: "destructive", title: "Instance removed", description: "The server instance is no longer available." });
         router.push("/dashboard");
@@ -170,7 +172,7 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
       }
       
-      // Extended check for restarts/npm installs
+      // Jeda untuk memastikan status sinkron
       setTimeout(async () => {
         const check = await getServerProcessStatus(id as string);
         await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });

@@ -37,12 +37,20 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [isSticky, setIsSticky] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const lastRawLogs = React.useRef<string>("");
 
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
     
     const result = await getServerLogs(serverId);
-    if (result.success && result.content) {
+    if (result.success && result.content !== undefined) {
+      // HANYA update state jika konten log berubah
+      if (result.content === lastRawLogs.current) {
+        setIsInitializing(false);
+        return;
+      }
+      
+      lastRawLogs.current = result.content;
       const lines = result.content.split('\n').filter(l => l.trim());
       const mappedLogs: LogLine[] = lines.map((line, i) => {
         let type: LogLine["type"] = "user";
@@ -75,7 +83,10 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       
       setLogs(mappedLogs.slice(-200));
     } else if (result.success && !result.content) {
-      setLogs([]);
+      if (lastRawLogs.current !== "") {
+        lastRawLogs.current = "";
+        setLogs([]);
+      }
     }
     setIsInitializing(false);
   }, [serverId]);
