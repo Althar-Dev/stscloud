@@ -202,18 +202,30 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
-              <span 
-                className={cn(
-                  "break-all",
-                  log.type === "error" ? "text-red-400 font-bold" :
-                  log.type === "warn" ? "text-yellow-400" :
-                  log.type === "success" ? "text-green-400 font-semibold" : 
-                  log.type === "user" ? "text-slate-100" : "text-slate-400"
-                )}
-                dangerouslySetInnerHTML={log.html ? { __html: log.html } : undefined}
-              >
-                {!log.html && log.message}
-              </span>
+              {log.html ? (
+                <span 
+                  className={cn(
+                    "break-all",
+                    log.type === "error" ? "text-red-400 font-bold" :
+                    log.type === "warn" ? "text-yellow-400" :
+                    log.type === "success" ? "text-green-400 font-semibold" : 
+                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                  )}
+                  dangerouslySetInnerHTML={{ __html: log.html }}
+                />
+              ) : (
+                <span 
+                  className={cn(
+                    "break-all",
+                    log.type === "error" ? "text-red-400 font-bold" :
+                    log.type === "warn" ? "text-yellow-400" :
+                    log.type === "success" ? "text-green-400 font-semibold" : 
+                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                  )}
+                >
+                  {log.message}
+                </span>
+              )}
             </div>
           ))
         )}
