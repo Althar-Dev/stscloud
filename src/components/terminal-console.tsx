@@ -82,8 +82,10 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         };
       });
       
-      // Enforce 200 lines limit for UI stability
+      // Limit to 200 lines for stability
       setLogs(mappedLogs.slice(-200));
+    } else if (result.success && !result.content) {
+      setLogs([]);
     }
     setIsInitializing(false);
   }, [serverId]);
@@ -103,7 +105,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const atBottom = scrollHeight - clientHeight <= scrollTop + 30;
+    const atBottom = scrollHeight - clientHeight <= scrollTop + 50;
     setIsSticky(atBottom);
   };
 
@@ -158,12 +160,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       <div 
         ref={scrollRef} 
         onScroll={handleScroll}
-        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar scroll-smooth"
+        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar scroll-smooth overflow-x-auto"
       >
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
-            <span className="text-xs">Connecting to stream...</span>
+            <span className="text-xs">Connecting...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
@@ -172,14 +174,14 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-2">
+            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-2 whitespace-pre">
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
               {log.html ? (
                 <span 
                   className={cn(
-                    "break-all",
+                    "break-normal",
                     log.type === "error" ? "text-red-400 font-bold" :
                     log.type === "warn" ? "text-yellow-400" :
                     log.type === "success" ? "text-green-400 font-semibold" : 
@@ -190,7 +192,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               ) : (
                 <span 
                   className={cn(
-                    "break-all",
+                    "break-normal",
                     log.type === "error" ? "text-red-400 font-bold" :
                     log.type === "warn" ? "text-yellow-400" :
                     log.type === "success" ? "text-green-400 font-semibold" : 

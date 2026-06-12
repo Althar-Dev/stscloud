@@ -56,11 +56,10 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
@@ -80,7 +79,6 @@ export default function ServerPage() {
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState("console");
 
-  // Settings states
   const [serverName, setServerName] = React.useState("");
   const [nodeVersion, setNodeVersion] = React.useState("");
   const [startupCommand, setStartupCommand] = React.useState("");
@@ -89,10 +87,8 @@ export default function ServerPage() {
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   
-  // Power Action Lock: Prevent auto-restart sync for 5 seconds after manual actions
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Data Listeners
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
@@ -122,35 +118,31 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // LOG CLEANER: Clear logs when offline
+  // AUTO-CLEAR: Bersihkan logs.sts setiap kali status terdeteksi offline
   React.useEffect(() => {
     if (server?.status === 'offline' && id) {
-      clearServerLogs(id as string);
+      clearServerLogs(id as string).catch(() => {});
     }
   }, [server?.status, id]);
 
-  // HEALTH MONITOR: Sync DB status with actual OS process
+  // SYNC OS Process -> Database Status
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
     const monitorInterval = setInterval(async () => {
-      const status = await getServerProcessStatus(id as string);
-      
-      // Auto-sync if DB is 'online' but process is dead
-      if (!status.running && server.status === 'online') {
-        updateDoc(doc(db, "servers", id as string), { status: 'offline' });
-        toast({ variant: "destructive", title: "Process Terminated", description: "The application has stopped unexpectedly." });
-      }
-      // Auto-sync if DB is 'offline' but process is actually running
-      else if (status.running && server.status === 'offline') {
-        updateDoc(doc(db, "servers", id as string), { status: 'online' });
-      }
+      try {
+        const status = await getServerProcessStatus(id as string);
+        if (!status.running && server.status === 'online') {
+          updateDoc(doc(db, "servers", id as string), { status: 'offline' });
+        } else if (status.running && server.status === 'offline') {
+          updateDoc(doc(db, "servers", id as string), { status: 'online' });
+        }
+      } catch (e) {}
     }, 3000);
 
     return () => clearInterval(monitorInterval);
-  }, [id, server, db, toast, powerActionActive]);
+  }, [id, server, db, powerActionActive]);
 
-  // Disk Usage Watcher
   React.useEffect(() => {
     if (!id) return;
     const updateUsage = async () => {
@@ -165,7 +157,7 @@ export default function ServerPage() {
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
     
-    // LOCK Health Monitor: Disable auto-sync for 5 seconds to let OS finish the task
+    // POWER LOCK: Kunci status selama 5 detik untuk stabilitas
     setPowerActionActive(true);
     
     let targetStatus = server.status;
@@ -187,11 +179,10 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
       }
       
-      // Delayed validation of state
       setTimeout(async () => {
         const check = await getServerProcessStatus(id as string);
         await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
-        setPowerActionActive(false); // RELEASE LOCK after validation
+        setPowerActionActive(false);
       }, 5000);
       
     } catch (error: any) {
@@ -296,16 +287,17 @@ export default function ServerPage() {
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <ScrollArea className="w-full" orientation="horizontal">
-              <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto inline-flex whitespace-nowrap">
-                <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>
-                <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><FolderOpen className="size-4" /> Files</TabsTrigger>
-                {isNodeJS && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
-                <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><UsersIcon className="size-4" /> Access</TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><History className="size-4" /> Activity</TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-3 md:px-5 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><SettingsIcon className="size-4" /> Settings</TabsTrigger>
+            {/* HORIZONTAL SCROLL CONTAINER FOR TABS */}
+            <div className="w-full md:w-auto overflow-x-auto pb-1 custom-scrollbar">
+              <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto flex whitespace-nowrap">
+                <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>
+                <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><FolderOpen className="size-4" /> Files</TabsTrigger>
+                {isNodeJS && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
+                <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><UsersIcon className="size-4" /> Access</TabsTrigger>
+                <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><History className="size-4" /> Activity</TabsTrigger>
+                <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><SettingsIcon className="size-4" /> Settings</TabsTrigger>
               </TabsList>
-            </ScrollArea>
+            </div>
 
             <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-full md:w-auto">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-full md:w-auto">
@@ -330,7 +322,10 @@ export default function ServerPage() {
           {isNodeJS && (
             <TabsContent value="startup" className="animate-in fade-in duration-500 space-y-8">
               <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
-                <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3"><div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Rocket className="size-5" /></div><div><h2 className="text-xl font-headline font-bold">Boot Configuration</h2><p className="text-xs text-muted-foreground">Modify script execution parameters.</p></div></div>
+                <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Rocket className="size-5" /></div>
+                  <div><h2 className="text-xl font-headline font-bold">Boot Configuration</h2><p className="text-xs text-muted-foreground">Modify script execution parameters.</p></div>
+                </div>
                 <CardContent className="p-8 space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">StartUp Command</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} /></div>
@@ -362,7 +357,7 @@ export default function ServerPage() {
                 <p className="text-sm text-muted-foreground mb-6">Decommissioning will permanently wipe all storage and configuration data.</p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild><Button variant="destructive" className="h-11 font-bold gap-2" disabled={isDeleting}><Trash2 className="size-4" /> Decommission Server</Button></AlertDialogTrigger>
-                  <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Permanently?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. <strong>{server?.name}</strong> will be wiped.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteServer} className="bg-destructive text-white">Yes, Delete Everything</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                  <AlertDialogContent className="rounded-xl border-border/50"><AlertDialogHeader><AlertDialogTitle>Delete Permanently?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. <strong>{server?.name}</strong> will be wiped.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteServer} className="bg-destructive text-white rounded-lg">Yes, Delete Everything</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                 </AlertDialog>
              </div>
           </TabsContent>

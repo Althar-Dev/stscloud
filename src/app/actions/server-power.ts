@@ -6,7 +6,7 @@ import { spawn } from 'child_process';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Optimized to prevent NextJS Server Action timeouts.
+ * Optimized to prevent NextJS Server Action timeouts by running execution asynchronously.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -16,7 +16,7 @@ export async function getServerProcessStatus(serverId: string) {
     const pid = parseInt(pidStr.trim());
     if (isNaN(pid)) return { running: false };
     
-    // Check if process exists by sending signal 0
+    // Check if process group exists (using signal 0)
     process.kill(pid, 0);
     return { running: true, pid };
   } catch (e) {
@@ -44,11 +44,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       if (pidStr) {
         const pid = parseInt(pidStr.trim());
         try {
-          // Kill the process group (negative PID) with SIGINT (Ctrl+C)
+          // SIGINT to process group (negative PID) for Ctrl+C behavior
           process.kill(-pid, 'SIGINT'); 
           await fs.unlink(pidPath).catch(() => {});
           
-          // Force kill after 2s if still breathing
+          // Force kill after 2s if still running
           setTimeout(() => {
              try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
           }, 2000);
@@ -72,13 +72,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'start' || action === 'restart') {
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
-      await fs.writeFile(logPath, `${timestamp()} [STS] Booting with Node.js v${config.nodeVersion}...\n`);
+      await fs.writeFile(logPath, `${timestamp()} [STS] Starting with Node.js v${config.nodeVersion}...\n`);
 
-      // Fire and forget the booting logic to avoid Server Action Timeout
+      // ASYNC EXECUTION: Fire and forget to avoid NextJS Server Action Timeout
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        // 1. Dependency check
+        // 1. Dependency Check
         const nodeModulesPath = path.join(filesDir, 'node_modules');
         let needsInstall = false;
         try {
@@ -88,7 +88,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
 
         if (needsInstall) {
-          logStream.write(`${timestamp()} [STS] node_modules missing. Running npm install...\n`);
+          logStream.write(`${timestamp()} [STS] Installing dependencies (npm install)...\n`);
           
           await new Promise((resolve) => {
             const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
@@ -107,13 +107,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           });
         }
 
-        // 2. Start Application
+        // 2. Start Application with Node Version Wrapper
         logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
         const commandParts = config.startupCommand.split(' ');
         
         const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
           cwd: filesDir,
-          detached: true, 
+          detached: true, // Create a process group
           stdio: ['ignore', 'pipe', 'pipe'],
           env: { 
             ...process.env, 
@@ -138,7 +138,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
         child.unref();
       })().catch(err => {
-        fs.appendFile(logPath, `\n${timestamp()} [ERROR] Boot failure: ${err.message}\n`).catch(() => {});
+        fs.appendFile(logPath, `\n${timestamp()} [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
       });
 
       return { success: true };

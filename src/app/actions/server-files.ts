@@ -181,7 +181,7 @@ export async function getServerLogs(serverId: string) {
       
       return { success: true, content };
     } catch {
-      return { success: true, content: `[${new Date().toISOString()}] [STS] Initializing logs.sts...\n` };
+      return { success: true, content: "" };
     }
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -191,10 +191,8 @@ export async function getServerLogs(serverId: string) {
 export async function clearServerLogs(serverId: string) {
   try {
     const logPath = getLogPath(serverId);
-    const isoTime = new Date().toISOString();
-    const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.\n`;
     await fs.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.writeFile(logPath, initialLogs);
+    await fs.writeFile(logPath, ""); // Fully empty
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
