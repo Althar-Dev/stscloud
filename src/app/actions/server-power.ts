@@ -2,10 +2,10 @@
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
-import { spawn, execSync } from 'child_process';
+import { spawn } from 'child_process';
 
 /**
- * @fileOverview Server actions to handle ACTUAL server execution using child_process.
+ * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
  */
 
 export async function executeServerPower(serverId: string, action: 'start' | 'stop' | 'restart', config: {
@@ -27,11 +27,15 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       const pid = await fs.readFile(pidPath, 'utf8');
       if (pid) {
-        process.kill(parseInt(pid), 'SIGTERM');
+        try {
+          process.kill(parseInt(pid), 'SIGTERM');
+        } catch (e) {
+          // Process already dead
+        }
         await fs.unlink(pidPath);
       }
     } catch (e) {
-      // Process not running or file missing
+      // PID file not found
     }
   };
 
@@ -45,38 +49,57 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
   if (action === 'start' || action === 'restart') {
     try {
-      // Clear logs for new session
+      // 1. Prepare Environment
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence...\n`);
 
-      // 1. Dependency Check & Real Install
+      const logStream = createWriteStream(logPath, { flags: 'a' });
+
+      // 2. Dependency Check & Real-time Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
+      let dependenciesReady = false;
       try {
         await fs.access(nodeModulesPath);
-        await fs.appendFile(logPath, `${timestamp()} [STS] Dependencies found. Skipping install.\n`);
+        dependenciesReady = true;
+        logStream.write(`${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
-        await fs.appendFile(logPath, `${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
-        try {
-          // Execute npm install synchronously to ensure it finishes before app starts
-          // In a production env, this would be an async stream, but for reliability we wait here
-          execSync('npm install --production', { cwd: filesDir, stdio: 'ignore', timeout: 300000 });
-          await fs.appendFile(logPath, `${timestamp()} [STS] Installation complete.\n`);
-        } catch (err: any) {
-          await fs.appendFile(logPath, `${timestamp()} [ERROR] npm install failed: ${err.message}\n`);
-          return { success: false, error: "Failed to install dependencies" };
-        }
+        logStream.write(`${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
+        
+        // Spawn npm install and wait for it
+        await new Promise((resolve, reject) => {
+          const installProcess = spawn('npm', ['install', '--production'], {
+            cwd: filesDir,
+            env: { ...process.env, NODE_ENV: 'production' }
+          });
+
+          installProcess.stdout?.on('data', (data) => logStream.write(data));
+          installProcess.stderr?.on('data', (data) => logStream.write(data));
+
+          installProcess.on('close', (code) => {
+            if (code === 0) {
+              logStream.write(`${timestamp()} [STS] Installation complete.\n`);
+              resolve(true);
+            } else {
+              logStream.write(`${timestamp()} [ERROR] npm install failed with code ${code}\n`);
+              reject(new Error('Installation failed'));
+            }
+          });
+
+          installProcess.on('error', (err) => {
+            logStream.write(`${timestamp()} [ERROR] Failed to start npm install: ${err.message}\n`);
+            reject(err);
+          });
+        });
       }
 
-      // 2. Prepare Command
+      // 3. Prepare Command
       const commandParts = config.startupCommand.split(' ');
       const mainCmd = commandParts[0];
       const args = commandParts.slice(1);
 
-      await fs.appendFile(logPath, `${timestamp()} [STS] Executing: ${config.startupCommand}\n`);
+      logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
-      // 3. REAL SPAWN
-      const logStream = createWriteStream(logPath, { flags: 'a' });
-      
+      // 4. REAL SPAWN FOR USER SCRIPT
       const child = spawn(mainCmd, args, {
         cwd: filesDir,
         detached: true,
@@ -84,14 +107,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         env: { ...process.env, NODE_ENV: 'production' }
       });
 
-      // Pipe output directly to log file
+      // Stream output directly
       child.stdout?.on('data', (data) => logStream.write(data));
       child.stderr?.on('data', (data) => logStream.write(data));
 
       child.on('error', (err) => {
-        const errStream = createWriteStream(logPath, { flags: 'a' });
-        errStream.write(`\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`);
-        errStream.end();
+        const errLog = `\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`;
+        logStream.write(errLog);
       });
 
       // Save PID
@@ -99,12 +121,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         await fs.writeFile(pidPath, child.pid.toString());
       }
 
-      // Detach the child process so it survives the Server Action lifecycle
+      // Detach so it keeps running
       child.unref();
 
       return { success: true };
     } catch (error: any) {
-      await fs.appendFile(logPath, `${timestamp()} [ERROR] Boot failed: ${error.message}\n`);
+      const errorMsg = `\n${timestamp()} [ERROR] Boot failed: ${error.message}\n`;
+      await fs.appendFile(logPath, errorMsg);
       return { success: false, error: error.message };
     }
   }
