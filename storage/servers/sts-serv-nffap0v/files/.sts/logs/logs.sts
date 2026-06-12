@@ -1,8 +1,5 @@
-[2026-06-12T16:28:06.925Z] [STS] Starting with Node.js v20...
-[2026-06-12T16:28:06.934Z] [STS] Executing npm start
 
+[2026-06-12T16:45:58.970Z] [STS] Terminating process (SIGINT)...
+[2026-06-12T16:45:58.981Z] [STS] Server stopped. Status: Offline.
 
-> auto-order-saweria-bot@1.0.0 start
-> node src/index.js
-
-[INFO] Update type: message
+[2026-06-12T16:45:59.101Z] [STS] Process exited with code null

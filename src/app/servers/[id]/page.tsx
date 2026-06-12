@@ -300,7 +300,7 @@ export default function ServerPage() {
                 <div className="flex flex-col">
                   <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>
                   <span className="text-[10px] md:text-xs font-code text-primary font-medium whitespace-nowrap">
-                    sts-server-{server?.id}.stscloud.id
+                    {server?.id}.stscloud.id
                   </span>
                 </div>
               </div>
