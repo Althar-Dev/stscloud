@@ -1,24 +1,2 @@
-[2026-06-12T02:04:32.145Z] [STS] Welcome to STSCloud.
-[2026-06-12T02:04:32.145Z] [STS] Starting container...
-[2026-06-12T02:04:32.145Z] [DOCKER] Pulling image: node:20-alpine...
-[2026-06-12T02:04:32.145Z] [DOCKER] Creating network isolation... done.
-[2026-06-12T02:04:32.171Z] [STS] Checking allocated disk space... 0.02MB used
-[2026-06-12T02:04:32.175Z] [STS] Found package.json. Name: telegram-STS, Version: 1.0.0
-[2026-06-12T02:04:32.175Z] [STS] Entry file 'main.js' located.
-[2026-06-12T02:04:32.176Z] [STS] node_modules NOT FOUND. initializing dependency installation...
-[2026-06-12T02:04:32.176Z] [STS] Running: npm install --production
-[2026-06-12T02:04:32.176Z] [INFO] added 142 packages, and audited 143 packages in 3.8s
-[2026-06-12T02:04:32.176Z] [INFO] found 0 vulnerabilities
-[2026-06-12T02:04:32.176Z] [STS] Installation complete. node_modules initialized.
-[2026-06-12T02:04:32.176Z] [DOCKER] Mounting local volumes for node_modules...
-[2026-06-12T02:04:32.176Z] [STS] Environment: NODE_ENV=production
-[2026-06-12T02:04:32.176Z] [STS] Executing startup command: npm start
-[2026-06-12T02:04:32.176Z] [USER] > npm start
-[2026-06-12T02:04:32.176Z] [USER] > Starting node app in /home/user/studio/storage/servers/sts-serv-nffap0v/files
-[2026-06-12T02:04:32.176Z] [USER] [2:04:32 AM] Application is now online and listening on port 8080.
-[2026-06-12T02:04:32.177Z] [USER] [2:04:32 AM] Connected to database successfully.
-[2026-06-12T02:04:32.177Z] [USER] [2:04:32 AM] Server reachable at http://sts-serv-nffap0v.stscloud.net
-
-[2026-06-12T02:08:37.712Z] [STS] SIGTERM received. Stopping Docker container...
-[2026-06-12T02:08:37.712Z] [INFO] Processes exited with code 0.
-[2026-06-12T02:08:37.712Z] [STS] Node is now offline. Project data is preserved in storage.
+[2026-06-12T02:09:20.623Z] [STS] Welcome to STSCloud.
+[2026-06-12T02:09:20.623Z] [STS] Console cleared on refresh.

@@ -1,11 +1,11 @@
 'use server';
 
-import { promises as fs } from 'fs';
+import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
-import { getServerDiskUsage } from './server-files';
+import { spawn, execSync } from 'child_process';
 
 /**
- * @fileOverview Server actions to handle actual server execution logic with dependency checking and user script logging.
+ * @fileOverview Server actions to handle ACTUAL server execution using child_process.
  */
 
 export async function executeServerPower(serverId: string, action: 'start' | 'stop' | 'restart', config: {
@@ -14,107 +14,100 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   entryFile: string;
   startupCommand: string;
 }) {
-  try {
-    const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
-    const filesDir = path.join(baseDir, 'files');
-    const logPath = path.join(filesDir, '.sts', 'logs', 'example.txt');
-    const timestamp = () => `[${new Date().toISOString()}]`;
-    
-    // Ensure directories exist
-    await fs.mkdir(path.dirname(logPath), { recursive: true });
+  const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+  const filesDir = path.join(baseDir, 'files');
+  const stsDir = path.join(filesDir, '.sts');
+  const logPath = path.join(stsDir, 'logs', 'example.txt');
+  const pidPath = path.join(stsDir, 'run.pid');
+  
+  const timestamp = () => `[${new Date().toISOString()}]`;
 
-    if (action === 'start' || action === 'restart') {
-      let logBuffer = `${timestamp()} [STS] Welcome to STSCloud.\n`;
-      logBuffer += action === 'restart' 
-        ? `${timestamp()} [STS] Restart signal received. Re-initializing container...\n` 
-        : `${timestamp()} [STS] Starting container...\n`;
-      
-      logBuffer += `${timestamp()} [DOCKER] Pulling image: node:${config.nodeVersion}-alpine...\n`;
-      logBuffer += `${timestamp()} [DOCKER] Creating network isolation... done.\n`;
-      
-      const disk = await getServerDiskUsage(serverId);
-      logBuffer += `${timestamp()} [STS] Checking allocated disk space... ${disk.success ? disk.sizeInMB?.toFixed(2) + 'MB used' : 'Error checking disk'}\n`;
+  // Helper to kill existing process
+  const killExisting = async () => {
+    try {
+      const pid = await fs.readFile(pidPath, 'utf8');
+      if (pid) {
+        process.kill(parseInt(pid), 'SIGTERM');
+        await fs.unlink(pidPath);
+      }
+    } catch (e) {
+      // Process not running or file missing
+    }
+  };
 
-      const packageJsonPath = path.join(filesDir, 'package.json');
-      const entryFilePath = path.join(filesDir, config.entryFile || 'index.js');
+  if (action === 'stop' || action === 'restart') {
+    await killExisting();
+    if (action === 'stop') {
+      await fs.appendFile(logPath, `\n${timestamp()} [STS] SIGTERM received. Node is now offline.\n`);
+      return { success: true };
+    }
+  }
+
+  if (action === 'start' || action === 'restart') {
+    try {
+      // Clear logs for new session
+      await fs.mkdir(path.dirname(logPath), { recursive: true });
+      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing boot sequence...\n`);
+
+      // 1. Dependency Check & Real Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
-      
-      let packageExists = false;
-      let entryExists = false;
-
-      // 1. Check Package.json
-      try {
-        const pkgContent = await fs.readFile(packageJsonPath, 'utf8');
-        const pkg = JSON.parse(pkgContent);
-        packageExists = true;
-        logBuffer += `${timestamp()} [STS] Found package.json. Name: ${pkg.name || 'unnamed'}, Version: ${pkg.version || '0.0.0'}\n`;
-        
-        // If using npm start, check if script exists
-        if (config.startupCommand === 'npm start' && (!pkg.scripts || !pkg.scripts.start)) {
-          logBuffer += `${timestamp()} [ERROR] 'npm start' command failed: No 'start' script found in package.json.\n`;
-          await fs.writeFile(logPath, logBuffer);
-          return { success: false, error: "No start script in package.json" };
-        }
-      } catch (err: any) {
-        logBuffer += `${timestamp()} [ERROR] package.json NOT FOUND or INVALID. Server cannot determine dependencies.\n`;
-      }
-
-      // 2. Check Entry File
-      try {
-        await fs.access(entryFilePath);
-        entryExists = true;
-        logBuffer += `${timestamp()} [STS] Entry file '${config.entryFile}' located.\n`;
-      } catch {
-        logBuffer += `${timestamp()} [ERROR] ENTRY FILE '${config.entryFile}' NOT FOUND.\n`;
-      }
-
-      if (!packageExists || !entryExists) {
-        logBuffer += `${timestamp()} [STS] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.\n`;
-        await fs.writeFile(logPath, logBuffer);
-        return { 
-          success: false, 
-          error: `Missing mandatory files: ${!packageExists ? 'package.json ' : ''}${!entryExists ? config.entryFile : ''}` 
-        };
-      }
-
-      // 3. Dependency Check (The part that installs if missing)
       try {
         await fs.access(nodeModulesPath);
-        logBuffer += `${timestamp()} [STS] dependencies (node_modules) found. skipping installation.\n`;
+        await fs.appendFile(logPath, `${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
-        logBuffer += `${timestamp()} [STS] node_modules NOT FOUND. initializing dependency installation...\n`;
-        logBuffer += `${timestamp()} [STS] Running: npm install --production\n`;
-        // Simulation of dependency installation logs
-        logBuffer += `${timestamp()} [INFO] added 142 packages, and audited 143 packages in 3.8s\n`;
-        logBuffer += `${timestamp()} [INFO] found 0 vulnerabilities\n`;
-        logBuffer += `${timestamp()} [STS] Installation complete. node_modules initialized.\n`;
-        
-        // Physically create the folder in simulation to represent state
-        try { await fs.mkdir(nodeModulesPath, { recursive: true }); } catch(e) {}
+        await fs.appendFile(logPath, `${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
+        try {
+          // Execute npm install synchronously to ensure it finishes before app starts
+          // In a production env, this would be an async stream, but for reliability we wait here
+          execSync('npm install --production', { cwd: filesDir, stdio: 'ignore', timeout: 300000 });
+          await fs.appendFile(logPath, `${timestamp()} [STS] Installation complete.\n`);
+        } catch (err: any) {
+          await fs.appendFile(logPath, `${timestamp()} [ERROR] npm install failed: ${err.message}\n`);
+          return { success: false, error: "Failed to install dependencies" };
+        }
       }
 
-      logBuffer += `${timestamp()} [DOCKER] Mounting local volumes for node_modules...\n`;
-      logBuffer += `${timestamp()} [STS] Environment: NODE_ENV=production\n`;
-      logBuffer += `${timestamp()} [STS] Executing startup command: ${config.startupCommand}\n`;
+      // 2. Prepare Command
+      const commandParts = config.startupCommand.split(' ');
+      const mainCmd = commandParts[0];
+      const args = commandParts.slice(1);
+
+      await fs.appendFile(logPath, `${timestamp()} [STS] Executing: ${config.startupCommand}\n`);
+
+      // 3. REAL SPAWN
+      const logStream = createWriteStream(logPath, { flags: 'a' });
       
-      // 4. Start User Script and Capture Output
-      logBuffer += `${timestamp()} [USER] > ${config.startupCommand}\n`;
-      logBuffer += `${timestamp()} [USER] > Starting node app in ${filesDir}\n`;
-      logBuffer += `${timestamp()} [USER] [${new Date().toLocaleTimeString()}] Application is now online and listening on port 8080.\n`;
-      logBuffer += `${timestamp()} [USER] [${new Date().toLocaleTimeString()}] Connected to database successfully.\n`;
-      logBuffer += `${timestamp()} [USER] [${new Date().toLocaleTimeString()}] Server reachable at http://${serverId}.stscloud.net\n`;
+      const child = spawn(mainCmd, args, {
+        cwd: filesDir,
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, NODE_ENV: 'production' }
+      });
 
-      await fs.writeFile(logPath, logBuffer);
-    } else if (action === 'stop') {
-      const stopMsg = `\n${timestamp()} [STS] SIGTERM received. Stopping Docker container...
-${timestamp()} [INFO] Processes exited with code 0.
-${timestamp()} [STS] Node is now offline. Project data is preserved in storage.\n`;
-      await fs.appendFile(logPath, stopMsg);
+      // Pipe output directly to log file
+      child.stdout?.on('data', (data) => logStream.write(data));
+      child.stderr?.on('data', (data) => logStream.write(data));
+
+      child.on('error', (err) => {
+        const errStream = createWriteStream(logPath, { flags: 'a' });
+        errStream.write(`\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`);
+        errStream.end();
+      });
+
+      // Save PID
+      if (child.pid) {
+        await fs.writeFile(pidPath, child.pid.toString());
+      }
+
+      // Detach the child process so it survives the Server Action lifecycle
+      child.unref();
+
+      return { success: true };
+    } catch (error: any) {
+      await fs.appendFile(logPath, `${timestamp()} [ERROR] Boot failed: ${error.message}\n`);
+      return { success: false, error: error.message };
     }
-
-    return { success: true };
-  } catch (error: any) {
-    console.error('Execution Error:', error);
-    return { success: false, error: error.message };
   }
+
+  return { success: true };
 }

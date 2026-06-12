@@ -27,16 +27,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [isInitializing, setIsInitializing] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const addLog = React.useCallback((message: string, type: LogLine["type"] = "info") => {
-    const newLine: LogLine = {
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      type,
-      message,
-    };
-    setLogs((prev) => [...prev.slice(-199), newLine]);
-  }, []);
-
   // Fetch logs from file system
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
@@ -45,25 +35,32 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     if (result.success && result.content) {
       const lines = result.content.split('\n').filter(l => l.trim());
       const mappedLogs: LogLine[] = lines.map((line, i) => {
-        let type: LogLine["type"] = "info";
+        let type: LogLine["type"] = "user"; // Default to user for raw application output
+        
+        // System detection
         if (line.includes('[ERROR]')) type = "error";
-        if (line.includes('[SUCCESS]')) type = "success";
-        if (line.includes('[SYSTEM]') || line.includes('[STS]')) type = "info";
-        if (line.includes('[DEBUG]')) type = "warn";
-        if (line.includes('[USER]')) type = "user";
+        else if (line.includes('[SUCCESS]')) type = "success";
+        else if (line.includes('[STS]')) type = "info";
+        else if (line.includes('[DEBUG]')) type = "warn";
 
         let timestamp = "LIVE";
         let displayMessage = line;
         
+        // Extract system timestamp if present
         const timestampMatch = line.match(/^\[(.*?)\]/);
         if (timestampMatch) {
           const rawTime = timestampMatch[1];
+          // Simple check to see if it's an ISO date or just a string
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
+          
+          // If it was a system log, clean the label
+          displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
+        } else {
+          // It's raw output from user script
+          type = "user";
+          timestamp = ""; // No system timestamp for raw user logs to keep it clean
         }
-
-        // Clean labels from message
-        displayMessage = displayMessage.replace('[STS]', '').replace('[USER]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
 
         return {
           id: `fs-${i}-${line.length}`,
@@ -97,21 +94,25 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    addLog(`$ ${inputValue}`, "info");
+    
+    const newLine: LogLine = {
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: "",
+      type: "info",
+      message: `$ ${inputValue}`,
+    };
+    setLogs((prev) => [...prev, newLine]);
     setInputValue("");
     
+    // Commands here are local terminal helpers
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
       if (cmd === "help") {
-        addLog("Available commands: help, status, clear", "success");
-      } else if (cmd === "status") {
-        addLog(`Instance Status: ${externalStatus || "offline"}`, "info");
+        setLogs(prev => [...prev, { id: Date.now().toString(), timestamp: "", type: "success", message: "Available: help, status, clear" }]);
       } else if (cmd === "clear") {
         setLogs([]);
-      } else {
-        addLog(`Unknown command: ${inputValue}. Local terminal only.`, "error");
       }
-    }, 400);
+    }, 100);
   };
 
   return (
@@ -119,9 +120,9 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       <div className="flex items-center justify-between p-2 md:p-3 border-b border-border/50 bg-secondary/30">
         <div className="flex items-center gap-1 md:gap-2">
           <div className="flex items-center gap-1.5 px-2 mr-1">
-            <div className="size-2.5 rounded-full bg-red-500" />
-            <div className="size-2.5 rounded-full bg-yellow-500" />
-            <div className="size-2.5 rounded-full bg-green-500" />
+            <div className="size-2.5 rounded-full bg-red-500/80" />
+            <div className="size-2.5 rounded-full bg-yellow-500/80" />
+            <div className="size-2.5 rounded-full bg-green-500/80" />
           </div>
           
           <Badge 
@@ -160,17 +161,19 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
-            <span className="text-xs">Connecting to node...</span>
+            <span className="text-xs">Connecting to instance...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm text-center">Terminal ready. Start server to see logs.</p>
+            <p className="text-xs md:text-sm text-center">Terminal ready. Start server to stream output.</p>
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-1.5 animate-in fade-in slide-in-from-left-1 duration-200 flex items-start gap-3">
-              <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] md:text-xs shrink-0 mt-0.5">[{log.timestamp}]</span>
+            <div key={log.id} className="mb-1 animate-in fade-in duration-200 flex items-start gap-2">
+              {log.timestamp && (
+                <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
+              )}
               <span className={cn(
                 "break-all",
                 log.type === "error" ? "text-red-400 font-bold" :
@@ -191,7 +194,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Run console command..." 
+            placeholder="Type command..." 
             className="h-9 md:h-10 bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7"
           />
         </div>
