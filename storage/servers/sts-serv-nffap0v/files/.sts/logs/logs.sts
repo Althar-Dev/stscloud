@@ -1,5 +1,8 @@
+[2026-06-12T17:12:08.663Z] [STS] Starting with Node.js v20...
+[2026-06-12T17:12:08.668Z] [STS] Executing: npm start
 
-[2026-06-12T16:45:58.970Z] [STS] Terminating process (SIGINT)...
-[2026-06-12T16:45:58.981Z] [STS] Server stopped. Status: Offline.
 
-[2026-06-12T16:45:59.101Z] [STS] Process exited with code null
+> telegram-custom-emoji-code@1.0.0 start
+> node index.js
+
+Bot aktif

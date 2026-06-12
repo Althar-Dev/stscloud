@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -52,7 +53,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/dialog";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -61,7 +62,7 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
+import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
 
 export default function ServerPage() {
@@ -114,13 +115,6 @@ export default function ServerPage() {
       unsubServer();
     };
   }, [user, id, db, router, toast, isDeleting]);
-
-  // AUTO-CLEAR: Bersihkan logs.sts setiap kali status terdeteksi offline
-  React.useEffect(() => {
-    if (server?.status === 'offline' && id) {
-      clearServerLogs(id as string).catch(() => {});
-    }
-  }, [server?.status, id]);
 
   // SYNC OS Process -> Database Status
   React.useEffect(() => {
@@ -282,7 +276,6 @@ export default function ServerPage() {
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* HORIZONTAL SCROLL CONTAINER FOR TABS */}
             <div className="w-full md:w-auto overflow-x-auto pb-1 custom-scrollbar">
               <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto flex whitespace-nowrap">
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>

@@ -1,0 +1,22 @@
+{
+  "name": "telegram-custom-emoji-code",
+  "version": "1.0.0",
+  "description": "Telegram bot untuk mendapatkan custom emoji ID",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "telegram",
+    "telegraf",
+    "bot",
+    "emoji",
+    "custom-emoji"
+  ],
+  "author": "AltharDev",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.16.3"
+  }
+}
