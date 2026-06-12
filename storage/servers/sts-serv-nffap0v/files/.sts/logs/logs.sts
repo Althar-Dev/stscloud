@@ -2,18 +2,17 @@
 [36m░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄[0m
 [34m░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█[0m
 [35m░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
-
-[STS] [17:57:37] Checking available disk... [32mOk[0m
-[STS] [17:57:37] Checking node_modules... [32mOk[0m
-[STS] [17:57:37] Starting with Node.Js v20
-[STS] [17:57:37] Executing npm start
+[STS] [18:00:06] Checking available disk... [32mOk[0m
+[STS] [18:00:06] Checking node_modules... [32mOk[0m
+[STS] [18:00:06] Starting with Node.Js v20
+[STS] [18:00:06] Executing npm start
 
 
 > telegram-custom-emoji-code@1.0.0 start
 > node index.js
 
 Bot aktif
-[STS] [17:57:48] Terminating process (SIGINT)...
-[STS] [17:57:48] Server stopped. Status: Offline.
+[STS] [18:00:11] Terminating process (SIGINT)...
+[STS] [18:00:11] Server stopped. Status: Offline.
 
-[STS] [17:57:48] Process exited with code null
+[STS] [18:00:11] Process exited with code null

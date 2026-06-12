@@ -81,10 +81,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       
-      const ascii = `
-${cyan('░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄')}
-${purple('░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█')}
-${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}`;
+      const ascii = `${cyan('░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄')}\n${purple('░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█')}\n${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}`;
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
@@ -101,11 +98,7 @@ ${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀
         diskStatus = 'Bad';
       }
 
-      const initialLogs = `${ascii}
-[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}
-[STS] [${timestamp()}] Checking node_modules... ${modulesStatus === 'Ok' ? green('Ok') : yellow('No')}
-[STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}
-[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
+      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Checking node_modules... ${modulesStatus === 'Ok' ? green('Ok') : yellow('No')}\n[STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}\n[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
 
       // Always overwrite logs on START to clean previous session
       await fs.writeFile(logPath, initialLogs);

@@ -59,14 +59,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         let timestamp = "";
         let displayMessage = line;
 
-        // Pattern matching for [STS] [HH:MM:SS]
         const stsMatch = line.match(/^\[STS\]\s*\[(.*?)\]/);
         
         if (stsMatch) {
           isSystem = true;
           type = "info";
           timestamp = stsMatch[1];
-          // Strip the prefix to get the message
           displayMessage = line.replace(/^\[STS\]\s*\[.*?\]/, '').trim();
           
           if (displayMessage.includes('[ERROR]')) type = "error";
@@ -161,7 +159,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       <div 
         ref={scrollRef} 
         onScroll={handleScroll}
-        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar scroll-smooth overflow-x-auto"
+        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-[1.15] custom-scrollbar scroll-smooth overflow-x-auto"
       >
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
@@ -179,7 +177,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.isSystem ? (
                 <>
                   <span className="text-primary font-bold shrink-0">[STS]</span>
-                  <span className="text-neutral-500 tabular-nums shrink-0"> [{log.timestamp}] </span>
+                  <span className="text-neutral-500 tabular-nums shrink-0">[{log.timestamp}]</span>
                 </>
               ) : null}
               {log.html ? (
