@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -37,33 +38,26 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => `[${new Date().toISOString()}]`;
 
-  // Kill entire process group to ensure sub-processes also die
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
       if (pidStr) {
         const pid = parseInt(pidStr.trim());
         try {
-          // Kill the process group (indicated by negative PID)
-          // We use SIGINT (Ctrl+C) first for graceful exit
+          // Kill the process group (indicated by negative PID) with SIGINT (Ctrl+C)
           process.kill(-pid, 'SIGINT'); 
-          
-          // Force delete PID file immediately
           await fs.unlink(pidPath).catch(() => {});
           
-          // Wait a bit and force kill if still breathing
+          // Force kill after 1s if still breathing
           setTimeout(() => {
              try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
           }, 1000);
         } catch (e) {
-          // Fallback to single PID kill
           try { process.kill(pid, 'SIGINT'); } catch (e2) {}
           await fs.unlink(pidPath).catch(() => {});
         }
       }
-    } catch (e) {
-      // PID file not found or process already gone
-    }
+    } catch (e) {}
   };
 
   if (action === 'stop' || action === 'restart') {
@@ -78,12 +72,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'start' || action === 'restart') {
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
-      // Clear logs for fresh start
       await fs.writeFile(logPath, `${timestamp()} [STS] Starting with Node.js v${config.nodeVersion} environment...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
-      // 1. Dependency check (Real npm install)
+      // 1. Dependency check
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let needsInstall = false;
       try {
@@ -121,14 +114,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         });
       }
 
-      // 2. Start Application
+      // 2. Start Application using npx wrapper for correct Node.js version
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
       const commandParts = config.startupCommand.split(' ');
       
       const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
         cwd: filesDir,
-        detached: true, // Create new process group
+        detached: true, 
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { 
           ...process.env, 
@@ -142,7 +135,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         await fs.writeFile(pidPath, child.pid.toString());
       }
 
-      // Stream output directly to file
       child.stdout?.on('data', (data) => logStream.write(data));
       child.stderr?.on('data', (data) => logStream.write(data));
 
@@ -152,9 +144,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         fs.unlink(pidPath).catch(() => {});
       });
 
-      // Detach to allow the server action to return while process keeps running
       child.unref();
-
       return { success: true };
     } catch (error: any) {
       await fs.appendFile(logPath, `\n${timestamp()} [ERROR] System failed to boot: ${error.message}\n`);
