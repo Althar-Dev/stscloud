@@ -25,6 +25,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
   const [isInitializing, setIsInitializing] = React.useState(true);
+  const [isSticky, setIsSticky] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch logs from file system
@@ -71,18 +72,27 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   React.useEffect(() => {
     fetchLogs();
-    // Always poll regardless of status to ensure we catch exit logs or stop logs
     const pollInterval = setInterval(() => {
       fetchLogs();
     }, 500);
     return () => clearInterval(pollInterval);
   }, [fetchLogs]);
 
+  // Handle auto-scroll only if sticky is enabled
   React.useEffect(() => {
-    if (scrollRef.current) {
+    if (isSticky && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, [logs, isSticky]);
+
+  // Detect if user is at the bottom to toggle sticky mode
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    // If user is within 20px of the bottom, keep it sticky
+    const atBottom = scrollHeight - clientHeight <= scrollTop + 20;
+    setIsSticky(atBottom);
+  };
 
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +106,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     };
     setLogs((prev) => [...prev, newLine]);
     setInputValue("");
+    setIsSticky(true); // Force sticky on manual command
     
     setTimeout(() => {
       const cmd = inputValue.toLowerCase().trim();
@@ -149,7 +160,11 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar">
+      <div 
+        ref={scrollRef} 
+        onScroll={handleScroll}
+        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-relaxed custom-scrollbar scroll-smooth"
+      >
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />

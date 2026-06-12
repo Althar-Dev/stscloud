@@ -1,0 +1,20 @@
+{
+  "categories": [
+    {
+      "id": "pacia7zh",
+      "name": "ml"
+    }
+  ],
+  "products": {
+    "pacia7zh": [
+      {
+        "id": "yje7zoxe",
+        "name": "10 dm",
+        "desk": "",
+        "stock": 10,
+        "price": 10,
+        "link": ""
+      }
+    ]
+  }
+}
