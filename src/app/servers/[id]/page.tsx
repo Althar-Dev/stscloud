@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -21,27 +20,21 @@ import {
   FolderOpen, 
   ArrowLeft,
   Globe,
-  Clock,
   Headset,
   User,
   LogOut,
   Settings as SettingsIcon,
   Users as UsersIcon,
-  UserPlus,
   Trash2,
-  Mail,
   History,
-  CheckCircle2,
-  Info,
   Save,
   Rocket,
   AlertTriangle,
-  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -63,7 +56,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -86,9 +79,8 @@ export default function ServerPage() {
   const [diskUsage, setDiskUsage] = React.useState<number>(0);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState("console");
-  const [inviteEmail, setInviteEmail] = React.useState("");
 
-  // Settings & Startup states
+  // Settings states
   const [serverName, setServerName] = React.useState("");
   const [nodeVersion, setNodeVersion] = React.useState("");
   const [startupCommand, setStartupCommand] = React.useState("");
@@ -100,28 +92,24 @@ export default function ServerPage() {
   // Power Action Lock to prevent health watcher from conflicting with manual actions
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Initialize
+  // Initial Log Cleanup
   React.useEffect(() => {
     if (!id || !db) return;
-    
     const checkAndClearLogs = async () => {
       const snap = await getDoc(doc(db, "servers", id as string));
       if (snap.exists() && snap.data().status === "offline") {
         await clearServerLogs(id as string);
       }
     };
-    
     checkAndClearLogs();
   }, [id, db]);
 
-  // Data listeners
+  // Data Listeners
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
     const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists()) {
-        setProfile(doc.data());
-      }
+      if (doc.exists()) setProfile(doc.data());
     });
 
     const unsubServer = onSnapshot(doc(db, "servers", id as string), (doc) => {
@@ -133,11 +121,9 @@ export default function ServerPage() {
         setStartupCommand(data.startupCommand || "npm start");
         setCommandRun(data.commandRun || "node");
         setEntryFile(data.entryFile || "index.js");
-      } else {
-        if (!isDeleting) {
-          toast({ variant: "destructive", title: "Server not found", description: "This instance may have been decommissioned." });
-          router.push("/dashboard");
-        }
+      } else if (!isDeleting) {
+        toast({ variant: "destructive", title: "Instance not found", description: "This server may have been decommissioned." });
+        router.push("/dashboard");
       }
       setLoading(false);
     });
@@ -148,25 +134,26 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // Real-time Health Monitor: Sync OS process state with Firestore
+  // SMART HEALTH MONITOR: Sync status with OS process state
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
     const monitorInterval = setInterval(async () => {
       const status = await getServerProcessStatus(id as string);
       
+      // Sync DB state if it differs from real process state
       if (status.running && server.status === 'offline') {
         updateDoc(doc(db, "servers", id as string), { status: 'online' });
       } else if (!status.running && server.status === 'online') {
         updateDoc(doc(db, "servers", id as string), { status: 'offline' });
-        toast({ variant: "destructive", title: "App Terminated", description: "The script has stopped running." });
+        toast({ variant: "destructive", title: "Process Halted", description: "The script execution has stopped." });
       }
     }, 2500);
 
     return () => clearInterval(monitorInterval);
   }, [id, server, db, toast, powerActionActive]);
 
-  // Periodic Disk Usage Watcher
+  // Disk Usage Watcher
   React.useEffect(() => {
     if (!id) return;
     const updateUsage = async () => {
@@ -181,7 +168,9 @@ export default function ServerPage() {
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
     
+    // ACTIVATE LOCK: Prevent automatic health sync for 5 seconds
     setPowerActionActive(true);
+    
     let newStatus = server?.status;
     if (action === "start" || action === "restart") newStatus = "starting";
     if (action === "stop") newStatus = "offline";
@@ -190,16 +179,19 @@ export default function ServerPage() {
       await updateDoc(doc(db, "servers", id as string), { status: newStatus });
 
       const result = await executeServerPower(id as string, action, {
-        nodeVersion: server.nodeVersion || "20",
-        commandRun: server.commandRun || "node",
-        entryFile: server.entryFile || "index.js",
-        startupCommand: server.startupCommand || "npm start"
+        nodeVersion: nodeVersion || "20",
+        commandRun: commandRun || "node",
+        entryFile: entryFile || "index.js",
+        startupCommand: startupCommand || "npm start"
       });
 
       if (!result.success) {
         await updateDoc(doc(db, "servers", id as string), { status: "offline" });
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
-      } else if (action === "start" || action === "restart") {
+      }
+      
+      // If start/restart, check final state after a short delay
+      if (action === "start" || action === "restart") {
         setTimeout(async () => {
           const check = await getServerProcessStatus(id as string);
           await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
@@ -208,7 +200,7 @@ export default function ServerPage() {
     } catch (error: any) {
       console.error("Power action failed", error);
     } finally {
-      // Keep lock for 5 seconds to let system stabilize
+      // RELEASE LOCK after 5 seconds to let process state stabilize
       setTimeout(() => setPowerActionActive(false), 5000);
     }
   };
@@ -219,12 +211,12 @@ export default function ServerPage() {
     try {
       await updateDoc(doc(db, "servers", id as string), {
         name: serverName,
-        nodeVersion: nodeVersion,
-        startupCommand: startupCommand,
-        commandRun: commandRun,
-        entryFile: entryFile
+        nodeVersion,
+        startupCommand,
+        commandRun,
+        entryFile
       });
-      toast({ title: "Configuration Saved", description: "Startup parameters updated." });
+      toast({ title: "Config Updated", description: "Startup parameters have been saved." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
@@ -239,10 +231,10 @@ export default function ServerPage() {
       const cleanup = await decommissionServerFiles(id as string);
       if (!cleanup.success) throw new Error(cleanup.error);
       await deleteDoc(doc(db, "servers", id as string));
-      toast({ title: "Server Decommissioned", description: "Instance removed permanently." });
+      toast({ title: "Decommissioned", description: "Server instance and data removed." });
       router.push("/dashboard");
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Decommission Failed", description: error.message });
+      toast({ variant: "destructive", title: "Failed", description: error.message });
       setIsDeleting(false);
     }
   };
@@ -254,7 +246,7 @@ export default function ServerPage() {
 
   if (loading) return <Loader />;
 
-  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
   const isNodeJS = server?.runtime === "nodejs";
   const nodeVersionsList = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
@@ -277,7 +269,7 @@ export default function ServerPage() {
               <ArrowLeft className="size-4" />
             </button>
             <h1 className="font-headline font-semibold text-sm md:text-lg truncate max-w-[150px] md:max-w-none">
-              {server?.name || "Management"}
+              {server?.name || "Instance"}
             </h1>
           </div>
         </div>
@@ -296,7 +288,7 @@ export default function ServerPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2">
-              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-headline">Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="gap-2"><User className="size-4" /> Profile</DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><SettingsIcon className="size-4" /> Settings</DropdownMenuItem>
@@ -325,7 +317,7 @@ export default function ServerPage() {
               <div className="flex items-center justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50">
                   <Globe className="size-3.5 text-primary" />
-                  <div className="flex flex-col"><span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Address</span><span className="text-[10px] md:text-xs font-code text-primary font-medium">{server?.id}.stscloud.net</span></div>
+                  <div className="flex flex-col"><span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span><span className="text-[10px] md:text-xs font-code text-primary font-medium">{server?.id}.stscloud.net</span></div>
                 </div>
               </div>
             )}
@@ -341,7 +333,7 @@ export default function ServerPage() {
           {isNodeJS && (
             <TabsContent value="startup" className="animate-in fade-in duration-500 space-y-8">
               <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
-                <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3"><div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Rocket className="size-5" /></div><div><h2 className="text-xl font-headline font-bold">StartUp Configuration</h2><p className="text-xs text-muted-foreground">Manage how your NodeJS application boots.</p></div></div>
+                <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3"><div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Rocket className="size-5" /></div><div><h2 className="text-xl font-headline font-bold">Boot Configuration</h2><p className="text-xs text-muted-foreground">Modify script execution parameters.</p></div></div>
                 <CardContent className="p-8 space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">StartUp Command</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} /></div>
@@ -351,10 +343,10 @@ export default function ServerPage() {
                         <SelectContent className="max-h-60">{nodeVersionsList.map(v => <SelectItem key={v} value={v}>Node.js {v}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Command Run</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} /></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Entry File</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Binary Runner</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Entrypoint</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} /></div>
                   </div>
-                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2"><Save className="size-4" /> Save Configuration</Button>
+                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2"><Save className="size-4" /> Update Startup Config</Button>
                 </CardContent>
               </div>
             </TabsContent>
@@ -362,18 +354,18 @@ export default function ServerPage() {
 
           <TabsContent value="settings" className="animate-in fade-in duration-500 space-y-8">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
-                <h2 className="text-xl font-headline font-bold mb-6">General Settings</h2>
+                <h2 className="text-xl font-headline font-bold mb-6">Server Identity</h2>
                 <div className="space-y-6">
-                  <div className="grid gap-2"><Label htmlFor="s-name" className="text-sm font-medium">Server Name</Label><Input id="s-name" className="bg-secondary/50 border-none rounded-lg h-11" value={serverName} onChange={(e) => setServerName(e.target.value)} /></div>
-                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-primary hover:bg-primary/90 text-white h-11 font-bold gap-2"><Save className="size-4" /> Save Changes</Button>
+                  <div className="grid gap-2"><Label htmlFor="s-name" className="text-sm font-medium">Display Name</Label><Input id="s-name" className="bg-secondary/50 border-none rounded-lg h-11" value={serverName} onChange={(e) => setServerName(e.target.value)} /></div>
+                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-primary hover:bg-primary/90 text-white h-11 font-bold gap-2"><Save className="size-4" /> Save Settings</Button>
                 </div>
              </div>
              <div className="max-w-2xl bg-card border border-destructive/20 rounded-xl p-6 md:p-8">
-                <div className="flex items-center gap-3 text-destructive mb-4"><AlertTriangle className="size-6" /><h2 className="text-xl font-headline font-bold">Danger Zone</h2></div>
-                <p className="text-sm text-muted-foreground mb-6">Decommissioning will permanently delete the instance and all data.</p>
+                <div className="flex items-center gap-3 text-destructive mb-4"><AlertTriangle className="size-6" /><h2 className="text-xl font-headline font-bold">Termination</h2></div>
+                <p className="text-sm text-muted-foreground mb-6">Decommissioning will permanently wipe all storage and configuration data.</p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild><Button variant="destructive" className="h-11 font-bold gap-2" disabled={isDeleting}><Trash2 className="size-4" /> Decommission Server</Button></AlertDialogTrigger>
-                  <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete <strong>{server?.name}</strong>.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteServer} className="bg-destructive text-white">Yes, Decommission Server</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                  <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Permanently?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. <strong>{server?.name}</strong> will be wiped.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteServer} className="bg-destructive text-white">Yes, Delete Everything</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                 </AlertDialog>
              </div>
           </TabsContent>

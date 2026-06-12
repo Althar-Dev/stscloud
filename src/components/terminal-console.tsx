@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -70,7 +69,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
           
-          // System labels removal for cleaner display, ANSI will handle script colors
+          // Cleaner display for system logs
           displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
         } else {
           type = "user";
@@ -113,7 +112,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     e.preventDefault();
     if (!inputValue.trim()) return;
     setInputValue("");
-    // Command handling is simulated here; real input would need a websocket/stdin stream
+    // Command handling requires active stdin stream not available in this action-based setup
   };
 
   return (
@@ -166,12 +165,12 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
-            <span className="text-xs">Connecting to instance...</span>
+            <span className="text-xs">Connecting to TTY...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm text-center">Terminal ready. Start server to stream output.</p>
+            <p className="text-xs md:text-sm text-center">Shell ready. Boot server to see output.</p>
           </div>
         ) : (
           logs.map((log) => (
@@ -179,16 +178,30 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
-              <span 
-                className={cn(
-                  "break-all",
-                  log.type === "error" ? "text-red-400 font-bold" :
-                  log.type === "warn" ? "text-yellow-400" :
-                  log.type === "success" ? "text-green-400 font-semibold" : 
-                  log.type === "user" ? "text-slate-100" : "text-slate-400"
-                )}
-                {...(log.html ? { dangerouslySetInnerHTML: { __html: log.html } } : { children: log.message })}
-              />
+              {log.html ? (
+                <span 
+                  className={cn(
+                    "break-all",
+                    log.type === "error" ? "text-red-400 font-bold" :
+                    log.type === "warn" ? "text-yellow-400" :
+                    log.type === "success" ? "text-green-400 font-semibold" : 
+                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                  )}
+                  dangerouslySetInnerHTML={{ __html: log.html }}
+                />
+              ) : (
+                <span 
+                  className={cn(
+                    "break-all",
+                    log.type === "error" ? "text-red-400 font-bold" :
+                    log.type === "warn" ? "text-yellow-400" :
+                    log.type === "success" ? "text-green-400 font-semibold" : 
+                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                  )}
+                >
+                  {log.message}
+                </span>
+              )}
             </div>
           ))
         )}
@@ -206,7 +219,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         </div>
         <Button type="submit" size="sm" className="h-9 md:h-10 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-3 md:px-5">
           <Send className="size-3.5 md:size-4 mr-2" />
-          <span className="hidden xs:inline">Send</span>
+          <span className="hidden xs:inline">Execute</span>
         </Button>
       </form>
     </div>

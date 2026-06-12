@@ -1,4 +1,3 @@
-
 'use server';
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -16,7 +15,7 @@ export async function getServerProcessStatus(serverId: string) {
     const pid = parseInt(pidStr.trim());
     if (isNaN(pid)) return { running: false };
     
-    // Check if process exists. Using signal 0 is standard for this.
+    // Check if process exists by sending signal 0
     process.kill(pid, 0);
     return { running: true, pid };
   } catch (e) {
@@ -38,7 +37,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => `[${new Date().toISOString()}]`;
 
-  // Kill entire process group to ensure sub-processes like 'node' inside 'npm start' also die
+  // Kill entire process group to ensure sub-processes also die
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
@@ -46,16 +45,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const pid = parseInt(pidStr.trim());
         try {
           // Kill the process group (indicated by negative PID)
-          process.kill(-pid, 'SIGINT'); // Equivalent to Ctrl+C
+          // We use SIGINT (Ctrl+C) first for graceful exit
+          process.kill(-pid, 'SIGINT'); 
           
-          // Wait a bit for graceful shutdown then force if needed
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
+          // Force delete PID file immediately
+          await fs.unlink(pidPath).catch(() => {});
+          
+          // Wait a bit and force kill if still breathing
+          setTimeout(() => {
+             try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
+          }, 1000);
         } catch (e) {
           // Fallback to single PID kill
           try { process.kill(pid, 'SIGINT'); } catch (e2) {}
+          await fs.unlink(pidPath).catch(() => {});
         }
-        await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {
       // PID file not found or process already gone
@@ -63,7 +67,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n${timestamp()} [STS] Sending SIGINT to process group (Ctrl+C)...\n`);
+    await fs.appendFile(logPath, `\n${timestamp()} [STS] Sending SIGINT (Ctrl+C) to process group...\n`);
     await killExisting();
     if (action === 'stop') {
       await fs.appendFile(logPath, `${timestamp()} [STS] Process group terminated. Application is now offline.\n`);
@@ -74,12 +78,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   if (action === 'start' || action === 'restart') {
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
-      // Reset logs for new session
-      await fs.writeFile(logPath, `${timestamp()} [STS] Initializing environment for Node.js v${config.nodeVersion}...\n`);
+      // Clear logs for fresh start
+      await fs.writeFile(logPath, `${timestamp()} [STS] Booting with Node.js v${config.nodeVersion} environment...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
-      // 1. Dependency check
+      // 1. Dependency check (Real npm install)
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let needsInstall = false;
       try {
@@ -89,10 +93,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       }
 
       if (needsInstall) {
-        logStream.write(`${timestamp()} [STS] node_modules not found. Running real npm install...\n`);
+        logStream.write(`${timestamp()} [STS] node_modules missing. Running npm install...\n`);
         
         await new Promise((resolve, reject) => {
-          // Use npx to isolate node version
           const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
             cwd: filesDir,
             env: { 
@@ -108,24 +111,24 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
           installProcess.on('close', (code) => {
             if (code === 0) {
-              logStream.write(`${timestamp()} [STS] Installation complete.\n`);
+              logStream.write(`${timestamp()} [STS] Installation successful.\n`);
               resolve(true);
             } else {
-              logStream.write(`${timestamp()} [ERROR] npm install failed with code ${code}\n`);
-              reject(new Error('Installation failed'));
+              logStream.write(`${timestamp()} [ERROR] Installation failed with code ${code}\n`);
+              reject(new Error('npm install failed'));
             }
           });
         });
       }
 
-      // 2. Start script
+      // 2. Start Application
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
       const commandParts = config.startupCommand.split(' ');
       
       const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
         cwd: filesDir,
-        detached: true, // Start in a new process group
+        detached: true, // Create new process group
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { 
           ...process.env, 
@@ -139,7 +142,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         await fs.writeFile(pidPath, child.pid.toString());
       }
 
-      // Direct streaming from script to log file
+      // Stream output directly to file
       child.stdout?.on('data', (data) => logStream.write(data));
       child.stderr?.on('data', (data) => logStream.write(data));
 
@@ -149,12 +152,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         fs.unlink(pidPath).catch(() => {});
       });
 
-      // Detach so it survives server actions finishing
+      // Detach to allow the server action to return while process keeps running
       child.unref();
 
       return { success: true };
     } catch (error: any) {
-      await fs.appendFile(logPath, `\n${timestamp()} [ERROR] Boot failed: ${error.message}\n`);
+      await fs.appendFile(logPath, `\n${timestamp()} [ERROR] System failed to boot: ${error.message}\n`);
       return { success: false, error: error.message };
     }
   }
