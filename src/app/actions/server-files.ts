@@ -49,6 +49,7 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
   }
 }
 
+
 export async function createServerFile(serverId: string, fileName: string, subPath: string = '') {
   try {
     const filePath = path.join(getSafePath(serverId, subPath), fileName);

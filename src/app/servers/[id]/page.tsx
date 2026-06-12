@@ -314,7 +314,7 @@ export default function ServerPage() {
             </ScrollArea>
 
             {activeTab === "console" && (
-              <div className="flex items-center justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300">
+              <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50">
                   <Globe className="size-3.5 text-primary" />
                   <div className="flex flex-col">
