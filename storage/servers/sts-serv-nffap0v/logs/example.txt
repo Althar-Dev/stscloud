@@ -1,6 +1,0 @@
-[2026-06-11T07:01:46.291Z] [STS] Welcome to STSCloud.
-[2026-06-11T07:01:46.291Z] [STS] Starting container...
-[2026-06-11T07:01:46.307Z] [STS] Checking allocated disk space... 0.02MB used
-[2026-06-11T07:01:46.307Z] [STS] Found package.json. Dependency check passed.
-[2026-06-11T07:01:46.307Z] [ERROR] ENTRY FILE 'index.js' NOT FOUND.
-[2026-06-11T07:01:46.307Z] [STS] CRITICAL ERROR: Mandatory files missing. Boot sequence terminated.

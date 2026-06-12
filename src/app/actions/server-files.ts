@@ -1,4 +1,3 @@
-
 'use server';
 
 import { promises as fs } from 'fs';
@@ -11,11 +10,7 @@ import AdmZip from 'adm-zip';
 
 function getSafePath(serverId: string, subPath: string = '') {
   const baseDir = path.resolve(process.cwd(), 'storage', 'servers', serverId, 'files');
-  
-  // path.resolve interprets relative path segments like '..'
   const finalPath = path.resolve(baseDir, subPath);
-  
-  // Security check: if the user tries to go above the base directory, pin them to the base directory
   if (!finalPath.startsWith(baseDir)) {
     return baseDir;
   }
@@ -23,14 +18,12 @@ function getSafePath(serverId: string, subPath: string = '') {
 }
 
 function getLogPath(serverId: string) {
-  return path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'example.txt');
+  return path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
 }
 
 export async function getServerFiles(serverId: string, subPath: string = '') {
   try {
     const targetPath = getSafePath(serverId, subPath);
-    
-    // Check if directory exists
     try {
       await fs.access(targetPath);
     } catch {
@@ -38,7 +31,6 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
     }
 
     const entries = await fs.readdir(targetPath, { withFileTypes: true });
-    
     const files = await Promise.all(entries.map(async (entry) => {
       const fullPath = path.join(targetPath, entry.name);
       const stats = await fs.stat(fullPath);
@@ -53,7 +45,6 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
 
     return { success: true, files };
   } catch (error: any) {
-    console.error('File Error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -83,13 +74,10 @@ export async function unarchiveServerFile(serverId: string, fileName: string, su
   try {
     const currentDirPath = getSafePath(serverId, subPath);
     const filePath = path.join(currentDirPath, fileName);
-    
     const zip = new AdmZip(filePath);
     zip.extractAllTo(currentDirPath, true);
-    
     return { success: true };
   } catch (error: any) {
-    console.error('Unarchive Error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -98,22 +86,6 @@ export async function createServerFolder(serverId: string, folderName: string, s
   try {
     const folderPath = path.join(getSafePath(serverId, subPath), folderName);
     await fs.mkdir(folderPath, { recursive: true });
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function deleteServerPath(serverId: string, name: string, subPath: string = '') {
-  try {
-    const targetPath = path.join(getSafePath(serverId, subPath), name);
-    const stats = await fs.stat(targetPath);
-    
-    if (stats.isDirectory()) {
-      await fs.rm(targetPath, { recursive: true, force: true });
-    } else {
-      await fs.unlink(targetPath);
-    }
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -136,7 +108,6 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
   try {
     const currentPath = getSafePath(serverId, subPath);
     const zip = new AdmZip();
-    
     for (const name of names) {
       const fullPath = path.join(currentPath, name);
       const stats = await fs.stat(fullPath);
@@ -146,7 +117,6 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
         zip.addLocalFile(fullPath);
       }
     }
-    
     const finalZipName = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`;
     zip.writeZip(path.join(currentPath, finalZipName));
     return { success: true };
@@ -158,15 +128,12 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
 export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
   try {
     const sourceDir = getSafePath(serverId, currentSubPath);
-    const resolvedTargetSubPath = path.join(currentSubPath, targetSubPath);
-    const targetDir = getSafePath(serverId, resolvedTargetSubPath);
-    
+    const targetDir = getSafePath(serverId, path.join(currentSubPath, targetSubPath));
     try {
       await fs.access(targetDir);
     } catch {
       await fs.mkdir(targetDir, { recursive: true });
     }
-
     for (const name of names) {
       const oldPath = path.join(sourceDir, name);
       const newPath = path.join(targetDir, name);
@@ -202,13 +169,12 @@ export async function updateFileContent(serverId: string, fileName: string, cont
 export async function getServerLogs(serverId: string) {
   try {
     const logPath = getLogPath(serverId);
-    
     try {
       await fs.access(logPath);
       const content = await fs.readFile(logPath, 'utf8');
       return { success: true, content };
     } catch {
-      return { success: true, content: `[${new Date().toISOString()}] [STS] Welcome to STSCloud.\n` };
+      return { success: true, content: `[${new Date().toISOString()}] [STS] Initializing logs.sts...\n` };
     }
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -220,7 +186,6 @@ export async function clearServerLogs(serverId: string) {
     const logPath = getLogPath(serverId);
     const isoTime = new Date().toISOString();
     const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.\n`;
-    
     await fs.mkdir(path.dirname(logPath), { recursive: true });
     await fs.writeFile(logPath, initialLogs);
     return { success: true };
@@ -232,7 +197,6 @@ export async function clearServerLogs(serverId: string) {
 export async function getServerDiskUsage(serverId: string) {
   try {
     const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
-    
     try {
       await fs.access(serverPath);
     } catch {
@@ -240,7 +204,6 @@ export async function getServerDiskUsage(serverId: string) {
     }
 
     let totalSizeBytes = 0;
-    
     async function calculateSize(dirPath: string) {
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -253,9 +216,7 @@ export async function getServerDiskUsage(serverId: string) {
             } else {
               totalSizeBytes += stats.size;
             }
-          } catch (e) {
-            // Skip files that might be deleted during walk
-          }
+          } catch (e) {}
         }
       } catch (e) {}
     }
@@ -263,7 +224,6 @@ export async function getServerDiskUsage(serverId: string) {
     await calculateSize(serverPath);
     return { success: true, sizeInMB: totalSizeBytes / (1024 * 1024) };
   } catch (error: any) {
-    console.error('Disk Usage Error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -277,7 +237,6 @@ export async function decommissionServerFiles(serverId: string) {
     } catch {}
     return { success: true };
   } catch (error: any) {
-    console.error('Decommission Error:', error);
     return { success: false, error: error.message };
   }
 }

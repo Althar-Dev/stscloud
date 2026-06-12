@@ -317,7 +317,12 @@ export default function ServerPage() {
               <div className="flex items-center justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50">
                   <Globe className="size-3.5 text-primary" />
-                  <div className="flex flex-col"><span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span><span className="text-[10px] md:text-xs font-code text-primary font-medium">{server?.id}.stscloud.net</span></div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>
+                    <span className="text-[10px] md:text-xs font-code text-primary font-medium">
+                      sts-server-{server?.id}.stscloud.id
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

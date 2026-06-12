@@ -165,7 +165,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
-            <span className="text-xs">Connecting to TTY...</span>
+            <span className="text-xs">Connecting...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">

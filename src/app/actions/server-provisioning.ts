@@ -18,13 +18,14 @@ export async function provisionServerFiles(serverId: string) {
     await fs.mkdir(logsDir, { recursive: true });
 
     // Create initial provisioning log with branding
-    const exampleLogPath = path.join(logsDir, 'example.txt');
+    const logPath = path.join(logsDir, 'logs.sts');
     const isoTime = new Date().toISOString();
     const initialLogs = `[${isoTime}] [STS] Welcome to STSCloud.
 [${isoTime}] [STS] Node provisioned successfully.
-[${isoTime}] [STS] Ready for deployment.\n`;
+[${isoTime}] [STS] Ready for deployment.
+[${isoTime}] [STS] Use Start button to boot the application.\n`;
     
-    await fs.writeFile(exampleLogPath, initialLogs);
+    await fs.writeFile(logPath, initialLogs);
 
     return { success: true, path: baseDir };
   } catch (error: any) {

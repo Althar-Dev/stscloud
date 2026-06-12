@@ -32,7 +32,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
   const filesDir = path.join(baseDir, 'files');
   const stsDir = path.join(filesDir, '.sts');
-  const logPath = path.join(stsDir, 'logs', 'example.txt');
+  const logPath = path.join(stsDir, 'logs', 'logs.sts');
   const pidPath = path.join(stsDir, 'run.pid');
   
   const timestamp = () => `[${new Date().toISOString()}]`;
@@ -67,7 +67,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n${timestamp()} [STS] Terminate process...\n`);
+    await fs.appendFile(logPath, `\n${timestamp()} [STS] Terminate process (SIGINT)...\n`);
     await killExisting();
     if (action === 'stop') {
       await fs.appendFile(logPath, `${timestamp()} [STS] Process terminated. Server is now offline.\n`);
@@ -79,7 +79,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
     try {
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       // Clear logs for fresh start
-      await fs.writeFile(logPath, `${timestamp()} [STS] Booting with Node.js v${config.nodeVersion} environment...\n`);
+      await fs.writeFile(logPath, `${timestamp()} [STS] Starting with Node.js v${config.nodeVersion} environment...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
