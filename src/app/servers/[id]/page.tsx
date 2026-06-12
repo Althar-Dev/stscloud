@@ -53,7 +53,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -148,7 +148,6 @@ export default function ServerPage() {
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
     
-    // POWER LOCK: Kunci status selama 5 detik untuk stabilitas
     setPowerActionActive(true);
     
     let targetStatus = server.status;
