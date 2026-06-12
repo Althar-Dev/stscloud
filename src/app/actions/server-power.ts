@@ -22,9 +22,15 @@ export async function getServerProcessStatus(serverId: string) {
     const pid = parseInt(content);
     if (isNaN(pid)) return { running: false };
     
-    // Check if process group exists (using signal 0)
-    process.kill(pid, 0);
-    return { running: true, pid };
+    try {
+      // Check if process exists using signal 0
+      process.kill(pid, 0);
+      return { running: true, pid };
+    } catch (e) {
+      // Process is dead but PID file exists, cleanup
+      await fs.unlink(pidPath).catch(() => {});
+      return { running: false };
+    }
   } catch (e) {
     return { running: false };
   }
@@ -52,38 +58,36 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
-      if (pidStr && pidStr.trim() !== 'BOOTING') {
-        const pid = parseInt(pidStr.trim());
-        try {
-          // SIGINT to process group (negative PID) for Ctrl+C behavior
-          process.kill(-pid, 'SIGINT'); 
-          await fs.unlink(pidPath).catch(() => {});
-          
-          // Force kill after 2s if still running
-          setTimeout(() => {
-             try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
-          }, 2000);
-        } catch (e) {
-          try { process.kill(pid, 'SIGINT'); } catch (e2) {}
-          await fs.unlink(pidPath).catch(() => {});
+      const trimmedPid = pidStr?.trim();
+      
+      if (trimmedPid && trimmedPid !== 'BOOTING') {
+        const pid = parseInt(trimmedPid);
+        if (!isNaN(pid)) {
+          try {
+            // Kill entire process group aggressively (negative PID)
+            // This ensures all sub-processes spawned by npx/node are killed
+            process.kill(-pid, 'SIGKILL'); 
+          } catch (e) {
+            // Fallback for single process if group kill fails
+            try { process.kill(pid, 'SIGKILL'); } catch (e2) {}
+          }
         }
-      } else {
-        await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {}
+    // Always cleanup PID file
+    await fs.unlink(pidPath).catch(() => {});
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `[STS] [${timestamp()}] Terminating process (SIGINT)...\n`);
+    await fs.appendFile(logPath, `[STS] [${timestamp()}] Terminating process group (SIGKILL)... Status: Offline.\n`);
     await killExisting();
     
     if (action === 'restart') {
-      // Give the OS a moment to release ports and file handles
+      // OS grace period to release ports
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     if (action === 'stop') {
-      await fs.appendFile(logPath, `[STS] [${timestamp()}] Server stopped. Status: Offline.\n`);
       return { success: true };
     }
   }
@@ -93,30 +97,22 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       await fs.mkdir(path.dirname(pidPath), { recursive: true });
       
-      // Mark as booting to prevent status check from flipping to offline
+      // Mark as booting to prevent premature offline status
       await fs.writeFile(pidPath, 'BOOTING');
 
       const asciiRaw = `░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
       
-      // Generate gradient ASCII (Cyan to Blue)
-      const ascii = gradient(['#00f2fe', '#4facfe'])(asciiRaw);
+      // Gradient ASCII (Purple to Orange)
+      const ascii = gradient(['#8e2de2', '#f09819'])(asciiRaw);
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
-      try {
-        await fs.access(nodeModulesPath);
-      } catch (e) {
-        modulesStatus = 'No';
-      }
+      try { await fs.access(nodeModulesPath); } catch (e) { modulesStatus = 'No'; }
 
       let diskStatus = 'Ok';
-      try {
-        await fs.access(filesDir);
-      } catch (e) {
-        diskStatus = 'Bad';
-      }
+      try { await fs.access(filesDir); } catch (e) { diskStatus = 'Bad'; }
 
       const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Checking node_modules... ${modulesStatus === 'Ok' ? green('Ok') : yellow('No')}\n[STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}\n[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
 
@@ -128,17 +124,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         
         if (modulesStatus === 'No') {
           logStream.write(`[STS] [${timestamp()}] Installing dependencies (npm install)...\n`);
-          
           await new Promise((resolve) => {
             const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
               cwd: filesDir,
-              env: { 
-                ...process.env, 
-                NODE_ENV: 'production',
-                FORCE_COLOR: '1'
-              }
+              env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
             });
-
             installProcess.stdout?.on('data', (data) => logStream.write(data));
             installProcess.stderr?.on('data', (data) => logStream.write(data));
             installProcess.on('close', () => resolve(true));
@@ -150,14 +140,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           cwd: filesDir,
           detached: true,
           stdio: ['ignore', 'pipe', 'pipe'],
-          env: { 
-            ...process.env, 
-            NODE_ENV: 'production',
-            FORCE_COLOR: '1'
-          }
+          env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
         });
 
         if (child.pid) {
+          // Store the leader PID for process group management
           await fs.writeFile(pidPath, child.pid.toString());
         }
 
@@ -173,10 +160,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         child.unref();
       })().catch(err => {
         fs.appendFile(logPath, `\n[STS] [${timestamp()}] [ERROR] Execution failure: ${err.message}\n`).catch(() => {});
+        fs.unlink(pidPath).catch(() => {});
       });
 
       return { success: true };
     } catch (error: any) {
+      await fs.unlink(pidPath).catch(() => {});
       return { success: false, error: error.message };
     }
   }
