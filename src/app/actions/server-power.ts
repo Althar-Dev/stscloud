@@ -1,4 +1,3 @@
-
 'use server';
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -46,7 +45,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const pid = parseInt(pidStr.trim());
         try {
           // Kill the process group (negative PID) with SIGINT (Ctrl+C)
-          // This is essential for clean shutdowns of Node.js apps
           process.kill(-pid, 'SIGINT'); 
           await fs.unlink(pidPath).catch(() => {});
           

@@ -49,7 +49,6 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
   }
 }
 
-
 export async function createServerFile(serverId: string, fileName: string, subPath: string = '') {
   try {
     const filePath = path.join(getSafePath(serverId, subPath), fileName);
@@ -174,7 +173,7 @@ export async function getServerLogs(serverId: string) {
       await fs.access(logPath);
       const content = await fs.readFile(logPath, 'utf8');
       
-      // Implement maximum 200 lines tail for performance
+      // Limit to 200 lines tail for performance
       const lines = content.split('\n');
       if (lines.length > 200) {
         return { success: true, content: lines.slice(-200).join('\n') };

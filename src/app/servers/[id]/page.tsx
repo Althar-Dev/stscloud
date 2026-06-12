@@ -122,6 +122,13 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
+  // LOG CLEANER: Clear logs when offline
+  React.useEffect(() => {
+    if (server?.status === 'offline' && id) {
+      clearServerLogs(id as string);
+    }
+  }, [server?.status, id]);
+
   // HEALTH MONITOR: Sync DB status with actual OS process
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
@@ -300,19 +307,17 @@ export default function ServerPage() {
               </TabsList>
             </ScrollArea>
 
-            {activeTab === "console" && (
-              <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-full md:w-auto">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-full md:w-auto">
-                  <Globe className="size-3.5 text-primary" />
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>
-                    <span className="text-[10px] md:text-xs font-code text-primary font-medium whitespace-nowrap">
-                      sts-server-{server?.id}.stscloud.id
-                    </span>
-                  </div>
+            <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-full md:w-auto">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-full md:w-auto">
+                <Globe className="size-3.5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>
+                  <span className="text-[10px] md:text-xs font-code text-primary font-medium whitespace-nowrap">
+                    sts-server-{server?.id}.stscloud.id
+                  </span>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">

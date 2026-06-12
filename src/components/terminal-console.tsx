@@ -68,8 +68,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           const rawTime = timestampMatch[1];
           timestamp = rawTime.includes('T') ? rawTime.split('T')[1].split('.')[0] : rawTime;
           displayMessage = line.replace(timestampMatch[0], '').trim();
-          
-          // Cleaner display for system logs
           displayMessage = displayMessage.replace('[STS]', '').replace('[ERROR]', '').replace('[SUCCESS]', '').trim();
         } else {
           type = "user";
@@ -84,7 +82,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         };
       });
       
-      // Limit to 200 lines for UI performance
+      // Enforce 200 lines limit for UI stability
       setLogs(mappedLogs.slice(-200));
     }
     setIsInitializing(false);
@@ -105,7 +103,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    // Tolerance of 30px for determining if we are at bottom
     const atBottom = scrollHeight - clientHeight <= scrollTop + 30;
     setIsSticky(atBottom);
   };
@@ -113,7 +110,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    // Command execution logic could be added here
     setInputValue("");
   };
 
