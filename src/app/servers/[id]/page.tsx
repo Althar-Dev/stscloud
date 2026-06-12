@@ -90,7 +90,7 @@ export default function ServerPage() {
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   
-  // Power Action Lock to prevent health watcher from conflicting with manual actions
+  // Power Action Lock: Prevent auto-restart sync for 5 seconds after manual actions
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
   // Initial Log Cleanup
@@ -123,7 +123,7 @@ export default function ServerPage() {
         setCommandRun(data.commandRun || "node");
         setEntryFile(data.entryFile || "index.js");
       } else if (!isDeleting) {
-        toast({ variant: "destructive", title: "Instance not found", description: "This server may have been decommissioned." });
+        toast({ variant: "destructive", title: "Instance removed", description: "The server instance is no longer available." });
         router.push("/dashboard");
       }
       setLoading(false);
@@ -135,21 +135,23 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // SMART HEALTH MONITOR: Sync status with OS process state
+  // HEALTH MONITOR: Sync DB status with actual OS process
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
     const monitorInterval = setInterval(async () => {
       const status = await getServerProcessStatus(id as string);
       
-      // Sync DB state if it differs from real process state
-      if (status.running && server.status === 'offline') {
-        updateDoc(doc(db, "servers", id as string), { status: 'online' });
-      } else if (!status.running && server.status === 'online') {
+      // Auto-sync if DB is 'online' but process is dead
+      if (!status.running && server.status === 'online') {
         updateDoc(doc(db, "servers", id as string), { status: 'offline' });
-        toast({ variant: "destructive", title: "Process Halted", description: "The script execution has stopped." });
+        toast({ variant: "destructive", title: "Process Terminated", description: "The application has stopped unexpectedly." });
       }
-    }, 2500);
+      // Auto-sync if DB is 'offline' but process is actually running
+      else if (status.running && server.status === 'offline') {
+        updateDoc(doc(db, "servers", id as string), { status: 'online' });
+      }
+    }, 3000);
 
     return () => clearInterval(monitorInterval);
   }, [id, server, db, toast, powerActionActive]);
@@ -162,22 +164,22 @@ export default function ServerPage() {
       if (res.success) setDiskUsage(res.sizeInMB || 0);
     };
     updateUsage();
-    const interval = setInterval(updateUsage, 10000);
+    const interval = setInterval(updateUsage, 15000);
     return () => clearInterval(interval);
   }, [id]);
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
     
-    // ACTIVATE LOCK: Prevent automatic health sync for 5 seconds
+    // LOCK Health Monitor: Disable auto-sync for 5 seconds to let OS finish the task
     setPowerActionActive(true);
     
-    let newStatus = server?.status;
-    if (action === "start" || action === "restart") newStatus = "starting";
-    if (action === "stop") newStatus = "offline";
+    let targetStatus = server.status;
+    if (action === "start" || action === "restart") targetStatus = "starting";
+    if (action === "stop") targetStatus = "offline";
 
     try {
-      await updateDoc(doc(db, "servers", id as string), { status: newStatus });
+      await updateDoc(doc(db, "servers", id as string), { status: targetStatus });
 
       const result = await executeServerPower(id as string, action, {
         nodeVersion: nodeVersion || "20",
@@ -191,18 +193,15 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
       }
       
-      // If start/restart, check final state after a short delay
-      if (action === "start" || action === "restart") {
-        setTimeout(async () => {
-          const check = await getServerProcessStatus(id as string);
-          await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
-        }, 3000);
-      }
+      // Delayed validation of state
+      setTimeout(async () => {
+        const check = await getServerProcessStatus(id as string);
+        await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
+        setPowerActionActive(false); // RELEASE LOCK after validation
+      }, 5000);
+      
     } catch (error: any) {
-      console.error("Power action failed", error);
-    } finally {
-      // RELEASE LOCK after 5 seconds to let process state stabilize
-      setTimeout(() => setPowerActionActive(false), 5000);
+      setPowerActionActive(false);
     }
   };
 
@@ -217,7 +216,7 @@ export default function ServerPage() {
         commandRun,
         entryFile
       });
-      toast({ title: "Config Updated", description: "Startup parameters have been saved." });
+      toast({ title: "Config Saved", description: "Startup parameters updated." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
@@ -232,7 +231,7 @@ export default function ServerPage() {
       const cleanup = await decommissionServerFiles(id as string);
       if (!cleanup.success) throw new Error(cleanup.error);
       await deleteDoc(doc(db, "servers", id as string));
-      toast({ title: "Decommissioned", description: "Server instance and data removed." });
+      toast({ title: "Decommissioned", description: "All server data has been wiped." });
       router.push("/dashboard");
     } catch (error: any) {
       toast({ variant: "destructive", title: "Failed", description: error.message });
@@ -316,7 +315,7 @@ export default function ServerPage() {
 
             {activeTab === "console" && (
               <div className="flex items-center justify-start md:justify-end gap-2 md:gap-4 px-1 animate-in fade-in duration-300 w-full md:w-auto">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-fit">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/30 border border-border/50 w-full md:w-auto">
                   <Globe className="size-3.5 text-primary" />
                   <div className="flex flex-col">
                     <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none mb-1">Hostname</span>

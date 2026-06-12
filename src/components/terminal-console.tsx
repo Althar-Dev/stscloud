@@ -77,7 +77,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         }
 
         return {
-          id: `fs-${i}-${line.length}`,
+          id: `log-${i}-${line.length}`,
           timestamp,
           type,
           message: displayMessage,
@@ -92,7 +92,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   React.useEffect(() => {
     fetchLogs();
-    const pollInterval = setInterval(fetchLogs, 500);
+    const pollInterval = setInterval(fetchLogs, 800);
     return () => clearInterval(pollInterval);
   }, [fetchLogs]);
 
@@ -105,7 +105,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const atBottom = scrollHeight - clientHeight <= scrollTop + 20;
+    const atBottom = scrollHeight - clientHeight <= scrollTop + 30;
     setIsSticky(atBottom);
   };
 
@@ -113,7 +113,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     e.preventDefault();
     if (!inputValue.trim()) return;
     setInputValue("");
-    // Command handling requires active stdin stream not available in this action-based setup
   };
 
   return (
@@ -166,16 +165,16 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
-            <span className="text-xs">Connecting...</span>
+            <span className="text-xs">Connecting to stream...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
             <TerminalIcon className="size-8 md:size-10" />
-            <p className="text-xs md:text-sm text-center">Shell ready. Boot server to see output.</p>
+            <p className="text-xs md:text-sm text-center">Ready for execution. Press Start to boot.</p>
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-1 animate-in fade-in duration-200 flex items-start gap-2">
+            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-2">
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
@@ -186,7 +185,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
                     log.type === "error" ? "text-red-400 font-bold" :
                     log.type === "warn" ? "text-yellow-400" :
                     log.type === "success" ? "text-green-400 font-semibold" : 
-                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                    "text-slate-200"
                   )}
                   dangerouslySetInnerHTML={{ __html: log.html }}
                 />
@@ -197,7 +196,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
                     log.type === "error" ? "text-red-400 font-bold" :
                     log.type === "warn" ? "text-yellow-400" :
                     log.type === "success" ? "text-green-400 font-semibold" : 
-                    log.type === "user" ? "text-slate-100" : "text-slate-400"
+                    "text-slate-200"
                   )}
                 >
                   {log.message}
