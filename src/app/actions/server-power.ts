@@ -6,12 +6,9 @@ import path from 'path';
 import { spawn } from 'child_process';
 
 /**
- * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and status monitoring.
+ * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
  */
 
-/**
- * Checks if the actual OS process for a server is still running.
- */
 export async function getServerProcessStatus(serverId: string) {
   const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
@@ -19,11 +16,10 @@ export async function getServerProcessStatus(serverId: string) {
     const pid = parseInt(pidStr.trim());
     if (isNaN(pid)) return { running: false };
     
-    // Signal 0 checks for process existence without killing it
+    // Check if process exists. Using signal 0 is standard for this.
     process.kill(pid, 0);
     return { running: true, pid };
   } catch (e) {
-    // If PID file missing or process not found
     return { running: false };
   }
 }
@@ -42,57 +38,61 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => `[${new Date().toISOString()}]`;
 
-  // Helper to kill existing process and its children
+  // Kill entire process group to ensure sub-processes like 'node' inside 'npm start' also die
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
       if (pidStr) {
         const pid = parseInt(pidStr.trim());
         try {
-          // Send SIGTERM to the process group (negative PID)
-          process.kill(-pid, 'SIGTERM');
+          // Kill the process group (indicated by negative PID)
+          process.kill(-pid, 'SIGINT'); // Equivalent to Ctrl+C
           
           // Wait a bit for graceful shutdown then force if needed
           await new Promise(resolve => setTimeout(resolve, 1000));
           try { process.kill(-pid, 'SIGKILL'); } catch(e) {}
         } catch (e) {
-          // Fallback to single PID kill if group kill fails
-          try { process.kill(pid, 'SIGTERM'); } catch (e2) {}
+          // Fallback to single PID kill
+          try { process.kill(pid, 'SIGINT'); } catch (e2) {}
         }
         await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {
-      // PID file not found or already gone
+      // PID file not found or process already gone
     }
   };
 
   if (action === 'stop' || action === 'restart') {
-    await fs.appendFile(logPath, `\n${timestamp()} [STS] Initiating shutdown sequence...\n`);
+    await fs.appendFile(logPath, `\n${timestamp()} [STS] Sending SIGINT to process group (Ctrl+C)...\n`);
     await killExisting();
     if (action === 'stop') {
-      await fs.appendFile(logPath, `${timestamp()} [STS] SIGTERM received. Application is now offline.\n`);
+      await fs.appendFile(logPath, `${timestamp()} [STS] Process group terminated. Application is now offline.\n`);
       return { success: true };
     }
   }
 
   if (action === 'start' || action === 'restart') {
     try {
-      // 1. Prepare Environment
       await fs.mkdir(path.dirname(logPath), { recursive: true });
-      // Clear logs on fresh start/restart
-      await fs.writeFile(logPath, `${timestamp()} [STS] Welcome to STSCloud.\n${timestamp()} [STS] Initializing environment for Node.js v${config.nodeVersion}...\n`);
+      // Reset logs for new session
+      await fs.writeFile(logPath, `${timestamp()} [STS] Initializing environment for Node.js v${config.nodeVersion}...\n`);
 
       const logStream = createWriteStream(logPath, { flags: 'a' });
 
-      // 2. Dependency Check & Version-Specific Install
+      // 1. Dependency check
       const nodeModulesPath = path.join(filesDir, 'node_modules');
+      let needsInstall = false;
       try {
         await fs.access(nodeModulesPath);
-        logStream.write(`${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
-        logStream.write(`${timestamp()} [STS] Node_modules not found. Installing dependencies using Node.js v${config.nodeVersion} context...\n`);
+        needsInstall = true;
+      }
+
+      if (needsInstall) {
+        logStream.write(`${timestamp()} [STS] node_modules not found. Running real npm install...\n`);
         
         await new Promise((resolve, reject) => {
+          // Use npx to isolate node version
           const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
             cwd: filesDir,
             env: { 
@@ -115,24 +115,17 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               reject(new Error('Installation failed'));
             }
           });
-
-          installProcess.on('error', (err) => {
-            logStream.write(`${timestamp()} [ERROR] Failed to start npm install: ${err.message}\n`);
-            reject(err);
-          });
         });
       }
 
-      // 3. Prepare Command
-      const commandParts = config.startupCommand.split(' ');
-      
-      logStream.write(`${timestamp()} [STS] Activating virtual environment (Node.js v${config.nodeVersion})...\n`);
+      // 2. Start script
       logStream.write(`${timestamp()} [STS] Executing: ${config.startupCommand}\n\n`);
 
-      // 4. REAL SPAWN WITH VERSION WRAPPER
+      const commandParts = config.startupCommand.split(' ');
+      
       const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
         cwd: filesDir,
-        detached: true,
+        detached: true, // Start in a new process group
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { 
           ...process.env, 
@@ -142,20 +135,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
       });
 
-      // Save PID immediately
       if (child.pid) {
         await fs.writeFile(pidPath, child.pid.toString());
       }
 
-      // Stream output directly
+      // Direct streaming from script to log file
       child.stdout?.on('data', (data) => logStream.write(data));
       child.stderr?.on('data', (data) => logStream.write(data));
-
-      child.on('error', (err) => {
-        const errLog = `\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`;
-        fs.appendFile(logPath, errLog).catch(() => {});
-        fs.unlink(pidPath).catch(() => {});
-      });
 
       child.on('close', (code) => {
         const exitLog = `\n${timestamp()} [STS] Process exited with code ${code}\n`;
@@ -163,13 +149,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         fs.unlink(pidPath).catch(() => {});
       });
 
-      // Detach so it keeps running
+      // Detach so it survives server actions finishing
       child.unref();
 
       return { success: true };
     } catch (error: any) {
-      const errorMsg = `\n${timestamp()} [ERROR] Boot failed: ${error.message}\n`;
-      await fs.appendFile(logPath, errorMsg);
+      await fs.appendFile(logPath, `\n${timestamp()} [ERROR] Boot failed: ${error.message}\n`);
       return { success: false, error: error.message };
     }
   }

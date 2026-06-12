@@ -47,7 +47,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [isSticky, setIsSticky] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch logs from file system
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
     
@@ -93,20 +92,16 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   React.useEffect(() => {
     fetchLogs();
-    const pollInterval = setInterval(() => {
-      fetchLogs();
-    }, 500);
+    const pollInterval = setInterval(fetchLogs, 500);
     return () => clearInterval(pollInterval);
   }, [fetchLogs]);
 
-  // Handle auto-scroll only if sticky is enabled
   React.useEffect(() => {
     if (isSticky && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs, isSticky]);
 
-  // Detect if user is at the bottom to toggle sticky mode
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -117,26 +112,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const handleCommand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    
-    const newLine: LogLine = {
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: "",
-      type: "info",
-      message: `$ ${inputValue}`,
-      html: ansiConverter.toHtml(`$ ${inputValue}`)
-    };
-    setLogs((prev) => [...prev, newLine]);
     setInputValue("");
-    setIsSticky(true);
-    
-    setTimeout(() => {
-      const cmd = inputValue.toLowerCase().trim();
-      if (cmd === "help") {
-        setLogs(prev => [...prev, { id: Date.now().toString(), timestamp: "", type: "success", message: "Available: help, status, clear", html: ansiConverter.toHtml("Available: help, status, clear") }]);
-      } else if (cmd === "clear") {
-        setLogs([]);
-      }
-    }, 100);
+    // Command handling is simulated here; real input would need a websocket/stdin stream
   };
 
   return (
@@ -202,30 +179,16 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               {log.timestamp && (
                 <span className="text-muted-foreground opacity-40 tabular-nums text-[10px] shrink-0 mt-0.5">[{log.timestamp}]</span>
               )}
-              {log.html ? (
-                <span 
-                  className={cn(
-                    "break-all",
-                    log.type === "error" ? "text-red-400 font-bold" :
-                    log.type === "warn" ? "text-yellow-400" :
-                    log.type === "success" ? "text-green-400 font-semibold" : 
-                    log.type === "user" ? "text-slate-100" : "text-slate-400"
-                  )}
-                  dangerouslySetInnerHTML={{ __html: log.html }}
-                />
-              ) : (
-                <span 
-                  className={cn(
-                    "break-all",
-                    log.type === "error" ? "text-red-400 font-bold" :
-                    log.type === "warn" ? "text-yellow-400" :
-                    log.type === "success" ? "text-green-400 font-semibold" : 
-                    log.type === "user" ? "text-slate-100" : "text-slate-400"
-                  )}
-                >
-                  {log.message}
-                </span>
-              )}
+              <span 
+                className={cn(
+                  "break-all",
+                  log.type === "error" ? "text-red-400 font-bold" :
+                  log.type === "warn" ? "text-yellow-400" :
+                  log.type === "success" ? "text-green-400 font-semibold" : 
+                  log.type === "user" ? "text-slate-100" : "text-slate-400"
+                )}
+                {...(log.html ? { dangerouslySetInnerHTML: { __html: log.html } } : { children: log.message })}
+              />
             </div>
           ))
         )}
