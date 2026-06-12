@@ -40,16 +40,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => `[${new Date().toISOString()}]`;
 
-  // Helper to kill existing process
+  // Helper to kill existing process and its children
   const killExisting = async () => {
     try {
       const pidStr = await fs.readFile(pidPath, 'utf8');
       if (pidStr) {
         const pid = parseInt(pidStr.trim());
         try {
-          process.kill(pid, 'SIGTERM');
+          // Send signal to the entire process group (negative PID)
+          // This ensures that child processes (like node started by npm) are also killed
+          process.kill(-pid, 'SIGTERM');
         } catch (e) {
-          // Process already dead
+          // If group kill fails, try killing the specific PID
+          try {
+            process.kill(pid, 'SIGTERM');
+          } catch (e2) {}
         }
         await fs.unlink(pidPath).catch(() => {});
       }
@@ -119,7 +124,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       // 4. REAL SPAWN FOR USER SCRIPT
       const child = spawn(mainCmd, args, {
         cwd: filesDir,
-        detached: true,
+        detached: true, // Crucial for process group killing later
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, NODE_ENV: 'production' }
       });

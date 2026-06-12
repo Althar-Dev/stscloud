@@ -1,7 +1,7 @@
-[2026-06-12T02:19:34.436Z] [STS] Welcome to STSCloud.
-[2026-06-12T02:19:34.436Z] [STS] Initializing boot sequence...
-[2026-06-12T02:19:34.438Z] [STS] Dependencies found. Skipping install.
-[2026-06-12T02:19:34.438Z] [STS] Executing: npm start
+[2026-06-12T02:22:29.678Z] [STS] Welcome to STSCloud.
+[2026-06-12T02:22:29.678Z] [STS] Initializing boot sequence...
+[2026-06-12T02:22:29.691Z] [STS] Dependencies found. Skipping install.
+[2026-06-12T02:22:29.691Z] [STS] Executing: npm start
 
 
 > telegram-STS@1.0.0 start
@@ -11,12 +11,3 @@
 ✓ Message handlers loaded
 ✓ Loaded 10 callback handler(s)
 ✓ Error handlers loaded
-Failed to start STS: TelegramError: 404: Not Found
-    at Telegram.callApi [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/core/network/client.js:315:19[90m)[39m
-[90m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
-    at async Telegraf.launch [90m(/home/user/studio/storage/servers/sts-serv-nffap0v/files/[39mnode_modules/[4mtelegraf[24m/lib/telegraf.js:188:78[90m)[39m {
-  response: { ok: [33mfalse[39m, error_code: [33m404[39m, description: [32m'Not Found'[39m },
-  on: { method: [32m'getMe'[39m, payload: {} }
-}
-
-[2026-06-12T02:19:56.009Z] [STS] SIGTERM received. Node is now offline.
