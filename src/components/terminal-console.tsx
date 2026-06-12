@@ -15,13 +15,13 @@ const ansiConverter = new AnsiFilter({
   stream: true,
   colors: {
     0: "#000000",
-    1: "#ff5555",
-    2: "#50fa7b",
-    3: "#f1fa8c",
-    4: "#bd93f9",
-    5: "#ff79c6",
-    6: "#8be9fd",
-    7: "#f8f8f2"
+    1: "#ff5555", // Red
+    2: "#50fa7b", // Green
+    3: "#f1fa8c", // Yellow
+    4: "#bd93f9", // Purple
+    5: "#ff79c6", // Pink
+    6: "#8be9fd", // Cyan
+    7: "#f8f8f2"  // White
   }
 });
 

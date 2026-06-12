@@ -6,7 +6,7 @@ import { spawn } from 'child_process';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Optimized with the requested [STS] [timestamp] format.
+ * Optimized with stylized ASCII art and colored status indicators.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -37,6 +37,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const pidPath = path.join(stsDir, 'run.pid');
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+  
+  // ANSI Color Helpers
+  const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
+  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
+  const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
+  const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
+  const purple = (s: string) => `\x1b[34m${s}\x1b[0m`;
+  const pink = (s: string) => `\x1b[35m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -74,12 +82,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       await fs.mkdir(path.dirname(logPath), { recursive: true });
       
       const ascii = `
-  ____ _____ ____  ____ _                     _ 
- / ___|_   _/ ___|/ ___| | ___  _   _  __| |
- \\___ \\ | | \\___ \\ |   | |/ _ \\| | | |/ _\` |
-  ___) || |  ___) | |___| | (_) | |_| | (_| |
- |____/ |_| |____/ \\____|_|\\___/ \\__,_|\\__,_|
-                                              
+${cyan('░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄')}
+${purple('░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█')}
+${pink('░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░')}
 `;
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
@@ -98,8 +103,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       }
 
       const initialLogs = `${ascii}
-[STS] [${timestamp()}] Checking available disk... ${diskStatus}
-[STS] [${timestamp()}] Checking node_modules... ${modulesStatus}
+[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}
+[STS] [${timestamp()}] Checking node_modules... ${modulesStatus === 'Ok' ? green('Ok') : yellow('No')}
 [STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}
 [STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
 
