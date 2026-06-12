@@ -5,8 +5,26 @@ import path from 'path';
 import { spawn } from 'child_process';
 
 /**
- * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
+ * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and status monitoring.
  */
+
+/**
+ * Checks if the actual OS process for a server is still running.
+ */
+export async function getServerProcessStatus(serverId: string) {
+  const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
+  try {
+    const pidStr = await fs.readFile(pidPath, 'utf8');
+    const pid = parseInt(pidStr.trim());
+    if (isNaN(pid)) return { running: false };
+    
+    // Signal 0 checks for process existence without killing it
+    process.kill(pid, 0);
+    return { running: true };
+  } catch (e) {
+    return { running: false };
+  }
+}
 
 export async function executeServerPower(serverId: string, action: 'start' | 'stop' | 'restart', config: {
   nodeVersion: string;
@@ -25,14 +43,15 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   // Helper to kill existing process
   const killExisting = async () => {
     try {
-      const pid = await fs.readFile(pidPath, 'utf8');
-      if (pid) {
+      const pidStr = await fs.readFile(pidPath, 'utf8');
+      if (pidStr) {
+        const pid = parseInt(pidStr.trim());
         try {
-          process.kill(parseInt(pid), 'SIGTERM');
+          process.kill(pid, 'SIGTERM');
         } catch (e) {
           // Process already dead
         }
-        await fs.unlink(pidPath);
+        await fs.unlink(pidPath).catch(() => {});
       }
     } catch (e) {
       // PID file not found
@@ -57,10 +76,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       // 2. Dependency Check & Real-time Install
       const nodeModulesPath = path.join(filesDir, 'node_modules');
-      let dependenciesReady = false;
       try {
         await fs.access(nodeModulesPath);
-        dependenciesReady = true;
         logStream.write(`${timestamp()} [STS] Dependencies found. Skipping install.\n`);
       } catch {
         logStream.write(`${timestamp()} [STS] node_modules not found. Running: npm install --production\n`);
@@ -113,7 +130,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       child.on('error', (err) => {
         const errLog = `\n${timestamp()} [ERROR] Failed to spawn process: ${err.message}\n`;
-        logStream.write(errLog);
+        fs.appendFile(logPath, errLog).catch(() => {});
+      });
+
+      child.on('close', (code) => {
+        const exitLog = `\n${timestamp()} [STS] Process exited with code ${code}\n`;
+        fs.appendFile(logPath, exitLog).catch(() => {});
       });
 
       // Save PID

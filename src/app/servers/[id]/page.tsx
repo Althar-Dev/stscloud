@@ -69,7 +69,7 @@ import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
-import { executeServerPower } from "@/app/actions/server-power";
+import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
 import { Loader } from "@/components/loader";
 
 export default function ServerPage() {
@@ -110,6 +110,7 @@ export default function ServerPage() {
     checkAndClearLogs();
   }, [id, db]);
 
+  // Data listeners
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
@@ -151,6 +152,29 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
+  // Real-time Health Watcher: If OS process dies, update status to offline
+  React.useEffect(() => {
+    if (!id || !server || server.status === 'offline') return;
+
+    const monitorInterval = setInterval(async () => {
+      const status = await getServerProcessStatus(id as string);
+      
+      // If we think it's online but OS says it's not running
+      if (!status.running && server.status === 'online') {
+        updateDoc(doc(db, "servers", id as string), {
+          status: 'offline'
+        });
+        toast({
+          variant: "destructive",
+          title: "Application Terminated",
+          description: "The script has stopped running or crashed."
+        });
+      }
+    }, 2500);
+
+    return () => clearInterval(monitorInterval);
+  }, [id, server, db, toast]);
+
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
     
@@ -179,15 +203,23 @@ export default function ServerPage() {
       }
 
       if (action === "start" || action === "restart") {
+        // Confirm it's actually running before setting online
         setTimeout(async () => {
-          await updateDoc(doc(db, "servers", id as string), {
-            status: "online"
-          });
-          toast({
-            title: "Container Online",
-            description: `Docker instance with Node v${server.nodeVersion} is running.`
-          });
-        }, 1500);
+          const check = await getServerProcessStatus(id as string);
+          if (check.running) {
+            await updateDoc(doc(db, "servers", id as string), {
+              status: "online"
+            });
+            toast({
+              title: "Instance Online",
+              description: `Script is now running in isolated container.`
+            });
+          } else {
+            await updateDoc(doc(db, "servers", id as string), {
+              status: "offline"
+            });
+          }
+        }, 2000);
       }
     } catch (error: any) {
       console.error("Power action failed", error);

@@ -1,8 +1,8 @@
-[2026-06-12T02:15:08.965Z] [STS] Welcome to STSCloud.
-[2026-06-12T02:15:08.965Z] [STS] Initializing boot sequence...
-[2026-06-12T02:15:08.966Z] [STS] node_modules not found. Running: npm install --production
-[2026-06-12T02:15:16.612Z] [STS] Installation complete.
-[2026-06-12T02:15:16.623Z] [STS] Executing: npm start
+[2026-06-12T02:19:34.436Z] [STS] Welcome to STSCloud.
+[2026-06-12T02:19:34.436Z] [STS] Initializing boot sequence...
+[2026-06-12T02:19:34.438Z] [STS] Dependencies found. Skipping install.
+[2026-06-12T02:19:34.438Z] [STS] Executing: npm start
+
 
 > telegram-STS@1.0.0 start
 > node main.js
@@ -19,4 +19,4 @@ Failed to start STS: TelegramError: 404: Not Found
   on: { method: [32m'getMe'[39m, payload: {} }
 }
 
-[2026-06-12T02:16:21.346Z] [STS] SIGTERM received. Node is now offline.
+[2026-06-12T02:19:56.009Z] [STS] SIGTERM received. Node is now offline.
