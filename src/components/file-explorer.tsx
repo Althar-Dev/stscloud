@@ -107,16 +107,33 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
-  // CRITICAL FIX: Failsafe for Radix body-lock bug where pointer-events: none stays on body
+  // CRITICAL FIX: Aggressive cleanup for Radix UI body-lock bug
+  // This ensures that when any dialog is closed, the UI is never frozen.
   React.useEffect(() => {
-    const anyOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen;
-    if (!anyOpen) {
-      // Forcefully restore pointer events after a small delay to allow Radix cleanup to finish
-      const timer = setTimeout(() => {
+    const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen;
+    
+    if (!isAnyModalOpen) {
+      const forceCleanup = () => {
         document.body.style.pointerEvents = "auto";
         document.body.style.overflow = "auto";
-      }, 100);
-      return () => clearTimeout(timer);
+        document.body.style.paddingRight = "";
+        document.documentElement.style.pointerEvents = "auto";
+        document.documentElement.style.overflow = "auto";
+        // Also remove Radix's specific lock attribute if present
+        document.body.removeAttribute('data-radix-scroll-lock');
+      };
+
+      // Execute immediately and with delays to catch late-firing Radix events
+      forceCleanup();
+      const t1 = setTimeout(forceCleanup, 50);
+      const t2 = setTimeout(forceCleanup, 300);
+      const t3 = setTimeout(forceCleanup, 1000);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     }
   }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen]);
 
@@ -281,7 +298,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     if (result.success) {
       setEditingFileName(name);
       setEditingContent(result.content || "");
-      // Use timeout to prevent Radix body-lock conflict when opening from Dropdown
+      // Use timeout to ensure any dropdown is closed before modal opens
       setTimeout(() => setIsEditorOpen(true), 10);
     } else toast({ variant: "destructive", title: "Read Error", description: result.error });
     setLoading(false);
