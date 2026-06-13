@@ -107,7 +107,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
-  // Failsafe for Radix body-lock bug where scroll/clicks get stuck after dialog closure
+  // CRITICAL: Failsafe for Radix body-lock bug where scroll/clicks get stuck after dialog closure
   React.useEffect(() => {
     if (!isCreateOpen && !isEditorOpen && !isArchiveOpen && !isMoveOpen) {
       document.body.style.pointerEvents = "auto";
@@ -162,7 +162,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         : await createServerFolder(serverId, newItemName, getSubPathString());
 
       if (result.success) {
-        setIsCreateOpen(false); // Close first to trigger Radix cleanup
+        setIsCreateOpen(false);
         setNewItemName("");
         toast({ title: "Created", description: `Successfully created ${createType}: ${newItemName}` });
         fetchFiles();
