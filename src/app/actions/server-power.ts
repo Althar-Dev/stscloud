@@ -105,7 +105,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
       
       // Gradient ASCII (Purple to Orange)
-      const ascii = gradient(['#8e2de2', '#f09819'])(asciiRaw);
+      const ascii = gradient(['blue', 'blue'])(asciiRaw);
       
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';

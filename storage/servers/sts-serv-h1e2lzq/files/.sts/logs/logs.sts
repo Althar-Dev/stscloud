@@ -1,4 +1,16 @@
-[STS] [21:22:52] Welcome to STSCloud.
-[STS] [21:22:52] Node provisioned successfully.
-[STS] [21:22:52] Ready for deployment.
-[STS] [21:22:52] Use Start button to boot the application.
+[95m░[39m[95m█[39m[95m▀[39m[95m▀[39m[95m░[39m[95m▀[39m[95m█[39m[95m▀[39m[95m░[39m[95m█[39m[95m▀[39m[95m▀[39m[95m░[39m[95m█[39m[95m▀[39m[95m▀[39m[95m░[39m[35m█[39m[35m░[39m[35m░[39m[35m░[39m[35m█[39m[35m▀[39m[35m█[39m[35m░[39m[35m█[39m[35m░[39m[35m█[39m[35m░[39m[35m█[39m[35m▀[39m[35m▄[39m
+[35m░[39m[35m▀[39m[35m▀[39m[35m█[39m[35m░[39m[35m░[39m[35m█[39m[35m░[39m[35m░[39m[35m▀[39m[35m▀[39m[35m█[39m[35m░[39m[35m█[39m[35m░[39m[31m░[39m[91m░[39m[91m█[39m[91m░[39m[91m░[39m[91m░[39m[91m█[39m[91m░[39m[91m█[39m[91m░[39m[91m█[39m[91m░[39m[91m█[39m[91m░[39m[91m█[39m[91m░[39m[91m█[39m
+[91m░[39m[91m▀[39m[91m▀[39m[91m▀[39m[91m░[39m[91m░[39m[91m▀[39m[91m░[39m[91m░[39m[91m▀[39m[93m▀[39m[93m▀[39m[93m░[39m[93m▀[39m[93m▀[39m[93m▀[39m[93m░[39m[93m▀[39m[93m▀[39m[93m▀[39m[93m░[39m[93m▀[39m[93m▀[39m[93m▀[39m[93m░[39m[93m▀[39m[93m▀[39m[93m▀[39m[93m░[39m[93m▀[39m[93m▀[39m[93m░[39m
+[STS] [08:33:12] Checking available disk... [32mOk[0m
+[STS] [08:33:12] Checking node_modules... [32mOk[0m
+[STS] [08:33:12] Starting with Node.Js v20
+[STS] [08:33:12] Executing npm start
+
+
+> premium-emoji-id-bot@1.0.0 start
+> node index.js
+
+Bot aktif
+[STS] [08:33:34] Terminating process group (SIGKILL)... Status: Offline.
+
+[STS] [08:33:34] Process exited with code null
