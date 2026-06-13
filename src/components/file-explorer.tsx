@@ -55,7 +55,6 @@ import {
   getServerFiles, 
   createServerFile, 
   createServerFolder, 
-  deleteServerPath,
   deleteServerPaths,
   archiveServerPaths,
   moveServerPaths,
@@ -108,13 +107,21 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
+  // Failsafe for Radix body-lock bug where scroll/clicks get stuck after dialog closure
+  React.useEffect(() => {
+    if (!isCreateOpen && !isEditorOpen && !isArchiveOpen && !isMoveOpen) {
+      document.body.style.pointerEvents = "auto";
+      document.body.style.overflow = "auto";
+    }
+  }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen]);
+
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
     setLoading(true);
     const result = await getServerFiles(serverId, getSubPathString());
     if (result.success) {
       setFiles(result.files || []);
-      setSelectedItems(new Set()); // Reset selection
+      setSelectedItems(new Set()); 
     } else {
       toast({
         variant: "destructive",
@@ -129,7 +136,6 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     fetchFiles();
   }, [fetchFiles]);
 
-  // Selection handlers
   const toggleSelect = (name: string) => {
     const next = new Set(selectedItems);
     if (next.has(name)) next.delete(name);
@@ -156,9 +162,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         : await createServerFolder(serverId, newItemName, getSubPathString());
 
       if (result.success) {
-        toast({ title: "Created", description: `Successfully created ${createType}: ${newItemName}` });
-        setIsCreateOpen(false);
+        setIsCreateOpen(false); // Close first to trigger Radix cleanup
         setNewItemName("");
+        toast({ title: "Created", description: `Successfully created ${createType}: ${newItemName}` });
         fetchFiles();
       } else {
         throw new Error(result.error);
@@ -194,14 +200,15 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     }
   };
 
-  // Bulk Actions
-  const handleBulkDelete = async () => {
-    if (!serverId || selectedItems.size === 0) return;
+  const handleBulkDelete = async (itemsToDelete?: string[]) => {
+    const targets = itemsToDelete || Array.from(selectedItems);
+    if (!serverId || targets.length === 0) return;
+    
     setLoading(true);
     try {
-      const result = await deleteServerPaths(serverId, Array.from(selectedItems), getSubPathString());
+      const result = await deleteServerPaths(serverId, targets, getSubPathString());
       if (result.success) {
-        toast({ title: "Bulk Delete Success", description: `Removed ${selectedItems.size} items.` });
+        toast({ title: "Delete Success", description: `Removed ${targets.length} items.` });
         fetchFiles();
       } else throw new Error(result.error);
     } catch (error: any) {
@@ -217,8 +224,8 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     try {
       const result = await archiveServerPaths(serverId, Array.from(selectedItems), zipName, getSubPathString());
       if (result.success) {
-        toast({ title: "Archive Success", description: `Created ${zipName}` });
         setIsArchiveOpen(false);
+        toast({ title: "Archive Success", description: `Created ${zipName}` });
         fetchFiles();
       } else throw new Error(result.error);
     } catch (error: any) {
@@ -234,9 +241,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     try {
       const result = await moveServerPaths(serverId, Array.from(selectedItems), getSubPathString(), targetPathInput);
       if (result.success) {
-        toast({ title: "Move Success", description: `Moved items to /${targetPathInput}` });
         setIsMoveOpen(false);
         setTargetPathInput("");
+        toast({ title: "Move Success", description: `Moved items to /${targetPathInput}` });
         fetchFiles();
       } else throw new Error(result.error);
     } catch (error: any) {
@@ -269,7 +276,8 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     if (result.success) {
       setEditingFileName(name);
       setEditingContent(result.content || "");
-      setIsEditorOpen(true);
+      // Use timeout to prevent Radix body-lock conflict when opening from Dropdown
+      setTimeout(() => setIsEditorOpen(true), 10);
     } else toast({ variant: "destructive", title: "Read Error", description: result.error });
     setLoading(false);
   };
@@ -279,8 +287,8 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     setIsSaving(true);
     const result = await updateFileContent(serverId, editingFileName, editingContent, getSubPathString());
     if (result.success) {
-      toast({ title: "Saved", description: `${editingFileName} updated successfully.` });
       setIsEditorOpen(false);
+      toast({ title: "Saved", description: `${editingFileName} updated successfully.` });
     } else toast({ variant: "destructive", title: "Save Error", description: result.error });
     setIsSaving(false);
   };
@@ -310,7 +318,6 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         </div>
       )}
 
-      {/* Bulk Action Toolbar */}
       {selectedItems.size > 0 && (
         <div className="flex items-center justify-between bg-primary/10 border border-primary/30 p-2 rounded-lg animate-in slide-in-from-top-2">
           <div className="flex items-center gap-3 px-2">
@@ -324,7 +331,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
             <Button size="sm" variant="ghost" className="h-8 gap-2 hover:bg-primary/20" onClick={() => setIsMoveOpen(true)}>
               <ArrowRightLeft className="size-3.5" /> Move
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleBulkDelete}>
+            <Button size="sm" variant="ghost" className="h-8 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleBulkDelete()}>
               <Trash2 className="size-3.5" /> Delete
             </Button>
           </div>
@@ -366,10 +373,24 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="gap-2" onClick={() => { setCreateType("file"); setIsCreateOpen(true); }}>
+              <DropdownMenuItem 
+                className="gap-2" 
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setCreateType("file");
+                  setTimeout(() => setIsCreateOpen(true), 10);
+                }}
+              >
                 <FileText className="size-4" /> New File
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2" onClick={() => { setCreateType("folder"); setIsCreateOpen(true); }}>
+              <DropdownMenuItem 
+                className="gap-2" 
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setCreateType("folder");
+                  setTimeout(() => setIsCreateOpen(true), 10);
+                }}
+              >
                 <FolderPlus className="size-4" /> New Folder
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -414,11 +435,19 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8 md:opacity-0 md:group-hover:opacity-100"><MoreVertical className="size-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          {file.type === "file" && <DropdownMenuItem className="gap-2" onClick={() => handleEditFile(file.name)}><Edit2 className="size-4" /> Edit</DropdownMenuItem>}
+                          {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> Edit</DropdownMenuItem>}
                           {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
                           {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={() => { setSelectedItems(new Set([file.name])); handleBulkDelete(); }}><Trash2 className="size-4" /> Delete</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="gap-2 text-destructive focus:text-destructive" 
+                            onSelect={(e) => { 
+                              e.preventDefault(); 
+                              handleBulkDelete([file.name]); 
+                            }}
+                          >
+                            <Trash2 className="size-4" /> Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
