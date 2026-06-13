@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -44,8 +43,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     
     const result = await getServerLogs(serverId);
     if (result.success && result.content !== undefined) {
-      // HANYA update state jika konten log berubah
-      // Ini mencegah terminal melakukan refresh DOM yang membuat seleksi teks hilang
+      // ONLY update state if log content actually changed
+      // This prevents terminal re-renders that mess up text selection
       if (result.content === lastRawLogs.current) {
         setIsInitializing(false);
         return;

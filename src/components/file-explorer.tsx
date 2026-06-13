@@ -107,11 +107,16 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
-  // CRITICAL: Failsafe for Radix body-lock bug where scroll/clicks get stuck after dialog closure
+  // CRITICAL FIX: Failsafe for Radix body-lock bug where pointer-events: none stays on body
   React.useEffect(() => {
-    if (!isCreateOpen && !isEditorOpen && !isArchiveOpen && !isMoveOpen) {
-      document.body.style.pointerEvents = "auto";
-      document.body.style.overflow = "auto";
+    const anyOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen;
+    if (!anyOpen) {
+      // Forcefully restore pointer events after a small delay to allow Radix cleanup to finish
+      const timer = setTimeout(() => {
+        document.body.style.pointerEvents = "auto";
+        document.body.style.overflow = "auto";
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen]);
 

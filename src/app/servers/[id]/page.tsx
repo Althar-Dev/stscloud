@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -100,7 +99,7 @@ export default function ServerPage() {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
         
-        // Hanya update input jika berbeda untuk menghindari flickering saat user mengetik
+        // Only update inputs if different to avoid flickering while typing
         setServerName(prev => prev === data.name ? prev : (data.name || ""));
         setNodeVersion(prev => prev === data.nodeVersion ? prev : (data.nodeVersion || "20"));
         setStartupCommand(prev => prev === data.startupCommand ? prev : (data.startupCommand || "npm start"));
