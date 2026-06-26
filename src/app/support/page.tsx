@@ -71,7 +71,7 @@ export default function SupportPage() {
                 <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
               </div>
               <span className="font-headline font-bold text-lg tracking-tight">
-                STS<span className="text-primary">Support</span>
+                <span className="text-primary">Support</span>
               </span>
             </Link>
           </div>
@@ -218,7 +218,7 @@ export default function SupportPage() {
       </main>
 
       <footer className="py-12 text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-        &copy; {new Date().getFullYear()} STSCloud Infrastructure. All rights reserved.
+        &copy; {new Date().getFullYear()} STSCloud. All rights reserved.
       </footer>
     </div>
   );

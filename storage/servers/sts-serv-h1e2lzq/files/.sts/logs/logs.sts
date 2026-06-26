@@ -1,16 +1,13 @@
 [94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [09:28:41] Checking available disk... [32mOk[0m
-[STS] [09:28:41] Checking node_modules... [32mOk[0m
-[STS] [09:28:41] Starting with Node.Js v20
-[STS] [09:28:41] Executing npm start
+[STS] [16:58:45] Checking available disk... [32mOk[0m
+[STS] [16:58:45] Checking node_modules... [32mOk[0m
+[STS] [16:58:45] Starting with Node.Js v20
+[STS] [16:58:45] Executing npm start
 
 
 > premium-emoji-id-bot@1.0.0 start
 > node index.js
 
 Bot aktif
-[STS] [09:28:59] Terminating process group (SIGKILL)... Status: Offline.
-
-[STS] [09:28:59] Process exited with code null

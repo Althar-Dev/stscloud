@@ -39,7 +39,7 @@ export default function LegalPage() {
                 <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
               </div>
               <span className="font-headline font-bold text-lg tracking-tight">
-                STS<span className="text-primary">Legal</span>
+                <span className="text-primary">Legal</span>
               </span>
             </Link>
           </div>

@@ -218,25 +218,31 @@ export default function Dashboard() {
                       {server.plan} Plan
                     </p>
                   </div>
-                  <div className="px-4 md:px-5 pb-4 md:pb-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-[10px] md:text-xs text-muted-foreground font-medium">
-                        <div className="flex items-center gap-1">
-                          <Cpu className="size-3 text-primary" />
-                          <span>{server.resources?.cpu || '0%'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Database className="size-3 text-primary" />
-                          <span>{server.resources?.ram || '0GB'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <HardDrive className="size-3 text-primary" />
-                          <span>{server.resources?.disk || '0GB'}</span>
-                        </div>
+                  
+                  <div className="px-4 md:px-5 py-3 border-y border-border/30 bg-secondary/10">
+                    <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground font-medium">
+                      <div className="flex items-center gap-1">
+                        <Cpu className="size-3 text-primary" />
+                        <span>{server.resources?.cpu || '0%'} CPU</span>
                       </div>
-                      <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
-                        <ExternalLink className="size-3.5 md:size-4" />
+                      <div className="flex items-center gap-1">
+                        <Database className="size-3 text-primary" />
+                        <span>{server.resources?.ram || '0GB'} RAM</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <HardDrive className="size-3 text-primary" />
+                        <span>{server.resources?.disk || '0GB'} DISK</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-4 md:px-5 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="size-3.5 text-primary" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Hub</span>
+                    </div>
+                    <div className="p-1.5 md:p-2 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
+                      <ExternalLink className="size-3.5 md:size-4" />
                     </div>
                   </div>
                 </Card>

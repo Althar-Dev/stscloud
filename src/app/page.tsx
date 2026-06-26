@@ -44,7 +44,7 @@ export default function LandingPage() {
               <Image src="/img/icon.png" alt="STSCloud" width={36} height={36} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg sm:text-xl tracking-tight">
-              STS<span className="text-primary">Cloud</span>
+              <span className="text-primary">Cloud</span>
             </span>
           </div>
           
@@ -242,7 +242,7 @@ export default function LandingPage() {
                 <div className="w-[36px] h-[36px] rounded-lg overflow-hidden flex items-center justify-center">
                   <Image src="/img/icon.png" alt="STSCloud" width={36} height={36} className="object-cover" />
                 </div>
-                <span className="text-primary font-headline font-bold text-xl tracking-tight">STSCloud</span>
+                <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
               </div>
               <p className="text-muted-foreground max-w-sm leading-relaxed text-sm font-medium">
                 Premier cloud delivery network engineered for the modern web. Built with security, speed, and simplicity in mind.

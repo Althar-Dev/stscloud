@@ -459,7 +459,7 @@ export default function UserDetailPage() {
                       <div key={server.id} className="relative group">
                         <Link href={`/servers/${server.id}`}>
                           <Card className="border-border/50 bg-card hover:bg-secondary/30 hover:border-primary/30 transition-all duration-300 overflow-hidden h-full">
-                            <CardContent className="p-5 space-y-4">
+                            <CardContent className="p-5 pb-3">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="size-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
@@ -474,17 +474,36 @@ export default function UserDetailPage() {
                                       )}>
                                         {server.status}
                                       </Badge>
-                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">STS {server.plan} | Node {server.nodeVersion || '--'}</p>
+                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">STS {server.plan}</p>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-3">
-                                <div className="flex items-center gap-1"><Cpu className="size-3 text-primary" /> {server.resources?.cpu || "--"}</div>
-                                <div className="flex items-center gap-1"><Database className="size-3 text-primary" /> {server.resources?.ram || "--"}</div>
-                                <div className="flex items-center gap-1"><HardDrive className="size-3 text-primary" /> {server.resources?.disk || "--"}</div>
-                              </div>
                             </CardContent>
+                            
+                            <div className="px-5 py-3 border-y border-border/30 bg-secondary/10">
+                              <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground font-medium">
+                                <div className="flex items-center gap-1">
+                                  <Cpu className="size-3 text-primary" />
+                                  <span>{server.resources?.cpu || "--"} CPU</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Database className="size-3 text-primary" />
+                                  <span>{server.resources?.ram || "--"} RAM</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <HardDrive className="size-3 text-primary" />
+                                  <span>{server.resources?.disk || "--"} DISK</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="p-5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Zap className="size-3.5 text-primary" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dev Instance</span>
+                              </div>
+                            </div>
                           </Card>
                         </Link>
                         
