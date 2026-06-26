@@ -482,18 +482,27 @@ export default function UserDetailPage() {
                             </CardContent>
                             
                             <div className="px-5 py-3 border-y border-border/30 bg-secondary/10">
-                              <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground font-medium">
-                                <div className="flex items-center gap-1">
+                              <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-2">
                                   <Cpu className="size-3 text-primary" />
-                                  <span>{server.resources?.cpu || "--"} CPU</span>
+                                  <div className="flex flex-col leading-none">
+                                    <span className="text-[7px] md:text-[8px] opacity-70">TOTAL CPU</span>
+                                    <span>{server.resources?.cpu || "--"}</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 border-l border-border/30 pl-2">
                                   <Database className="size-3 text-primary" />
-                                  <span>{server.resources?.ram || "--"} RAM</span>
+                                  <div className="flex flex-col leading-none">
+                                    <span className="text-[7px] md:text-[8px] opacity-70">TOTAL RAM</span>
+                                    <span>{server.resources?.ram || "--"}</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 border-l border-border/30 pl-2">
                                   <HardDrive className="size-3 text-primary" />
-                                  <span>{server.resources?.disk || "--"} DISK</span>
+                                  <div className="flex flex-col leading-none">
+                                    <span className="text-[7px] md:text-[8px] opacity-70">TOTAL DISK</span>
+                                    <span>{server.resources?.disk || "--"}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
