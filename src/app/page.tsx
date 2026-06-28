@@ -37,8 +37,8 @@ export default function LandingPage() {
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer">
             <div className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] rounded-lg overflow-hidden flex items-center justify-center transition-transform group-hover:scale-110">
               <Image src="/img/icon.png" alt="STSCloud" width={36} height={36} className="object-cover" />
@@ -67,23 +67,23 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section - Maximize to screen with constraints for high resolutions */}
-      <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden border-b border-border/50">
+      {/* Hero Section - Strict Screen Height on Desktop */}
+      <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05),transparent_50%)]" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          <div className="max-w-5xl mx-auto text-center space-y-6 md:space-y-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col justify-center flex-1">
+          <div className="max-w-5xl mx-auto text-center space-y-6 md:space-y-8">
             <div className="flex justify-center animate-fade-in">
               <Badge variant="outline" className="px-4 py-1.5 border-primary/20 bg-primary/5 text-primary text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">
                 <Activity className="size-3 mr-2 animate-pulse" /> Global Network Ready
               </Badge>
             </div>
-            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-headline font-bold tracking-tighter leading-[0.9] animate-fade-in [animation-delay:200ms]">
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-headline font-bold tracking-tighter leading-[0.95] animate-fade-in [animation-delay:200ms]">
               Next-Gen <span className="text-primary italic">Cloud</span> <br className="hidden md:block" /> Engineering
             </h1>
-            <p className="text-base sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
               Provision high-performance game nodes, complex bots, and web applications in under 60 seconds. Powered by localized edge infrastructure.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 md:pt-8 animate-fade-in [animation-delay:600ms] px-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in [animation-delay:600ms] px-6">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
                 <Button size="lg" className="h-14 md:h-16 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-2xl shadow-primary/20 group">
                   Start Provisioning <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
@@ -97,8 +97,8 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        {/* Animated Background Element */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-20 hidden md:block animate-bounce">
+        {/* Animated Scroll Indicator */}
+        <div className="relative pb-10 opacity-20 hidden md:block animate-bounce">
           <ChevronRight className="size-6 rotate-90 text-primary" />
         </div>
       </section>
