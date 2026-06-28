@@ -67,46 +67,50 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section - Maximize to screen with constraints for high resolutions */}
       <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05),transparent_50%)]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          <div className="max-w-5xl mx-auto text-center space-y-8">
+          <div className="max-w-5xl mx-auto text-center space-y-6 md:space-y-10">
             <div className="flex justify-center animate-fade-in">
               <Badge variant="outline" className="px-4 py-1.5 border-primary/20 bg-primary/5 text-primary text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">
                 <Activity className="size-3 mr-2 animate-pulse" /> Global Network Ready
               </Badge>
             </div>
-            <h1 className="text-5xl sm:text-7xl md:text-8xl font-headline font-bold tracking-tight leading-[1] animate-fade-in [animation-delay:200ms]">
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-headline font-bold tracking-tighter leading-[0.9] animate-fade-in [animation-delay:200ms]">
               Next-Gen <span className="text-primary italic">Cloud</span> <br className="hidden md:block" /> Engineering
             </h1>
-            <p className="text-base sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-medium animate-fade-in [animation-delay:400ms]">
+            <p className="text-base sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
               Provision high-performance game nodes, complex bots, and web applications in under 60 seconds. Powered by localized edge infrastructure.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-fade-in [animation-delay:600ms]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 md:pt-8 animate-fade-in [animation-delay:600ms] px-6">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
-                <Button size="lg" className="h-14 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-2xl shadow-primary/20 group">
+                <Button size="lg" className="h-14 md:h-16 px-10 text-lg font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-2xl shadow-primary/20 group">
                   Start Provisioning <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="h-14 px-10 text-lg font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm">
+                <Button size="lg" variant="outline" className="h-14 md:h-16 px-10 text-lg font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm">
                   View Benchmarks
                 </Button>
               </Link>
             </div>
           </div>
         </div>
+        {/* Animated Background Element */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-20 hidden md:block animate-bounce">
+          <ChevronRight className="size-6 rotate-90 text-primary" />
+        </div>
       </section>
 
       {/* Trust & Stats */}
-      <section className="py-12 border-b border-border/50 bg-secondary/10">
+      <section className="py-10 md:py-16 border-b border-border/50 bg-secondary/10">
         <div className="max-w-7xl mx-auto px-4 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-24 grayscale opacity-50">
-            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter"><Zap className="size-5 text-primary" /> Instant Boot</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter"><Shield className="size-5 text-primary" /> DDoS Mitigation</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter"><Globe className="size-5 text-primary" /> Edge Delivery</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter"><Cpu className="size-5 text-primary" /> Tier-1 CPU</div>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-24 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter transition-colors hover:text-primary"><Zap className="size-5 text-primary" /> Instant Boot</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter transition-colors hover:text-primary"><Shield className="size-5 text-primary" /> DDoS Mitigation</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter transition-colors hover:text-primary"><Globe className="size-5 text-primary" /> Edge Delivery</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-sm sm:text-xl uppercase tracking-tighter transition-colors hover:text-primary"><Cpu className="size-5 text-primary" /> Tier-1 CPU</div>
           </div>
         </div>
       </section>
@@ -119,12 +123,12 @@ export default function LandingPage() {
               <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-3">Infrastructure</Badge>
               <h2 className="text-4xl md:text-6xl font-headline font-bold leading-tight">Engineered for <br /> Peak Performance</h2>
             </div>
-            <p className="text-muted-foreground text-sm sm:text-lg max-w-sm mb-2">
-              Our platform abstracts complex DevOps into a single, beautiful dashboard.
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-sm mb-2 font-medium">
+              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard 
               icon={Terminal} 
               title="Real-time Execution" 
@@ -152,9 +156,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 text-center space-y-16">
           <div className="space-y-4">
             <h3 className="text-3xl md:text-5xl font-headline font-bold">Global Provisioning</h3>
-            <p className="text-muted-foreground max-w-xl mx-auto">Nodes deployed across major internet hubs for 99.9% uptime.</p>
+            <p className="text-muted-foreground max-w-xl mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and low latency.</p>
           </div>
-          <div className="relative group max-w-4xl mx-auto rounded-2xl overflow-hidden border border-border/50 shadow-2xl transition-transform hover:scale-[1.01]">
+          <div className="relative group max-w-4xl mx-auto rounded-3xl overflow-hidden border border-border/50 shadow-[0_0_50px_rgba(99,102,241,0.1)] transition-all duration-700 hover:scale-[1.02]">
             <Image 
               src="https://picsum.photos/seed/stscloud-map/1200/600" 
               alt="Global Map" 
@@ -165,11 +169,11 @@ export default function LandingPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-              <div className="size-20 rounded-full bg-primary/20 flex items-center justify-center animate-ping absolute" />
-              <div className="size-10 rounded-full bg-primary flex items-center justify-center relative shadow-lg">
-                <Globe className="size-6 text-white" />
+              <div className="size-20 md:size-32 rounded-full bg-primary/20 flex items-center justify-center animate-ping absolute" />
+              <div className="size-10 md:size-16 rounded-full bg-primary flex items-center justify-center relative shadow-2xl">
+                <Globe className="size-6 md:size-8 text-white" />
               </div>
-              <Badge className="mt-4 bg-primary text-white font-bold uppercase tracking-widest">Active Node SG-01</Badge>
+              <Badge className="mt-6 bg-primary text-white font-bold uppercase tracking-[0.2em] px-4 py-1">Active Node SG-01</Badge>
             </div>
           </div>
         </div>
@@ -178,39 +182,42 @@ export default function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-24 sm:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-6 mb-20">
+          <div className="text-center space-y-6 mb-20 px-4">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-3">Fair Pricing</Badge>
             <h2 className="text-4xl md:text-6xl font-headline font-bold">Scale Your Potential</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-lg font-medium">
               Choose the perfect tier for your application. No hidden costs. Pay only for what you need.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {pricingTiers.map((tier) => (
               <Card key={tier.id} className={cn(
-                "border-border/50 bg-card/50 backdrop-blur-md transition-all duration-500 hover:border-primary/50 hover:-translate-y-2 relative overflow-hidden group",
-                tier.popular && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
+                "border-border/50 bg-card/50 backdrop-blur-md transition-all duration-500 hover:border-primary/50 hover:-translate-y-3 relative overflow-hidden group flex flex-col h-full",
+                tier.popular && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02] scale-105 z-10"
               )}>
                 {tier.popular && (
-                  <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-bl-xl shadow-lg">
+                  <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-bl-2xl shadow-xl">
                     Recommended
                   </div>
                 )}
-                <CardHeader className="space-y-1">
-                  <div className="size-12 rounded-xl bg-secondary mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <ServerIcon className={cn("size-6", tier.popular ? "text-primary" : "text-muted-foreground")} />
+                <CardHeader className="space-y-2 p-8">
+                  <div className={cn(
+                    "size-14 rounded-2xl bg-secondary mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
+                    tier.popular ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    <ServerIcon className="size-7" />
                   </div>
-                  <CardTitle className="font-headline font-bold text-2xl">{tier.name}</CardTitle>
-                  <CardDescription className="text-xs uppercase font-bold tracking-widest opacity-60">Provision Tier</CardDescription>
+                  <CardTitle className="font-headline font-bold text-3xl">{tier.name}</CardTitle>
+                  <CardDescription className="text-xs uppercase font-bold tracking-[0.3em] opacity-60">Provision Tier</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-headline font-bold text-primary">{tier.price}</span>
+                <CardContent className="space-y-8 p-8 pt-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl md:text-5xl font-headline font-bold text-primary">{tier.price}</span>
                     <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">/mo</span>
                   </div>
                   
-                  <div className="space-y-4 py-6 border-y border-border/50">
+                  <div className="space-y-5 py-8 border-y border-border/50">
                     <PricingItem label="Memory" value={tier.ram} />
                     <PricingItem label="Compute" value={tier.cpu} />
                     <PricingItem label="SSD RAID" value={tier.disk} />
@@ -218,10 +225,10 @@ export default function LandingPage() {
                     <PricingItem label="Daily Snap" value="Enabled" />
                   </div>
 
-                  <Link href="/auth?type=signup" className="block">
+                  <Link href="/auth?type=signup" className="block w-full pt-4">
                     <Button className={cn(
-                      "w-full h-12 font-bold gap-2 text-sm uppercase tracking-widest transition-all",
-                      tier.popular ? "bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50"
+                      "w-full h-14 font-bold gap-2 text-sm uppercase tracking-widest transition-all duration-300",
+                      tier.popular ? "bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50"
                     )}>
                       Select {tier.name} <ChevronRight className="size-4" />
                     </Button>
@@ -234,33 +241,33 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 bg-background border-t border-border/50">
+      <footer className="py-24 bg-background border-t border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="col-span-1 md:col-span-2 space-y-6">
-              <div className="flex items-center gap-2">
-                <div className="w-[36px] h-[36px] rounded-lg overflow-hidden flex items-center justify-center">
-                  <Image src="/img/icon.png" alt="STSCloud" width={36} height={36} className="object-cover" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-16 md:gap-12">
+            <div className="col-span-1 md:col-span-2 space-y-8">
+              <div className="flex items-center gap-3">
+                <div className="w-[40px] h-[40px] rounded-xl overflow-hidden flex items-center justify-center bg-primary/10">
+                  <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
                 </div>
-                <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
+                <span className="text-primary font-headline font-bold text-2xl tracking-tight">Cloud</span>
               </div>
-              <p className="text-muted-foreground max-w-sm leading-relaxed text-sm font-medium">
+              <p className="text-muted-foreground max-w-sm leading-relaxed text-base font-medium">
                 Premier cloud delivery network engineered for the modern web. Built with security, speed, and simplicity in mind.
               </p>
             </div>
             
-            <div className="space-y-4">
-              <h4 className="font-headline font-bold text-xs uppercase tracking-[0.2em] text-primary">Service</h4>
-              <ul className="space-y-3 text-xs sm:text-sm text-muted-foreground font-medium">
+            <div className="space-y-6">
+              <h4 className="font-headline font-bold text-xs uppercase tracking-[0.3em] text-primary">Service</h4>
+              <ul className="space-y-4 text-sm text-muted-foreground font-medium">
                 <li><Link href="#features" className="hover:text-primary transition-colors">Infrastructure</Link></li>
                 <li><Link href="#infrastructure" className="hover:text-primary transition-colors">Global Map</Link></li>
                 <li><Link href="#pricing" className="hover:text-primary transition-colors">Pricing Tiers</Link></li>
               </ul>
             </div>
             
-            <div className="space-y-4">
-              <h4 className="font-headline font-bold text-xs uppercase tracking-[0.2em] text-primary">Portal</h4>
-              <ul className="space-y-3 text-xs sm:text-sm text-muted-foreground font-medium">
+            <div className="space-y-6">
+              <h4 className="font-headline font-bold text-xs uppercase tracking-[0.3em] text-primary">Portal</h4>
+              <ul className="space-y-4 text-sm text-muted-foreground font-medium">
                 <li><Link href="/support" className="hover:text-primary transition-colors">Help Center</Link></li>
                 <li><Link href="/auth?type=login" className="hover:text-primary transition-colors">Client Area</Link></li>
                 <li><Link href="/auth?type=signup" className="hover:text-primary transition-colors">Registration</Link></li>
@@ -268,13 +275,13 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="pt-12 mt-16 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center">
+          <div className="pt-16 mt-20 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-8">
+            <p className="text-[10px] md:text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] text-center">
               © {new Date().getFullYear()} STSCloud Infrastructure. All rights reserved.
             </p>
-            <div className="flex flex-wrap justify-center gap-6 grayscale opacity-40">
-              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-[0.2em]">PCI-DSS Secure</Badge>
-              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-[0.2em]">AES-256 Auth</Badge>
+            <div className="flex flex-wrap justify-center gap-8 grayscale opacity-40 hover:opacity-100 transition-opacity duration-500">
+              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-[0.3em]">PCI-DSS Secure</Badge>
+              <Badge variant="outline" className="border-none text-[10px] font-bold uppercase tracking-[0.3em]">AES-256 Auth</Badge>
             </div>
           </div>
         </div>
@@ -285,13 +292,13 @@ export default function LandingPage() {
 
 function FeatureCard({ icon: Icon, title, description, color }: { icon: any, title: string, description: string, color: string }) {
   return (
-    <Card className="border-border/50 bg-secondary/5 hover:bg-secondary/10 transition-all duration-300 group hover:border-primary/30">
-      <CardContent className="p-8 space-y-4">
-        <div className={cn("size-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300", color)}>
-          <Icon className="size-6" />
+    <Card className="border-border/50 bg-secondary/5 hover:bg-secondary/10 transition-all duration-500 group hover:border-primary/30 hover:-translate-y-2 flex flex-col">
+      <CardContent className="p-10 space-y-6 flex-1">
+        <div className={cn("size-14 rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500", color)}>
+          <Icon className="size-7" />
         </div>
-        <h3 className="font-headline font-bold text-xl">{title}</h3>
-        <p className="text-muted-foreground text-sm leading-relaxed font-medium">
+        <h3 className="font-headline font-bold text-2xl">{title}</h3>
+        <p className="text-muted-foreground text-sm md:text-base leading-relaxed font-medium">
           {description}
         </p>
       </CardContent>
@@ -301,9 +308,9 @@ function FeatureCard({ icon: Icon, title, description, color }: { icon: any, tit
 
 function PricingItem({ label, value }: { label: string, value: string }) {
   return (
-    <div className="flex items-center justify-between text-xs sm:text-sm">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <CheckCircle2 className="size-3.5 text-primary" />
+    <div className="flex items-center justify-between text-sm md:text-base">
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <CheckCircle2 className="size-4 text-primary" />
         <span className="font-medium">{label}</span>
       </div>
       <span className="font-bold">{value}</span>
