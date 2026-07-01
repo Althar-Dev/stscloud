@@ -17,7 +17,8 @@ import {
   Code2,
   Terminal,
   Layers,
-  BarChart3
+  BarChart3,
+  Cloud
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -74,7 +75,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <div className="flex justify-center animate-fade-in">
               <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-[0.2em]">
-                <Activity className="size-3 mr-2 animate-pulse" /> Global Network Ready
+                <Cloud className="size-3 mr-2 animate-pulse" /> STSCloud
               </Badge>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-bold tracking-tighter leading-[1.1] animate-fade-in [animation-delay:200ms]">
