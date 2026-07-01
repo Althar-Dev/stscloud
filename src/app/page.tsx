@@ -78,19 +78,19 @@ export default function LandingPage() {
               </Badge>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-bold tracking-tighter leading-[1.1] animate-fade-in [animation-delay:200ms]">
-              Next-Gen <span className="text-primary italic">Cloud</span> <br className="hidden md:block" /> Engineering
+              The Next Generation <br className="hidden md:block" /> <span className="text-primary italic">Cloud Hosting</span> Platform.
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
               Provision high-performance game nodes, complex bots, and web applications in under 60 seconds. Powered by localized edge infrastructure.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 animate-fade-in [animation-delay:600ms] px-6">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
-                <Button size="lg" className="h-12 md:h-14 px-8 text-sm font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-xl shadow-primary/20 group uppercase tracking-widest">
+                <Button size="lg" className="h-11 md:h-12 px-8 text-xs font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-xl shadow-primary/20 group uppercase tracking-widest">
                   Start Provisioning <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="h-12 md:h-14 px-8 text-sm font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm uppercase tracking-widest">
+                <Button size="lg" variant="outline" className="h-11 md:h-12 px-8 text-xs font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm uppercase tracking-widest">
                   View Benchmarks
                 </Button>
               </Link>
@@ -107,10 +107,10 @@ export default function LandingPage() {
       <section className="py-8 md:py-12 border-b border-border/50 bg-secondary/10">
         <div className="max-w-7xl mx-auto px-4 overflow-hidden">
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-16 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-sm uppercase tracking-widest transition-colors hover:text-primary"><Zap className="size-4 text-primary" /> Instant Boot</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-sm uppercase tracking-widest transition-colors hover:text-primary"><Shield className="size-4 text-primary" /> DDoS Mitigation</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-sm uppercase tracking-widest transition-colors hover:text-primary"><Globe className="size-4 text-primary" /> Edge Delivery</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-sm uppercase tracking-widest transition-colors hover:text-primary"><Cpu className="size-4 text-primary" /> Tier-1 CPU</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Zap className="size-4 text-primary" /> Instant Boot</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Shield className="size-4 text-primary" /> DDoS Mitigation</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Globe className="size-4 text-primary" /> Edge Delivery</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Cpu className="size-4 text-primary" /> Tier-1 CPU</div>
           </div>
         </div>
       </section>
