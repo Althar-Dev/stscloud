@@ -118,13 +118,13 @@ export default function LandingPage() {
       {/* Features */}
       <section id="features" className="py-20 sm:py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-12 sm:mb-16 px-1">
-            <div className="space-y-3 max-w-xl">
-              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">Infrastructure</Badge>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 px-1">
+            <div className="space-y-4 max-w-xl">
+              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px] w-fit">Infrastructure</Badge>
               <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Engineered for <br /> Peak Performance</h2>
             </div>
-            <p className="text-muted-foreground text-xs sm:text-sm max-w-sm mb-1 font-medium">
-              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans.
+            <p className="text-muted-foreground text-xs sm:text-sm max-w-sm font-medium leading-relaxed pb-1">
+              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans. No more manual configuration.
             </p>
           </div>
           
