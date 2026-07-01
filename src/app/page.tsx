@@ -81,7 +81,7 @@ export default function LandingPage() {
               The Next Generation <br className="hidden md:block" /> <span className="text-primary italic">Cloud Hosting</span> Platform.
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
-              Provision high-performance game nodes, complex bots, and web applications in under 60 seconds. Powered by localized edge infrastructure.
+              STSCloud delivers high performance; deploy complex bots and web applications in under 60 seconds. Powered by local edge infrastructure.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 animate-fade-in [animation-delay:600ms] px-6">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
