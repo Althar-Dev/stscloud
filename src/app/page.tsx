@@ -26,7 +26,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Lottie from "lottie-react";
-import planetJson from "../../public/lottie/planet.json";
 
 const pricingTiers = [
   { id: "p1", name: "Entry", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
@@ -38,6 +37,16 @@ const pricingTiers = [
 ];
 
 export default function LandingPage() {
+  const [planetJson, setPlanetJson] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    // Safely fetch the lottie JSON from the public directory to avoid build-time import errors
+    fetch("/lottie/planet.json")
+      .then((res) => res.json())
+      .then((data) => setPlanetJson(data))
+      .catch((err) => console.error("Failed to load Lottie animation:", err));
+  }, []);
+
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
       {/* Navigation */}
@@ -78,7 +87,7 @@ export default function LandingPage() {
         {/* Mobile Lottie Background (Behind text) */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-30 pointer-events-none">
           <div className="w-[150%] max-w-none">
-            <Lottie animationData={planetJson} loop={true} />
+            {planetJson && <Lottie animationData={planetJson} loop={true} />}
           </div>
         </div>
 
@@ -112,7 +121,7 @@ export default function LandingPage() {
           {/* Desktop Lottie Right Side */}
           <div className="hidden lg:flex flex-1 items-center justify-center max-w-lg z-10 animate-fade-in [animation-delay:400ms]">
             <div className="w-full">
-              <Lottie animationData={planetJson} loop={true} />
+              {planetJson && <Lottie animationData={planetJson} loop={true} />}
             </div>
           </div>
         </div>
