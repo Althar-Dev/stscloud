@@ -40,11 +40,22 @@ export default function LandingPage() {
   const [planetJson, setPlanetJson] = React.useState<any>(null);
 
   React.useEffect(() => {
-    // Safely fetch the lottie JSON from the public directory to avoid build-time import errors
-    fetch("/lottie/planet.json")
-      .then((res) => res.json())
-      .then((data) => setPlanetJson(data))
-      .catch((err) => console.error("Failed to load Lottie animation:", err));
+    // Robust fetch to avoid "Unexpected token <" if planet.json is missing or server returns HTML
+    const loadLottie = async () => {
+      try {
+        const res = await fetch("/lottie/planet.json");
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          setPlanetJson(data);
+        } else {
+          console.warn("Lottie data not found or invalid format at /lottie/planet.json");
+        }
+      } catch (err) {
+        // Fail silently to prevent crashing the whole page
+      }
+    };
+    loadLottie();
   }, []);
 
   return (

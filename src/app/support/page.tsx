@@ -224,14 +224,14 @@ export default function SupportPage() {
   );
 }
 
-// Internal components to keep it consistent
+// Internal component for consistent support branding
 function Badge({ children, variant = "default", className }: { children: React.ReactNode, variant?: any, className?: string }) {
   const variants: any = {
     default: "bg-primary text-white",
-    outline: "border border-border text-foreground"
+    outline: "border border-primary/20 text-primary bg-primary/5"
   };
   return (
-    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${variants[variant] || variants.default} ${className}`}>
+    <div className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${variants[variant] || variants.default} ${className}`}>
       {children}
     </div>
   );
