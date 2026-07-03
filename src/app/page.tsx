@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -24,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import Lottie from "lottie-react";
+import planetJson from "../../public/lottie/planet.json";
 
 const pricingTiers = [
   { id: "p1", name: "Entry", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
@@ -71,33 +74,49 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col justify-center flex-1">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <div className="flex justify-center animate-fade-in">
+        
+        {/* Mobile Lottie Background (Behind text) */}
+        <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-30 pointer-events-none">
+          <div className="w-[150%] max-w-none">
+            <Lottie animationData={planetJson} loop={true} />
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col lg:flex-row items-center justify-center lg:justify-between flex-1 gap-8">
+          <div className="max-w-2xl lg:text-left text-center space-y-6 animate-fade-in z-10">
+            <div className="flex justify-center lg:justify-start">
               <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-[0.2em]">
                 <Cloud className="size-3 mr-2 animate-pulse" /> STSCloud
               </Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-bold tracking-tighter leading-[1.1] animate-fade-in [animation-delay:200ms]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-bold tracking-tighter leading-[1.1] [animation-delay:200ms]">
               The Next Generation <br className="hidden md:block" /> <span className="text-primary italic">Cloud Hosting</span> Platform.
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto font-medium animate-fade-in [animation-delay:400ms] px-4">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl lg:mx-0 mx-auto font-medium [animation-delay:400ms] px-4 lg:px-0">
               STSCloud delivers high performance; deploy complex bots and web applications in under 60 seconds. Powered by local edge infrastructure.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 animate-fade-in [animation-delay:600ms] px-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-4 [animation-delay:600ms] px-6 lg:px-0">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
-                <Button size="lg" className="h-11 md:h-12 px-8 text-xs font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-xl shadow-primary/20 group uppercase tracking-widest">
+                <Button size="lg" className="h-10 md:h-11 px-8 text-[10px] font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-xl shadow-primary/20 group uppercase tracking-widest">
                   Start Provisioning <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="h-11 md:h-12 px-8 text-xs font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm uppercase tracking-widest">
+                <Button size="lg" variant="outline" className="h-10 md:h-11 px-8 text-[10px] font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm uppercase tracking-widest">
                   View Benchmarks
                 </Button>
               </Link>
             </div>
           </div>
+
+          {/* Desktop Lottie Right Side */}
+          <div className="hidden lg:flex flex-1 items-center justify-center max-w-lg z-10 animate-fade-in [animation-delay:400ms]">
+            <div className="w-full">
+              <Lottie animationData={planetJson} loop={true} />
+            </div>
+          </div>
         </div>
+
         {/* Animated Scroll Indicator */}
         <div className="relative pb-8 opacity-20 hidden md:block animate-bounce">
           <ChevronRight className="size-5 rotate-90 text-primary" />
