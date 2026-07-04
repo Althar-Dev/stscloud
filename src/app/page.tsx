@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -60,9 +61,6 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
-      {/* Background Dot Pattern Decor */}
-      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
-      
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
@@ -96,6 +94,9 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
+        {/* Background Dot Pattern Decor - Restricted to Hero only */}
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
+        
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
         {/* Mobile Lottie Background - 200% width, opacity 60% */}
