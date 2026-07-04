@@ -84,7 +84,7 @@ export default function LandingPage() {
               <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest px-4">Login</Button>
             </Link>
             <Link href="/auth?type=signup">
-              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold h-9 px-5 text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold h-9 px-5 text-[10px] uppercase tracking-widest">
                 Deploy Now
               </Button>
             </Link>
@@ -121,7 +121,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-4 [animation-delay:600ms] px-6 lg:px-0">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
-                <Button size="lg" className="h-10 md:h-11 px-8 text-[10px] font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full shadow-xl shadow-primary/20 group uppercase tracking-widest">
+                <Button size="lg" className="h-10 md:h-11 px-8 text-[10px] font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full group uppercase tracking-widest">
                   Start Provisioning <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
@@ -419,7 +419,7 @@ export default function LandingPage() {
                   <Link href="/auth?type=signup" className="block w-full pt-2">
                     <Button className={cn(
                       "w-full h-11 font-bold gap-2 text-[10px] uppercase tracking-widest transition-all duration-300",
-                      tier.popular ? "bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50"
+                      tier.popular ? "bg-primary hover:bg-primary/90 text-white" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50"
                     )}>
                       Select {tier.name} <ChevronRight className="size-3" />
                     </Button>
