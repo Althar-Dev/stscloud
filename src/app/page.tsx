@@ -178,21 +178,21 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <FeatureCard 
-              icon={Terminal} 
-              title="Real-time Execution" 
-              description="Access real-time process logs with ANSI color support and instant command execution via our web-terminal."
+              icon={Zap} 
+              title="Edge Infrastructure" 
+              description="Deploy on high-performance local nodes for ultra-low latency response times and deterministic consistency."
               color="text-primary"
             />
             <FeatureCard 
-              icon={BarChart3} 
-              title="Advanced Analytics" 
-              description="Monitor CPU, RAM, and Disk metrics with sub-second precision. Get alerts before bottlenecks occur."
+              icon={Activity} 
+              title="Real-time Telemetry" 
+              description="Full visibility into resource consumption. Monitor CPU, memory, and storage with precise sub-second updates."
               color="text-accent"
             />
             <FeatureCard 
-              icon={Layers} 
-              title="Sub-folder Isolation" 
-              description="Every server gets a dedicated, isolated file system. Upload, zip, and manage files with our intuitive explorer."
+              icon={Shield} 
+              title="Encrypted Isolation" 
+              description="Secure sandboxed file systems and multi-layer DDoS mitigation for every deployment, ensuring complete integrity."
               color="text-orange-400"
             />
           </div>
