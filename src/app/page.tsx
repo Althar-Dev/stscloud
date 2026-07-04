@@ -27,12 +27,12 @@ import { cn } from "@/lib/utils";
 import Lottie from "lottie-react";
 
 const pricingTiers = [
-  { id: "p1", name: "Entry", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
-  { id: "p2", name: "Basic", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", popular: false },
-  { id: "p3", name: "Pro", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", popular: true },
-  { id: "p4", name: "Elite", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", popular: false },
-  { id: "p5", name: "Extreme", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", popular: false },
-  { id: "p6", name: "Infinite", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", popular: false },
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", popular: false },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", popular: true },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", popular: false },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", popular: false },
+  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", popular: false },
 ];
 
 export default function LandingPage() {
@@ -245,7 +245,7 @@ export default function LandingPage() {
                                 <ServerIcon className="size-5" />
                              </div>
                              <div>
-                                <div className="text-sm font-bold font-headline">Production SG-01</div>
+                                <div className="text-sm font-bold font-headline">Production JKT-01</div>
                                 <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Node.js Infinity Plan</div>
                              </div>
                           </div>
