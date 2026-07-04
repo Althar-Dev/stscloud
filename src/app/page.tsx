@@ -386,19 +386,30 @@ export default function LandingPage() {
                     <span className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest">/mo</span>
                   </div>
                   
-                  {/* Inline Resource Specs: Ram, CPU, Disk on one line */}
-                  <div className="flex flex-wrap items-center justify-between gap-y-2 py-6 border-y border-border/50 text-[10px] font-bold uppercase tracking-tight">
-                    <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground">Ram</span>
-                      <span className="text-foreground">{tier.ram}</span>
+                  {/* Resource Specs: Stacked icon-label-value columns */}
+                  <div className="flex items-center justify-between py-6 border-y border-border/50">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <Database className="size-3 text-primary" />
+                        <span>Ram</span>
+                      </div>
+                      <div className="text-[10px] font-bold pl-4.5">{tier.ram}</div>
                     </div>
-                    <div className="flex items-center gap-1 border-x border-border/50 px-3">
-                      <span className="text-muted-foreground">CPU</span>
-                      <span className="text-foreground">{tier.cpu}</span>
+                    
+                    <div className="flex flex-col gap-1 border-x border-border/50 px-4">
+                      <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <Cpu className="size-3 text-primary" />
+                        <span>CPU</span>
+                      </div>
+                      <div className="text-[10px] font-bold pl-4.5">{tier.cpu}</div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground">Disk</span>
-                      <span className="text-foreground">{tier.disk}</span>
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <HardDrive className="size-3 text-primary" />
+                        <span>Disk</span>
+                      </div>
+                      <div className="text-[10px] font-bold pl-4.5">{tier.disk}</div>
                     </div>
                   </div>
 
