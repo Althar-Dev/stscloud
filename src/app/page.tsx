@@ -366,8 +366,8 @@ export default function LandingPage() {
                     Recommended
                   </div>
                 )}
-                <CardHeader className="p-6 md:p-8 space-y-0">
-                  <div className="flex items-start justify-between mb-4">
+                <CardHeader className="p-6 md:px-8 md:pt-8 md:pb-0 space-y-0">
+                  <div className="flex items-start justify-between mb-4 md:mb-6">
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         "size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
