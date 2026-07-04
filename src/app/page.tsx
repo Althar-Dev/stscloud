@@ -166,6 +166,42 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Features */}
+      <section id="features" className="py-20 sm:py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 px-1">
+            <div className="space-y-4 max-w-xl">
+              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px] w-fit">Infrastructure</Badge>
+              <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Engineered for <br /> Peak Performance</h2>
+            </div>
+            <p className="text-muted-foreground text-xs sm:text-sm max-w-sm font-medium leading-relaxed pb-1">
+              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans. No more manual configuration.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <FeatureCard 
+              icon={Zap} 
+              title="Edge Infrastructure" 
+              description="Deploy on high-performance local nodes for ultra-low latency response times and deterministic consistency."
+              color="text-primary"
+            />
+            <FeatureCard 
+              icon={Activity} 
+              title="Real-time Telemetry" 
+              description="Full visibility into resource consumption. Monitor CPU, memory, and storage with precise sub-second updates."
+              color="text-accent"
+            />
+            <FeatureCard 
+              icon={Shield} 
+              title="Encrypted Isolation" 
+              description="Secure sandboxed file systems and multi-layer DDoS mitigation for every deployment, ensuring complete integrity."
+              color="text-orange-400"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* UI Showcase / Command Center Section */}
       <section className="py-24 relative overflow-hidden border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -243,42 +279,6 @@ export default function LandingPage() {
                  <div className="absolute -bottom-6 -left-6 w-full h-full bg-accent/5 border border-accent/10 rounded-2xl -z-20 -translate-x-4 -translate-y-4" />
               </div>
            </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-20 sm:py-24 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 px-1">
-            <div className="space-y-4 max-w-xl">
-              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px] w-fit">Infrastructure</Badge>
-              <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Engineered for <br /> Peak Performance</h2>
-            </div>
-            <p className="text-muted-foreground text-xs sm:text-sm max-w-sm font-medium leading-relaxed pb-1">
-              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans. No more manual configuration.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <FeatureCard 
-              icon={Zap} 
-              title="Edge Infrastructure" 
-              description="Deploy on high-performance local nodes for ultra-low latency response times and deterministic consistency."
-              color="text-primary"
-            />
-            <FeatureCard 
-              icon={Activity} 
-              title="Real-time Telemetry" 
-              description="Full visibility into resource consumption. Monitor CPU, memory, and storage with precise sub-second updates."
-              color="text-accent"
-            />
-            <FeatureCard 
-              icon={Shield} 
-              title="Encrypted Isolation" 
-              description="Secure sandboxed file systems and multi-layer DDoS mitigation for every deployment, ensuring complete integrity."
-              color="text-orange-400"
-            />
-          </div>
         </div>
       </section>
 
