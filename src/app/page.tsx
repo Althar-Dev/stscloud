@@ -125,7 +125,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="h-10 md:h-11 px-8 text-[10px] font-bold border-border/50 bg-secondary/20 hover:bg-secondary/40 w-full backdrop-blur-sm uppercase tracking-widest">
+                <Button size="lg" variant="outline" className="h-10 md:h-11 px-8 text-[10px] font-bold border-border/50 bg-secondary hover:bg-secondary/80 w-full backdrop-blur-sm uppercase tracking-widest">
                   View Benchmarks
                 </Button>
               </Link>
@@ -147,7 +147,7 @@ export default function LandingPage() {
       </section>
 
       {/* Trust & Stats Marquee - 20s speed with blur edges */}
-      <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
+      <section className="py-12 border-b border-border/50 bg-secondary relative overflow-hidden">
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
         
@@ -277,14 +277,14 @@ export default function LandingPage() {
       </section>
 
       {/* Infrastructure Section */}
-      <section id="infrastructure" className="py-20 bg-secondary/5 border-y border-border/50 overflow-hidden">
+      <section id="infrastructure" className="py-20 bg-background border-y border-border/50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-12">
           <div className="space-y-3">
             <h2 className="text-3xl md:text-5xl font-headline font-bold">Global Provisioning</h2>
             <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and low latency.</p>
           </div>
           
-          <div className="relative max-w-4xl mx-auto overflow-hidden min-h-[300px] md:min-h-[400px] flex items-center justify-center">
+          <div className="relative max-w-4xl mx-auto flex items-center justify-center">
             {worldJson ? (
               <Lottie 
                 animationData={worldJson} 
@@ -367,25 +367,27 @@ export default function LandingPage() {
                   </div>
                 )}
                 <CardHeader className="p-6 md:p-8 space-y-0">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className={cn(
-                      "size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
-                      tier.popular ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      <ServerIcon className="size-5" />
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
+                        tier.popular ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        <ServerIcon className="size-5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <CardTitle className="font-headline font-bold text-xl md:text-2xl leading-none">{tier.name}</CardTitle>
+                        <CardDescription className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-60">Provision Tier</CardDescription>
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      <CardTitle className="font-headline font-bold text-xl md:text-2xl leading-none">{tier.name}</CardTitle>
-                      <CardDescription className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-60">Provision Tier</CardDescription>
+                    
+                    <div className="flex items-baseline gap-1 pt-1 shrink-0">
+                      <span className="text-lg md:text-xl font-headline font-bold text-primary">{tier.price}</span>
+                      <span className="text-muted-foreground text-[7px] uppercase font-bold tracking-widest">/mo</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 md:p-8 pt-0 flex-1">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl md:text-3xl font-headline font-bold text-primary">{tier.price}</span>
-                    <span className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest">/mo</span>
-                  </div>
-                  
                   {/* Resource Specs: Full-width border-y container with #0A0A0A background */}
                   <div className="flex items-center justify-between py-6 border-y border-border/50 -mx-6 md:-mx-8 px-6 md:px-8 bg-[#0A0A0A]">
                     <div className="flex items-center gap-2">
