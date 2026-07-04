@@ -480,7 +480,7 @@ function StatMarqueeItem({ icon: Icon, text }: { icon: any, text: string }) {
 
 function FeatureCard({ icon: Icon, title, description, color }: { icon: any, title: string, description: string, color: string }) {
   return (
-    <Card className="border-border/50 bg-card hover:bg-secondary/40 transition-all duration-500 group hover:border-primary/30 hover:-translate-y-1.5 flex flex-col">
+    <Card className="border-border/50 bg-card hover:bg-secondary transition-all duration-500 group hover:border-primary/30 hover:-translate-y-1.5 flex flex-col">
       <CardContent className="p-8 space-y-4 flex-1">
         <div className={cn("size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500", color)}>
           <Icon className="size-5" />
