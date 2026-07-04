@@ -98,7 +98,7 @@ export default function LandingPage() {
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background */}
+        {/* Mobile Lottie Background - 200% width, opacity 60% */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -146,7 +146,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Stats Marquee */}
+      {/* Trust & Stats Marquee - 20s speed with blur edges */}
       <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
@@ -386,33 +386,19 @@ export default function LandingPage() {
                     <span className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest">/mo</span>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-2 py-6 border-y border-border/50">
-                    <div className="flex flex-col items-center text-center gap-1.5">
-                      <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <Database className="size-3.5" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">RAM</div>
-                        <div className="text-[10px] font-bold">{tier.ram}</div>
-                      </div>
+                  {/* Inline Resource Specs: Ram, CPU, Disk on one line */}
+                  <div className="flex flex-wrap items-center justify-between gap-y-2 py-6 border-y border-border/50 text-[10px] font-bold uppercase tracking-tight">
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground">Ram</span>
+                      <span className="text-foreground">{tier.ram}</span>
                     </div>
-                    <div className="flex flex-col items-center text-center gap-1.5 border-x border-border/50">
-                      <div className="size-7 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                        <Cpu className="size-3.5" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">CPU</div>
-                        <div className="text-[10px] font-bold">{tier.cpu}</div>
-                      </div>
+                    <div className="flex items-center gap-1 border-x border-border/50 px-3">
+                      <span className="text-muted-foreground">CPU</span>
+                      <span className="text-foreground">{tier.cpu}</span>
                     </div>
-                    <div className="flex flex-col items-center text-center gap-1.5">
-                      <div className="size-7 rounded-lg bg-orange-400/10 flex items-center justify-center text-orange-400">
-                        <HardDrive className="size-3.5" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">Disk</div>
-                        <div className="text-[10px] font-bold">{tier.disk}</div>
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground">Disk</span>
+                      <span className="text-foreground">{tier.disk}</span>
                     </div>
                   </div>
 
