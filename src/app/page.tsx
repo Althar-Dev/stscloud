@@ -189,7 +189,7 @@ export default function LandingPage() {
             <FeatureCard 
               icon={Activity} 
               title="Real-time Telemetry" 
-              description="Full visibility into resource consumption. Monitor CPU, memory, and storage with precise sub-second updates."
+              description="Full visibility into resource consumption. Monitor CPU, memory, and storage with precise updates."
               color="text-accent"
             />
             <FeatureCard 
@@ -219,7 +219,7 @@ export default function LandingPage() {
                     <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <BarChart3 className="size-5 text-primary" />
                        <div className="font-headline font-bold text-sm">Real-time Metrics</div>
-                       <p className="text-[10px] text-muted-foreground font-medium">Sub-second telemetry for CPU, RAM, and IOPS consumption.</p>
+                       <p className="text-[10px] text-muted-foreground font-medium">Telemetry for CPU, RAM, and IOPS consumption.</p>
                     </div>
                     <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <Terminal className="size-5 text-accent" />
@@ -391,27 +391,27 @@ export default function LandingPage() {
                 <CardContent className="space-y-6 p-6 md:p-8 pt-0 flex-1">
                   {/* Resource Specs: Full-width border-y container with #0A0A0A background */}
                   <div className="flex items-center justify-between py-6 border-y border-border/50 -mx-6 md:-mx-8 px-6 md:px-8 bg-[#0A0A0A]">
-                    <div className="flex items-center gap-2">
-                      <Database className="size-4 text-primary" />
+                    <div className="flex items-center gap-3">
+                      <Database className="size-5 text-primary shrink-0" />
                       <div className="flex flex-col leading-none">
-                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Ram</span>
-                        <span className="text-[10px] font-bold mt-0.5">{tier.ram}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Ram</span>
+                        <span className="text-[11px] font-bold">{tier.ram}</span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 border-x border-border/50 px-4">
-                      <Cpu className="size-4 text-primary" />
+                    <div className="flex items-center gap-3 border-x border-border/50 px-4 h-10">
+                      <Cpu className="size-5 text-primary shrink-0" />
                       <div className="flex flex-col leading-none">
-                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">CPU</span>
-                        <span className="text-[10px] font-bold mt-0.5">{tier.cpu}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">CPU</span>
+                        <span className="text-[11px] font-bold">{tier.cpu}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="size-4 text-primary" />
+                    <div className="flex items-center gap-3">
+                      <HardDrive className="size-5 text-primary shrink-0" />
                       <div className="flex flex-col leading-none">
-                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Disk</span>
-                        <span className="text-[10px] font-bold mt-0.5">{tier.disk}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Disk</span>
+                        <span className="text-[11px] font-bold">{tier.disk}</span>
                       </div>
                     </div>
                   </div>
