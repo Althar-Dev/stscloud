@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -52,7 +51,7 @@ export default function LandingPage() {
           console.warn("Lottie data not found or invalid format at /lottie/planet.json");
         }
       } catch (err) {
-        // Fail silently to prevent crashing
+        // Fail silently
       }
     };
     loadLottie();
@@ -143,22 +142,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Stats */}
-      <section className="py-8 md:py-12 border-b border-border/50 bg-secondary/10">
-        <div className="max-w-7xl mx-auto px-4 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-16 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
-              <Rocket className="size-4 text-primary" /> INSTANT DEPLOYMENT
-            </div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
-              <Activity className="size-4 text-primary" /> 99.9% UPTIME
-            </div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
-              <Shield className="size-4 text-primary" /> DDOS MITIGATION
-            </div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
-              <Headset className="size-4 text-primary" /> 24/7 SUPPORT
-            </div>
+      {/* Trust & Stats Marquee */}
+      <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
+        {/* Gradient Blur Masks */}
+        <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+        
+        <div className="flex whitespace-nowrap animate-marquee">
+          <div className="flex items-center gap-16 md:gap-32 px-12 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+            <StatMarqueeItem icon={Rocket} text="INSTANT DEPLOYMENT" />
+            <StatMarqueeItem icon={Activity} text="99.9% UPTIME" />
+            <StatMarqueeItem icon={Shield} text="DDOS MITIGATION" />
+            <StatMarqueeItem icon={Headset} text="24/7 SUPPORT" />
+            {/* Duplicates for seamless loop */}
+            <StatMarqueeItem icon={Rocket} text="INSTANT DEPLOYMENT" />
+            <StatMarqueeItem icon={Activity} text="99.9% UPTIME" />
+            <StatMarqueeItem icon={Shield} text="DDOS MITIGATION" />
+            <StatMarqueeItem icon={Headset} text="24/7 SUPPORT" />
           </div>
         </div>
       </section>
@@ -334,6 +334,17 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function StatMarqueeItem({ icon: Icon, text }: { icon: any, text: string }) {
+  return (
+    <div className="flex items-center gap-3 md:gap-4 transition-colors hover:text-primary shrink-0">
+      <Icon className="size-5 md:size-7 text-primary" />
+      <span className="font-headline font-bold text-xs sm:text-sm md:text-base uppercase tracking-[0.2em] whitespace-nowrap">
+        {text}
+      </span>
     </div>
   );
 }
