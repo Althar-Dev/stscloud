@@ -386,8 +386,8 @@ export default function LandingPage() {
                     <span className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest">/mo</span>
                   </div>
                   
-                  {/* Resource Specs: Full-width border-y container */}
-                  <div className="flex items-center justify-between py-6 border-y border-border/50 -mx-6 md:-mx-8 px-6 md:px-8">
+                  {/* Resource Specs: Full-width border-y container with #0A0A0A background */}
+                  <div className="flex items-center justify-between py-6 border-y border-border/50 -mx-6 md:-mx-8 px-6 md:px-8 bg-[#0A0A0A]">
                     <div className="flex items-center gap-2">
                       <Database className="size-4 text-primary" />
                       <div className="flex flex-col leading-none">
