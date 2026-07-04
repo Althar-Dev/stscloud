@@ -21,11 +21,18 @@ import {
   Cloud,
   Headset,
   Database,
-  HardDrive
+  HardDrive,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import Lottie from "lottie-react";
 
@@ -36,6 +43,25 @@ const pricingTiers = [
   { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", popular: false },
   { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", popular: false },
   { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", popular: false },
+];
+
+const faqs = [
+  {
+    question: "How fast is the deployment process?",
+    answer: "Our automated provisioning system is engineered for speed. Most instances, including complex Node.js or Python environments, are live and accessible in under 60 seconds."
+  },
+  {
+    question: "Can I upgrade my server resources later?",
+    answer: "Absolutely. You can scale your CPU, RAM, and Disk resources instantly through your dashboard. The system handles the migration seamlessly without data loss."
+  },
+  {
+    question: "What payment methods do you support?",
+    answer: "We support various local and international payment methods including QRIS, Virtual Accounts (VA), and E-Wallets (Gopay, OVO, Dana) via our SValePay integration."
+  },
+  {
+    question: "Is my data isolated and secure?",
+    answer: "Yes. Every deployment runs in its own encrypted sandbox environment. We utilize hardware-level isolation and multi-layer DDoS mitigation to ensure maximum security."
+  }
 ];
 
 export default function LandingPage() {
@@ -425,6 +451,72 @@ export default function LandingPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 bg-secondary/20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-12">
+            <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">FAQ</Badge>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-sm font-medium">Everything you need to know about our cloud infrastructure.</p>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-border/50 bg-card/50 px-6 rounded-xl mb-4">
+                <AccordionTrigger className="font-headline font-bold text-base md:text-lg hover:no-underline hover:text-primary transition-colors py-6">
+                  <div className="flex items-center gap-3 text-left">
+                    <HelpCircle className="size-5 text-primary shrink-0" />
+                    {faq.question}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm md:text-base leading-relaxed font-medium pb-8 pl-8">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Ready to Scale CTA */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5 -z-10" />
+        <div className="max-w-5xl mx-auto px-4 text-center space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-4xl md:text-6xl font-headline font-bold tracking-tighter">Ready to scale your vision?</h2>
+            <p className="text-muted-foreground text-sm md:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+              Join thousands of developers deploying high-performance applications on STSCloud. Get started today and experience the future of hosting.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/auth?type=signup" className="w-full sm:w-auto">
+              <Button size="lg" className="h-14 px-10 text-xs font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full uppercase tracking-widest">
+                Deploy Your First Instance <ArrowRight className="size-5" />
+              </Button>
+            </Link>
+            <Link href="/support" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="h-14 px-10 text-xs font-bold border-border/50 bg-secondary hover:bg-secondary/80 w-full uppercase tracking-widest">
+                Contact Sales
+              </Button>
+            </Link>
+          </div>
+          <div className="flex items-center justify-center gap-8 pt-8 opacity-40 grayscale">
+            <div className="flex items-center gap-2">
+              <Shield className="size-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Secure by Default</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Activity className="size-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Real-time Metrics</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="size-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Instant Setup</span>
+            </div>
           </div>
         </div>
       </section>
