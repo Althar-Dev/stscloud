@@ -40,23 +40,23 @@ const pricingTiers = [
 
 export default function LandingPage() {
   const [planetJson, setPlanetJson] = React.useState<any>(null);
+  const [worldJson, setWorldJson] = React.useState<any>(null);
 
   React.useEffect(() => {
-    const loadLottie = async () => {
+    const loadLottie = async (url: string, setter: (data: any) => void) => {
       try {
-        const res = await fetch("/lottie/planet.json");
+        const res = await fetch(url);
         const contentType = res.headers.get("content-type");
         if (res.ok && contentType && contentType.includes("application/json")) {
           const data = await res.json();
-          setPlanetJson(data);
-        } else {
-          console.warn("Lottie data not found or invalid format at /lottie/planet.json");
+          setter(data);
         }
       } catch (err) {
         // Fail silently
       }
     };
-    loadLottie();
+    loadLottie("/lottie/planet.json", setPlanetJson);
+    loadLottie("/lottie/world.json", setWorldJson);
   }, []);
 
   return (
@@ -289,22 +289,25 @@ export default function LandingPage() {
             <h3 className="text-2xl md:text-4xl font-headline font-bold">Global Provisioning</h3>
             <p className="text-muted-foreground text-xs sm:text-sm max-w-lg mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and low latency.</p>
           </div>
-          <div className="relative group max-w-4xl mx-auto rounded-2xl overflow-hidden border border-border/50 shadow-[0_0_40px_rgba(99,102,241,0.08)] transition-all duration-700 hover:scale-[1.01]">
-            <Image 
-              src="https://picsum.photos/seed/stscloud-map/1200/600" 
-              alt="Global Map" 
-              width={1200} 
-              height={600} 
-              className="object-cover opacity-60 grayscale group-hover:grayscale-0 transition-all duration-700" 
-              data-ai-hint="world map"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          <div className="relative group max-w-4xl mx-auto rounded-2xl overflow-hidden border border-border/50 shadow-[0_0_40px_rgba(99,102,241,0.08)] transition-all duration-700 hover:scale-[1.01] bg-secondary/5 min-h-[300px] md:min-h-[500px] flex items-center justify-center p-4">
+            {worldJson ? (
+              <Lottie 
+                animationData={worldJson} 
+                loop={true} 
+                className="w-full h-auto max-w-3xl opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-80 transition-all duration-1000" 
+              />
+            ) : (
+              <div className="w-full aspect-video flex items-center justify-center opacity-20">
+                <Globe className="size-20 animate-pulse" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
               <div className="size-16 md:size-24 rounded-full bg-primary/20 flex items-center justify-center animate-ping absolute" />
-              <div className="size-8 md:size-12 rounded-full bg-primary flex items-center justify-center relative shadow-2xl">
+              <div className="size-8 md:size-12 rounded-full bg-primary flex items-center justify-center relative shadow-2xl border-2 border-background">
                 <Globe className="size-4 md:size-6 text-white" />
               </div>
-              <Badge className="mt-4 bg-primary text-white font-bold uppercase tracking-[0.2em] px-3 py-0.5 text-[9px]">Active Node SG-01</Badge>
+              <Badge className="mt-4 bg-primary text-white font-bold uppercase tracking-[0.2em] px-3 py-1 text-[9px] shadow-lg shadow-primary/20">Active Node SG-01</Badge>
             </div>
           </div>
         </div>
