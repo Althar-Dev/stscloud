@@ -220,7 +220,7 @@ export default function DeployPage() {
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
+              <Image src="/img/icons.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-xl tracking-tight">
               <span className="text-primary">Deploy</span>
@@ -376,7 +376,7 @@ export default function DeployPage() {
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Image src="/img/icon.png" alt="STS" width={30} height={30} className="object-contain" />
+                        <Image src="/img/icons.png" alt="STS" width={30} height={30} className="object-contain" />
                         <span className="font-bold font-headline text-lg">{preset.name}</span>
                       </div>
                       {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
@@ -521,7 +521,7 @@ export default function DeployPage() {
                   
                   <div className="text-muted-foreground">Resources</div>
                   <div className="font-bold text-right flex items-center justify-end gap-1.5">
-                    <Image src="/img/icon.png" alt="STS" width={16} height={16} className="object-contain" />
+                    <Image src="/img/icons.png" alt="STS" width={16} height={16} className="object-contain" />
                     {selectedPresetData?.name} ({selectedPresetData?.ram})
                   </div>
                   

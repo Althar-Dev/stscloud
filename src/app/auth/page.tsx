@@ -147,7 +147,7 @@ export default function AuthPage() {
         <div className="flex flex-col items-center text-center space-y-4">
           <Link href="/" className="group transition-transform hover:scale-105 active:scale-95">
             <div className="w-16 h-16 rounded-2xl bg-secondary border border-border/50 flex items-center justify-center overflow-hidden">
-              <Image src="/img/icon.png" alt="STSCloud" width={64} height={64} className="object-cover" />
+              <Image src="/img/icons.png" alt="STSCloud" width={64} height={64} className="object-cover" />
             </div>
           </Link>
           <div className="space-y-2">

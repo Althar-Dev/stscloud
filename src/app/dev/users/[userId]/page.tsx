@@ -250,7 +250,7 @@ export default function UserDetailPage() {
         <div className="flex items-center gap-4">
           <Link href="/dev" className="flex items-center gap-2">
             <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center bg-primary">
-              <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="invert brightness-0" />
+              <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="invert brightness-0" />
             </div>
             <span className="font-headline font-bold text-lg tracking-tight">
               <span className="text-primary">User</span>Detail

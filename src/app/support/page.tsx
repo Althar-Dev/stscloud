@@ -68,7 +68,7 @@ export default function SupportPage() {
             </button>
             <Link href="/" className="flex items-center gap-2">
               <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
-                <Image src="/img/icon.png" alt="STSCloud" width={32} height={32} className="object-cover" />
+                <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="object-cover" />
               </div>
               <span className="font-headline font-bold text-lg tracking-tight">
                 <span className="text-primary">Support</span>

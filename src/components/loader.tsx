@@ -27,7 +27,7 @@ export function Loader() {
       <div className="w-full max-w-[160px] sm:max-w-[240px] flex flex-col items-center animate-in fade-in duration-700">
         <div className="relative w-full aspect-square mb-2">
           <Image 
-            src="/img/icon.png" 
+            src="/img/icons.png" 
             alt="STSCloud" 
             fill 
             className="object-contain grayscale opacity-60" 

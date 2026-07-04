@@ -66,7 +66,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer">
             <div className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] rounded-lg overflow-hidden flex items-center justify-center transition-transform group-hover:scale-110">
-              <Image src="/img/icon.png" alt="STSCloud" width={36} height={36} className="object-cover" />
+              <Image src="/img/icons.png" alt="STSCloud" width={36} height={36} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg sm:text-xl tracking-tight">
               <span className="text-primary">Cloud</span>
@@ -96,7 +96,7 @@ export default function LandingPage() {
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background - Enlarged to 200% as requested */}
+        {/* Mobile Lottie Background */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -144,7 +144,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Stats Marquee - High speed 20s with blur masks */}
+      {/* Trust & Stats Marquee */}
       <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
@@ -227,7 +227,6 @@ export default function LandingPage() {
               </div>
 
               <div className="relative group">
-                 {/* UI Mockup Card - Non-transparent high-contrast container */}
                  <div className="relative z-10 bg-[#0c0c0f] border border-border/50 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
                     <div className="flex items-center justify-between p-4 border-b border-border/50 bg-secondary">
                        <div className="flex gap-1.5">
@@ -240,7 +239,6 @@ export default function LandingPage() {
                     </div>
                     
                     <div className="p-6 space-y-6">
-                       {/* Mock Server List - Solid Background */}
                        <div className="p-4 rounded-xl bg-secondary border border-primary/20 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -254,14 +252,12 @@ export default function LandingPage() {
                           <Badge className="bg-green-500/20 text-green-500 border-green-500/20 text-[8px] px-2 py-0">ONLINE</Badge>
                        </div>
 
-                       {/* Mock Metrics */}
                        <div className="grid grid-cols-3 gap-4">
                           <MockMetric label="CPU" value="42%" color="bg-primary" />
                           <MockMetric label="RAM" value="1.2GB" color="bg-accent" />
                           <MockMetric label="DISK" value="15%" color="bg-orange-400" />
                        </div>
 
-                       {/* Mock Terminal - Solid Background */}
                        <div className="bg-black rounded-lg p-4 font-code text-[10px] space-y-1 border border-border/30">
                           <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:01]</span> <span className="text-green-400">Boot successful.</span></div>
                           <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:02]</span> Listening on port 8080.</div>
@@ -271,7 +267,6 @@ export default function LandingPage() {
                     </div>
                  </div>
                  
-                 {/* Decorative background cards */}
                  <div className="absolute -top-6 -right-6 w-full h-full bg-primary/5 border border-primary/10 rounded-2xl -z-10 translate-x-4 translate-y-4" />
                  <div className="absolute -bottom-6 -left-6 w-full h-full bg-accent/5 border border-accent/10 rounded-2xl -z-20 -translate-x-4 -translate-y-4" />
               </div>
@@ -283,30 +278,74 @@ export default function LandingPage() {
       <section id="infrastructure" className="py-20 bg-secondary/5 border-y border-border/50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-12">
           <div className="space-y-3">
-            <h3 className="text-2xl md:text-4xl font-headline font-bold">Global Provisioning</h3>
-            <p className="text-muted-foreground text-xs sm:text-sm max-w-lg mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and low latency.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Global Provisioning</h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and low latency.</p>
           </div>
-          <div className="relative max-w-4xl mx-auto overflow-hidden min-h-[300px] md:min-h-[500px] flex items-center justify-center p-4">
+          
+          <div className="relative max-w-4xl mx-auto overflow-hidden min-h-[300px] md:min-h-[400px] flex items-center justify-center">
             {worldJson ? (
               <Lottie 
                 animationData={worldJson} 
                 loop={true} 
-                className="w-full h-auto max-w-3xl opacity-50 grayscale hover:grayscale-0 hover:opacity-80 transition-all duration-1000" 
+                className="w-full h-auto max-w-3xl opacity-30 grayscale" 
               />
             ) : (
-              <div className="w-full aspect-video flex items-center justify-center opacity-20">
+              <div className="w-full aspect-video flex items-center justify-center opacity-10">
                 <Globe className="size-20 animate-pulse" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
+                      <Globe className="size-5 text-primary" />
+                   </div>
+                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
+                </div>
+                <h4 className="font-headline font-bold text-lg">Indonesia</h4>
+                <p className="text-xs text-muted-foreground font-medium mb-4">Jakarta Region (JKT-01)</p>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
+                   <Activity className="size-3" /> Latency: &lt; 5ms
+                </div>
+             </Card>
+
+             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
+                      <Globe className="size-5 text-blue-400" />
+                   </div>
+                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
+                </div>
+                <h4 className="font-headline font-bold text-lg">Singapore</h4>
+                <p className="text-xs text-muted-foreground font-medium mb-4">SG Region (SIN-01)</p>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
+                   <Activity className="size-3" /> Latency: &lt; 15ms
+                </div>
+             </Card>
+
+             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
+                      <Globe className="size-5 text-red-400" />
+                   </div>
+                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
+                </div>
+                <h4 className="font-headline font-bold text-lg">Malaysia</h4>
+                <p className="text-xs text-muted-foreground font-medium mb-4">KL Region (KUL-01)</p>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
+                   <Activity className="size-3" /> Latency: &lt; 20ms
+                </div>
+             </Card>
           </div>
         </div>
       </section>
 
-      {/* Pricing - Solid Cards (No transparency) */}
+      {/* Pricing */}
       <section id="pricing" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-3 mb-16 px-4">
+          <div className="text-center space-3 mb-16 px-4">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">Fair Pricing</Badge>
             <h2 className="text-3xl md:text-5xl font-headline font-bold">Scale Your Potential</h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-xs sm:text-sm font-medium">
@@ -371,7 +410,7 @@ export default function LandingPage() {
             <div className="col-span-1 md:col-span-2 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center bg-primary/10">
-                  <Image src="/img/icon.png" alt="STSCloud" width={24} height={24} className="object-cover" />
+                  <Image src="/img/icons.png" alt="STSCloud" width={24} height={24} className="object-cover" />
                 </div>
                 <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
               </div>

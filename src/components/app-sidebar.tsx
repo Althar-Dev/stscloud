@@ -38,7 +38,7 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 flex items-center border-b border-border/50 px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
         <Link href="/" className="flex items-center justify-center gap-3 w-full">
           <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-            <Image src="/img/icon.png" alt="STSCloud" width={40} height={40} className="object-cover" />
+            <Image src="/img/icons.png" alt="STSCloud" width={40} height={40} className="object-cover" />
           </div>
           <span className="font-headline font-bold text-xl tracking-tight group-data-[collapsible=icon]:hidden truncate">
             <span className="text-primary">Cloud</span>
