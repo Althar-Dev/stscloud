@@ -19,7 +19,8 @@ import {
   Terminal,
   Layers,
   BarChart3,
-  Cloud
+  Cloud,
+  Headset
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -40,7 +41,6 @@ export default function LandingPage() {
   const [planetJson, setPlanetJson] = React.useState<any>(null);
 
   React.useEffect(() => {
-    // Robust fetch to avoid "Unexpected token <" if planet.json is missing or server returns HTML
     const loadLottie = async () => {
       try {
         const res = await fetch("/lottie/planet.json");
@@ -52,7 +52,7 @@ export default function LandingPage() {
           console.warn("Lottie data not found or invalid format at /lottie/planet.json");
         }
       } catch (err) {
-        // Fail silently to prevent crashing the whole page
+        // Fail silently to prevent crashing
       }
     };
     loadLottie();
@@ -95,7 +95,7 @@ export default function LandingPage() {
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background (Behind text) - Increased size and brightness */}
+        {/* Mobile Lottie Background */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -147,10 +147,18 @@ export default function LandingPage() {
       <section className="py-8 md:py-12 border-b border-border/50 bg-secondary/10">
         <div className="max-w-7xl mx-auto px-4 overflow-hidden">
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-16 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Zap className="size-4 text-primary" /> Instant Boot</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Shield className="size-4 text-primary" /> DDoS Mitigation</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Globe className="size-4 text-primary" /> Edge Delivery</div>
-            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary"><Cpu className="size-4 text-primary" /> Tier-1 CPU</div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
+              <Rocket className="size-4 text-primary" /> INSTANT DEPLOYMENT
+            </div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
+              <Activity className="size-4 text-primary" /> 99.9% UPTIME
+            </div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
+              <Shield className="size-4 text-primary" /> DDOS MITIGATION
+            </div>
+            <div className="flex items-center gap-2 font-headline font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-colors hover:text-primary">
+              <Headset className="size-4 text-primary" /> 24/7 SUPPORT
+            </div>
           </div>
         </div>
       </section>
