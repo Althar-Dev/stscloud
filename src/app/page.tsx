@@ -19,7 +19,9 @@ import {
   Layers,
   BarChart3,
   Cloud,
-  Headset
+  Headset,
+  Database,
+  HardDrive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -59,6 +61,9 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
+      {/* Background Dot Pattern Decor */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
+      
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
@@ -144,7 +149,6 @@ export default function LandingPage() {
 
       {/* Trust & Stats Marquee */}
       <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
-        {/* Gradient Blur Masks */}
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
         
@@ -154,12 +158,91 @@ export default function LandingPage() {
             <StatMarqueeItem icon={Activity} text="99.9% UPTIME" />
             <StatMarqueeItem icon={Shield} text="DDOS MITIGATION" />
             <StatMarqueeItem icon={Headset} text="24/7 SUPPORT" />
-            {/* Duplicates for seamless loop */}
             <StatMarqueeItem icon={Rocket} text="INSTANT DEPLOYMENT" />
             <StatMarqueeItem icon={Activity} text="99.9% UPTIME" />
             <StatMarqueeItem icon={Shield} text="DDOS MITIGATION" />
             <StatMarqueeItem icon={Headset} text="24/7 SUPPORT" />
           </div>
+        </div>
+      </section>
+
+      {/* UI Showcase / Command Center Section */}
+      <section className="py-24 relative overflow-hidden border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div className="space-y-8">
+                 <div className="space-y-4">
+                    <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1">Command Center</Badge>
+                    <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Total Control <br /> At Your Fingertips</h2>
+                    <p className="text-muted-foreground text-sm md:text-base max-w-lg leading-relaxed font-medium">
+                      Our dashboard provides a surgical view of your infrastructure. Monitor performance, manage files, and execute commands in a unified, beautiful interface.
+                    </p>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50 space-y-2">
+                       <BarChart3 className="size-5 text-primary" />
+                       <div className="font-headline font-bold text-sm">Real-time Metrics</div>
+                       <p className="text-[10px] text-muted-foreground font-medium">Sub-second telemetry for CPU, RAM, and IOPS consumption.</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50 space-y-2">
+                       <Terminal className="size-5 text-accent" />
+                       <div className="font-headline font-bold text-sm">SSH Web Terminal</div>
+                       <p className="text-[10px] text-muted-foreground font-medium">Full ANSI color support with instant command relay execution.</p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="relative group">
+                 {/* UI Mockup Card */}
+                 <div className="relative z-10 bg-[#0c0c0f] border border-border/50 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+                    <div className="flex items-center justify-between p-4 border-b border-border/50 bg-secondary/30">
+                       <div className="flex gap-1.5">
+                          <div className="size-2.5 rounded-full bg-red-500/50" />
+                          <div className="size-2.5 rounded-full bg-yellow-500/50" />
+                          <div className="size-2.5 rounded-full bg-green-500/50" />
+                       </div>
+                       <div className="text-[10px] font-code text-muted-foreground opacity-50">stscloud.id/dashboard</div>
+                       <div className="w-8" />
+                    </div>
+                    
+                    <div className="p-6 space-y-6">
+                       {/* Mock Server List */}
+                       <div className="p-4 rounded-xl bg-secondary/30 border border-primary/20 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                             <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                <ServerIcon className="size-5" />
+                             </div>
+                             <div>
+                                <div className="text-sm font-bold font-headline">Production SG-01</div>
+                                <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Node.js Infinity Plan</div>
+                             </div>
+                          </div>
+                          <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px] px-2 py-0">ONLINE</Badge>
+                       </div>
+
+                       {/* Mock Metrics */}
+                       <div className="grid grid-cols-3 gap-4">
+                          <MockMetric label="CPU" value="42%" color="bg-primary" />
+                          <MockMetric label="RAM" value="1.2GB" color="bg-accent" />
+                          <MockMetric label="DISK" value="15%" color="bg-orange-400" />
+                       </div>
+
+                       {/* Mock Terminal */}
+                       <div className="bg-black/40 rounded-lg p-4 font-code text-[10px] space-y-1 border border-border/30">
+                          <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:01]</span> <span className="text-green-400">Boot successful.</span></div>
+                          <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:02]</span> Listening on port 8080.</div>
+                          <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:15]</span> <span className="text-blue-400">GET /api/v1/deploy 200 OK</span></div>
+                          <div className="animate-pulse w-1.5 h-3 bg-white ml-1 inline-block" />
+                       </div>
+                    </div>
+                 </div>
+                 
+                 {/* Decorative background cards */}
+                 <div className="absolute -top-6 -right-6 w-full h-full bg-primary/5 border border-primary/10 rounded-2xl -z-10 translate-x-4 translate-y-4" />
+                 <div className="absolute -bottom-6 -left-6 w-full h-full bg-accent/5 border border-accent/10 rounded-2xl -z-20 -translate-x-4 -translate-y-4" />
+              </div>
+           </div>
         </div>
       </section>
 
@@ -336,6 +419,20 @@ export default function LandingPage() {
       </footer>
     </div>
   );
+}
+
+function MockMetric({ label, value, color }: { label: string, value: string, color: string }) {
+   return (
+      <div className="space-y-1.5">
+         <div className="flex justify-between items-center text-[7px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span>{label}</span>
+            <span className="text-white">{value}</span>
+         </div>
+         <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+            <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: value }} />
+         </div>
+      </div>
+   );
 }
 
 function StatMarqueeItem({ icon: Icon, text }: { icon: any, text: string }) {
