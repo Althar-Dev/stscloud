@@ -384,8 +384,6 @@ export default function LandingPage() {
                     <PricingItem label="Memory" value={tier.ram} />
                     <PricingItem label="Compute" value={tier.cpu} />
                     <PricingItem label="SSD RAID" value={tier.disk} />
-                    <PricingItem label="DDoS Shield" value="Included" />
-                    <PricingItem label="Daily Snap" value="Enabled" />
                   </div>
 
                   <Link href="/auth?type=signup" className="block w-full pt-2">
@@ -461,7 +459,7 @@ function MockMetric({ label, value, color }: { label: string, value: string, col
             <span className="text-white">{value}</span>
          </div>
          <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
-            <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: value }} />
+            <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ value }} />
          </div>
       </div>
    );
