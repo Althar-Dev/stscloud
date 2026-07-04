@@ -18,7 +18,9 @@ import {
   Terminal,
   BarChart3,
   Cloud,
-  Headset
+  Headset,
+  Database,
+  HardDrive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -384,10 +386,34 @@ export default function LandingPage() {
                     <span className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest">/mo</span>
                   </div>
                   
-                  <div className="space-y-3.5 py-6 border-y border-border/50">
-                    <PricingItem label="Memory" value={tier.ram} />
-                    <PricingItem label="Compute" value={tier.cpu} />
-                    <PricingItem label="SSD RAID" value={tier.disk} />
+                  <div className="grid grid-cols-3 gap-2 py-6 border-y border-border/50">
+                    <div className="flex flex-col items-center text-center gap-1.5">
+                      <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <Database className="size-3.5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">RAM</div>
+                        <div className="text-[10px] font-bold">{tier.ram}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center text-center gap-1.5 border-x border-border/50">
+                      <div className="size-7 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                        <Cpu className="size-3.5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">CPU</div>
+                        <div className="text-[10px] font-bold">{tier.cpu}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center text-center gap-1.5">
+                      <div className="size-7 rounded-lg bg-orange-400/10 flex items-center justify-center text-orange-400">
+                        <HardDrive className="size-3.5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="text-[7px] uppercase font-bold text-muted-foreground tracking-tighter">Disk</div>
+                        <div className="text-[10px] font-bold">{tier.disk}</div>
+                      </div>
+                    </div>
                   </div>
 
                   <Link href="/auth?type=signup" className="block w-full pt-2">
@@ -463,7 +489,7 @@ function MockMetric({ label, value, color }: { label: string, value: string, col
             <span className="text-white">{value}</span>
          </div>
          <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
-            <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ value }} />
+            <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: value }} />
          </div>
       </div>
    );
@@ -493,17 +519,5 @@ function FeatureCard({ icon: Icon, title, description, color }: { icon: any, tit
         </p>
       </CardContent>
     </Card>
-  );
-}
-
-function PricingItem({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="flex items-center justify-between text-xs">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <CheckCircle2 className="size-3 text-primary" />
-        <span className="font-medium">{label}</span>
-      </div>
-      <span className="font-bold">{value}</span>
-    </div>
   );
 }
