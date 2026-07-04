@@ -364,15 +364,19 @@ export default function LandingPage() {
                     Recommended
                   </div>
                 )}
-                <CardHeader className="space-y-1.5 p-6 md:p-8">
-                  <div className={cn(
-                    "size-10 rounded-xl bg-secondary mb-3 flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
-                    tier.popular ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    <ServerIcon className="size-5" />
+                <CardHeader className="p-6 md:p-8 space-y-0">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={cn(
+                      "size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500",
+                      tier.popular ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      <ServerIcon className="size-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <CardTitle className="font-headline font-bold text-xl md:text-2xl leading-none">{tier.name}</CardTitle>
+                      <CardDescription className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-60">Provision Tier</CardDescription>
+                    </div>
                   </div>
-                  <CardTitle className="font-headline font-bold text-xl md:text-2xl">{tier.name}</CardTitle>
-                  <CardDescription className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-60">Provision Tier</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 md:p-8 pt-0 flex-1">
                   <div className="flex items-baseline gap-1.5">
