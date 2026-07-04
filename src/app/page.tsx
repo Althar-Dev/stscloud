@@ -95,9 +95,9 @@ export default function LandingPage() {
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background (Behind text) */}
-        <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-30 pointer-events-none">
-          <div className="w-[150%] max-w-none">
+        {/* Mobile Lottie Background (Behind text) - Increased size and brightness */}
+        <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
+          <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
           </div>
         </div>

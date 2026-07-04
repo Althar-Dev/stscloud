@@ -12,7 +12,6 @@ import {
   ChevronRight, 
   Send,
   ArrowLeft,
-  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,6 +24,7 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 const faqs = [
   {
@@ -56,7 +56,7 @@ export default function SupportPage() {
 
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20">
-      {/* Header Styled like /legal */}
+      {/* Header synchronized with /legal */}
       <header className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -75,11 +75,9 @@ export default function SupportPage() {
               </span>
             </Link>
           </div>
-          <div className="hidden sm:block">
-            <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest text-[10px]">
-              Help Center
-            </Badge>
-          </div>
+          <Link href="/auth?type=signup">
+            <Button variant="outline" size="sm" className="font-bold uppercase tracking-widest text-[10px]">Back to Signup</Button>
+          </Link>
         </div>
       </header>
 
@@ -224,15 +222,3 @@ export default function SupportPage() {
   );
 }
 
-// Internal component for consistent support branding
-function Badge({ children, variant = "default", className }: { children: React.ReactNode, variant?: any, className?: string }) {
-  const variants: any = {
-    default: "bg-primary text-white",
-    outline: "border border-primary/20 text-primary bg-primary/5"
-  };
-  return (
-    <div className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${variants[variant] || variants.default} ${className}`}>
-      {children}
-    </div>
-  );
-}
