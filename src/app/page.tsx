@@ -96,7 +96,7 @@ export default function LandingPage() {
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background */}
+        {/* Mobile Lottie Background - Enlarged to 200% as requested */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -144,7 +144,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Stats Marquee */}
+      {/* Trust & Stats Marquee - High speed 20s with blur masks */}
       <section className="py-12 border-b border-border/50 bg-secondary/10 relative overflow-hidden">
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
@@ -213,12 +213,12 @@ export default function LandingPage() {
                  </div>
                  
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50 space-y-2">
+                    <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <BarChart3 className="size-5 text-primary" />
                        <div className="font-headline font-bold text-sm">Real-time Metrics</div>
                        <p className="text-[10px] text-muted-foreground font-medium">Sub-second telemetry for CPU, RAM, and IOPS consumption.</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50 space-y-2">
+                    <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <Terminal className="size-5 text-accent" />
                        <div className="font-headline font-bold text-sm">SSH Web Terminal</div>
                        <p className="text-[10px] text-muted-foreground font-medium">Full ANSI color support with instant command relay execution.</p>
@@ -227,9 +227,9 @@ export default function LandingPage() {
               </div>
 
               <div className="relative group">
-                 {/* UI Mockup Card */}
+                 {/* UI Mockup Card - Non-transparent high-contrast container */}
                  <div className="relative z-10 bg-[#0c0c0f] border border-border/50 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
-                    <div className="flex items-center justify-between p-4 border-b border-border/50 bg-secondary/30">
+                    <div className="flex items-center justify-between p-4 border-b border-border/50 bg-secondary">
                        <div className="flex gap-1.5">
                           <div className="size-2.5 rounded-full bg-red-500/50" />
                           <div className="size-2.5 rounded-full bg-yellow-500/50" />
@@ -240,8 +240,8 @@ export default function LandingPage() {
                     </div>
                     
                     <div className="p-6 space-y-6">
-                       {/* Mock Server List */}
-                       <div className="p-4 rounded-xl bg-secondary/30 border border-primary/20 flex items-center justify-between">
+                       {/* Mock Server List - Solid Background */}
+                       <div className="p-4 rounded-xl bg-secondary border border-primary/20 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                 <ServerIcon className="size-5" />
@@ -251,7 +251,7 @@ export default function LandingPage() {
                                 <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Node.js Infinity Plan</div>
                              </div>
                           </div>
-                          <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px] px-2 py-0">ONLINE</Badge>
+                          <Badge className="bg-green-500/20 text-green-500 border-green-500/20 text-[8px] px-2 py-0">ONLINE</Badge>
                        </div>
 
                        {/* Mock Metrics */}
@@ -261,8 +261,8 @@ export default function LandingPage() {
                           <MockMetric label="DISK" value="15%" color="bg-orange-400" />
                        </div>
 
-                       {/* Mock Terminal */}
-                       <div className="bg-black/40 rounded-lg p-4 font-code text-[10px] space-y-1 border border-border/30">
+                       {/* Mock Terminal - Solid Background */}
+                       <div className="bg-black rounded-lg p-4 font-code text-[10px] space-y-1 border border-border/30">
                           <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:01]</span> <span className="text-green-400">Boot successful.</span></div>
                           <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:02]</span> Listening on port 8080.</div>
                           <div className="flex gap-2"><span className="text-primary">[STS]</span> <span className="text-muted-foreground">[12:44:15]</span> <span className="text-blue-400">GET /api/v1/deploy 200 OK</span></div>
@@ -303,7 +303,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Pricing - Solid Cards (No transparency) */}
       <section id="pricing" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-3 mb-16 px-4">
@@ -317,8 +317,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
             {pricingTiers.map((tier) => (
               <Card key={tier.id} className={cn(
-                "border-border/50 bg-card/50 backdrop-blur-md transition-all duration-500 hover:border-primary/50 hover:-translate-y-2 relative overflow-hidden group flex flex-col h-full",
-                tier.popular && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.01] scale-[1.03] z-10"
+                "border-border/50 bg-card transition-all duration-500 hover:border-primary/50 hover:-translate-y-2 relative overflow-hidden group flex flex-col h-full",
+                tier.popular && "border-primary/50 ring-1 ring-primary/20 scale-[1.03] z-10"
               )}>
                 {tier.popular && (
                   <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-bl-xl shadow-lg">
@@ -441,7 +441,7 @@ function StatMarqueeItem({ icon: Icon, text }: { icon: any, text: string }) {
 
 function FeatureCard({ icon: Icon, title, description, color }: { icon: any, title: string, description: string, color: string }) {
   return (
-    <Card className="border-border/50 bg-secondary/5 hover:bg-secondary/10 transition-all duration-500 group hover:border-primary/30 hover:-translate-y-1.5 flex flex-col">
+    <Card className="border-border/50 bg-card hover:bg-secondary/40 transition-all duration-500 group hover:border-primary/30 hover:-translate-y-1.5 flex flex-col">
       <CardContent className="p-8 space-y-4 flex-1">
         <div className={cn("size-10 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-500", color)}>
           <Icon className="size-5" />
