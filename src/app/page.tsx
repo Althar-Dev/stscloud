@@ -219,12 +219,10 @@ export default function LandingPage() {
                     <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <BarChart3 className="size-5 text-primary" />
                        <div className="font-headline font-bold text-sm">Real-time Metrics</div>
-                       <p className="text-[10px] text-muted-foreground font-medium">Telemetry for CPU, RAM, and IOPS consumption.</p>
                     </div>
                     <div className="p-4 rounded-xl bg-card border border-border/50 space-y-2">
                        <Terminal className="size-5 text-accent" />
                        <div className="font-headline font-bold text-sm">SSH Web Terminal</div>
-                       <p className="text-[10px] text-muted-foreground font-medium">Full ANSI color support with instant command relay execution.</p>
                     </div>
                  </div>
               </div>
