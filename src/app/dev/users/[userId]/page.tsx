@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -249,8 +250,8 @@ export default function UserDetailPage() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-[#0c0c0f]/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/dev" className="flex items-center gap-2">
-            <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center bg-primary">
-              <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="invert brightness-0" />
+            <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg tracking-tight">
               <span className="text-primary">User</span>Detail

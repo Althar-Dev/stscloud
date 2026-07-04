@@ -527,7 +527,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 md:gap-8">
             <div className="col-span-1 md:col-span-2 space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center bg-primary/10">
+                <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
                   <Image src="/img/icons.png" alt="STSCloud" width={24} height={24} className="object-cover" />
                 </div>
                 <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
