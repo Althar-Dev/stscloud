@@ -24,7 +24,8 @@ import {
   HardDrive,
   HelpCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -82,7 +83,7 @@ export default function LandingPage() {
   const [globalAgents, setGlobalAgents] = React.useState<any[]>(defaultGlobalAgents);
   
   // Real-time status state
-  const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string }>>({});
+  const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   React.useEffect(() => {
     const loadLottie = async (url: string, setter: (data: any) => void) => {
@@ -118,45 +119,69 @@ export default function LandingPage() {
     };
   }, [db]);
 
-  // Real-time Latency & Status Logic
+  // Enhanced Real-time Latency & Status Logic
   React.useEffect(() => {
-    const checkAgents = async () => {
-      const results: Record<string, { status: string, latency: string }> = {};
+    if (globalAgents.length === 0) return;
+
+    const checkAgent = async (agent: any) => {
+      const url = agent.url;
       
-      for (const agent of globalAgents) {
-        const url = agent.url;
-        if (!url) {
-          results[agent.id] = { status: "DOWN", latency: "N/A" };
-          continue;
-        }
+      // Mark as checking
+      setAgentLiveInfo(prev => ({ 
+        ...prev, 
+        [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
+      }));
 
-        const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-        
-        if (isLocal) {
-          results[agent.id] = { status: "ACTIVE", latency: "< 1ms (Local)" };
-          continue;
-        }
-
-        const start = performance.now();
-        try {
-          const targetUrl = url.startsWith("http") ? url : `https://${url}`;
-          // Use fetch with no-cors to check reachability without CORS issues
-          await fetch(targetUrl, { 
-            mode: 'no-cors', 
-            cache: 'no-cache',
-            signal: AbortSignal.timeout(5000) 
-          });
-          const end = performance.now();
-          results[agent.id] = { status: "ACTIVE", latency: `${Math.round(end - start)}ms` };
-        } catch (e) {
-          results[agent.id] = { status: "DOWN", latency: "N/A" };
-        }
+      if (!url) {
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "DOWN", latency: "N/A", isChecking: false } 
+        }));
+        return;
       }
-      setAgentLiveInfo(results);
+
+      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+      
+      if (isLocal) {
+        // Artificial delay for local for premium feel
+        await new Promise(r => setTimeout(r, 800));
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Local)", isChecking: false } 
+        }));
+        return;
+      }
+
+      const start = performance.now();
+      try {
+        const targetUrl = url.startsWith("http") ? url : `https://${url}`;
+        // Use fetch with no-cors to check reachability
+        await fetch(targetUrl, { 
+          mode: 'no-cors', 
+          cache: 'no-cache',
+          signal: AbortSignal.timeout(5000) 
+        });
+        const end = performance.now();
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } 
+        }));
+      } catch (e) {
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "DOWN", latency: "TIMEOUT", isChecking: false } 
+        }));
+      }
     };
 
-    checkAgents();
-    const interval = setInterval(checkAgents, 30000); // Re-check every 30s
+    const runAllChecks = () => {
+      globalAgents.forEach(agent => {
+        checkAgent(agent);
+      });
+    };
+
+    runAllChecks();
+    const interval = setInterval(runAllChecks, 15000); // Check every 15s for real-time feel
     return () => clearInterval(interval);
   }, [globalAgents]);
 
@@ -283,18 +308,20 @@ export default function LandingPage() {
              {globalAgents.map((agent) => {
                 const live = agentLiveInfo[agent.id];
                 const isActive = live?.status === "ACTIVE";
+                const isChecking = live?.isChecking || !live;
                 
                 return (
-                  <Card key={agent.id} className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
+                  <Card key={agent.id} className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-all duration-300">
                     <div className="flex justify-between items-start mb-4">
                       <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
                           <Globe className={cn("size-5", isActive ? "text-primary" : "text-muted-foreground")} />
                       </div>
                       <Badge className={cn(
-                        "text-[8px] uppercase font-bold",
+                        "text-[8px] uppercase font-bold tracking-widest px-2 h-5",
+                        isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
                         isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                       )}>
-                        {live?.status || "CHECKING..."}
+                        {isChecking ? "PROBING..." : live.status}
                       </Badge>
                     </div>
                     <h4 className="font-headline font-bold text-lg">{agent.name}</h4>
@@ -302,11 +329,20 @@ export default function LandingPage() {
                     <p className="text-[8px] font-code text-muted-foreground opacity-50 mb-4 truncate">{agent.url}</p>
                     
                     <div className={cn(
-                      "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest",
+                      "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest min-h-[1.5rem]",
                       isActive ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-                      Latency: {live?.latency || agent.latency}
+                      {isChecking ? (
+                        <div className="flex items-center gap-2 opacity-50">
+                           <Loader2 className="size-3 animate-spin" />
+                           <span>Calculating...</span>
+                        </div>
+                      ) : (
+                        <>
+                          {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+                          Latency: {live.latency}
+                        </>
+                      )}
                     </div>
                   </Card>
                 );
