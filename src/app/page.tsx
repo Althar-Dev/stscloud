@@ -47,6 +47,12 @@ const defaultPricingTiers = [
   { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", popular: false },
 ];
 
+const defaultGlobalAgents = [
+  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", latency: "< 5ms", status: "active", color: "text-primary" },
+  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", latency: "< 15ms", status: "active", color: "text-blue-400" },
+  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", latency: "< 20ms", status: "active", color: "text-red-400" },
+];
+
 const faqs = [
   {
     question: "How fast is the deployment process?",
@@ -71,6 +77,7 @@ export default function LandingPage() {
   const [planetJson, setPlanetJson] = React.useState<any>(null);
   const [worldJson, setWorldJson] = React.useState<any>(null);
   const [pricingTiers, setPricingTiers] = React.useState<any[]>(defaultPricingTiers);
+  const [globalAgents, setGlobalAgents] = React.useState<any[]>(defaultGlobalAgents);
 
   React.useEffect(() => {
     const loadLottie = async (url: string, setter: (data: any) => void) => {
@@ -89,7 +96,7 @@ export default function LandingPage() {
     loadLottie("/lottie/world.json", setWorldJson);
 
     // Fetch dynamic pricing from Firestore
-    const unsub = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.tiers && Array.isArray(data.tiers)) {
@@ -97,10 +104,25 @@ export default function LandingPage() {
         }
       }
     }, (error) => {
-      console.warn("Pricing Listener fallback to static:", error.message);
+      console.warn("Pricing Listener fallback:", error.message);
     });
 
-    return () => unsub();
+    // Fetch dynamic global agents from Firestore
+    const unsubAgents = onSnapshot(doc(db, "main", "agents"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.list && Array.isArray(data.list)) {
+          setGlobalAgents(data.list);
+        }
+      }
+    }, (error) => {
+      console.warn("Agents Listener fallback:", error.message);
+    });
+
+    return () => {
+      unsubPricing();
+      unsubAgents();
+    };
   }, [db]);
 
   return (
@@ -138,9 +160,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
-        
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
+        <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_70%)] pointer-events-none" />
         
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
@@ -338,47 +358,21 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Globe className="size-5 text-primary" />
-                   </div>
-                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
-                </div>
-                <h4 className="font-headline font-bold text-lg">Indonesia</h4>
-                <p className="text-xs text-muted-foreground font-medium mb-4">Jakarta Region (JKT-01)</p>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
-                   <Activity className="size-3" /> Latency: &lt; 5ms
-                </div>
-             </Card>
-
-             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Globe className="size-5 text-blue-400" />
-                   </div>
-                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
-                </div>
-                <h4 className="font-headline font-bold text-lg">Singapore</h4>
-                <p className="text-xs text-muted-foreground font-medium mb-4">SG Region (SIN-01)</p>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
-                   <Activity className="size-3" /> Latency: &lt; 15ms
-                </div>
-             </Card>
-
-             <Card className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                   <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Globe className="size-5 text-red-400" />
-                   </div>
-                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px]">ACTIVE</Badge>
-                </div>
-                <h4 className="font-headline font-bold text-lg">Malaysia</h4>
-                <p className="text-xs text-muted-foreground font-medium mb-4">KL Region (KUL-01)</p>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
-                   <Activity className="size-3" /> Latency: &lt; 20ms
-                </div>
-             </Card>
+             {globalAgents.map((agent) => (
+                <Card key={agent.id} className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-colors">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="size-10 rounded-lg bg-secondary flex items-center justify-center">
+                        <Globe className={cn("size-5", agent.color || "text-primary")} />
+                    </div>
+                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px] uppercase">{agent.status || 'ACTIVE'}</Badge>
+                  </div>
+                  <h4 className="font-headline font-bold text-lg">{agent.name}</h4>
+                  <p className="text-xs text-muted-foreground font-medium mb-4">{agent.location}</p>
+                  <div className={cn("flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest", agent.color || "text-primary")}>
+                    <Activity className="size-3" /> Latency: {agent.latency}
+                  </div>
+                </Card>
+             ))}
           </div>
         </div>
       </section>

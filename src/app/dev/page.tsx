@@ -22,7 +22,8 @@ import {
   Save,
   RefreshCw,
   Database,
-  HardDrive
+  HardDrive,
+  Layout
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,12 @@ const defaultPricingTiers = [
   { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false },
 ];
 
+const defaultLandingAgents = [
+  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", latency: "< 5ms", status: "active", color: "text-primary" },
+  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", latency: "< 15ms", status: "active", color: "text-blue-400" },
+  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", latency: "< 20ms", status: "active", color: "text-red-400" },
+];
+
 export default function DevConsole() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
@@ -88,7 +95,11 @@ export default function DevConsole() {
   const [pricingData, setPricingData] = React.useState<any[]>([]);
   const [isUpdatingPricing, setIsUpdatingPricing] = React.useState(false);
 
-  // Agent Registration State
+  // Landing Config State
+  const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
+  const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
+
+  // Agent Registration State (Infra nodes)
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
   const [agentUrl, setAgentUrl] = React.useState("");
@@ -136,7 +147,7 @@ export default function DevConsole() {
       (err) => console.warn("Users list permission denied")
     );
 
-    // Agents Listener
+    // Infrastructure Agents (Real Nodes)
     const unsubAgents = onSnapshot(
       collection(db, "infrastructure_agents"), 
       (snapshot) => {
@@ -166,33 +177,44 @@ export default function DevConsole() {
       (err) => console.warn("Pricing listener error:", err)
     );
 
+    // Landing Agents Listener
+    const unsubLandingAgents = onSnapshot(
+      doc(db, "main", "agents"),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.list) setLandingAgents(data.list);
+        }
+      },
+      (err) => console.warn("Landing agents listener error:", err)
+    );
+
     return () => {
       unsubUsers();
       unsubAgents();
       unsubTransactions();
       unsubPricing();
+      unsubLandingAgents();
     };
   }, [profile, db]);
 
+  // Pricing Functions
   const handleInitializePricing = async () => {
     setIsUpdatingPricing(true);
     const docRef = doc(db, "main", "product");
     setDoc(docRef, { tiers: defaultPricingTiers, updatedAt: serverTimestamp() })
       .then(() => {
         setPricingData(defaultPricingTiers);
-        toast({ title: "Pricing Initialized", description: "Default product tiers have been written to database." });
+        toast({ title: "Pricing Initialized", description: "Default product tiers written." });
       })
-      .catch((err) => {
-        toast({ variant: "destructive", title: "Error", description: err.message });
-      })
+      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsUpdatingPricing(false));
   };
 
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
-    // If pricingData is empty, use default as base
     const base = pricingData.length > 0 ? pricingData : defaultPricingTiers;
-    const updatedTiers = base.map(t => t.id === tierId ? { ...t, [field]: value } : t);
-    setPricingData(updatedTiers);
+    const updated = base.map(t => t.id === tierId ? { ...t, [field]: value } : t);
+    setPricingData(updated);
   };
 
   const savePricingToDB = async () => {
@@ -200,45 +222,54 @@ export default function DevConsole() {
     const docRef = doc(db, "main", "product");
     const dataToSave = pricingData.length > 0 ? pricingData : defaultPricingTiers;
     setDoc(docRef, { tiers: dataToSave, updatedAt: serverTimestamp() })
-      .then(() => {
-        toast({ title: "Pricing Saved", description: "All changes have been synchronized to production." });
-      })
-      .catch((err) => {
-        toast({ variant: "destructive", title: "Error", description: err.message });
-      })
+      .then(() => toast({ title: "Pricing Saved", description: "Changes synchronized." }))
+      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsUpdatingPricing(false));
   };
 
-  const handleAddAgent = async () => {
-    if (!regionName || !agentUrl) {
-      toast({ variant: "destructive", title: "Missing Info", description: "Please enter Region Name and Agent URL." });
-      return;
-    }
+  // Landing Agents Functions
+  const handleInitializeLandingAgents = async () => {
+    setIsUpdatingLanding(true);
+    const docRef = doc(db, "main", "agents");
+    setDoc(docRef, { list: defaultGlobalAgents, updatedAt: serverTimestamp() })
+      .then(() => {
+        setLandingAgents(defaultGlobalAgents);
+        toast({ title: "Landing Agents Initialized", description: "Default region list written." });
+      })
+      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
+      .finally(() => setIsUpdatingLanding(false));
+  };
 
+  const handleUpdateLandingAgent = (id: string, field: string, value: any) => {
+    const base = landingAgents.length > 0 ? landingAgents : defaultGlobalAgents;
+    const updated = base.map(a => a.id === id ? { ...a, [field]: value } : a);
+    setLandingAgents(updated);
+  };
+
+  const saveLandingAgentsToDB = async () => {
+    setIsUpdatingLanding(true);
+    const docRef = doc(db, "main", "agents");
+    const dataToSave = landingAgents.length > 0 ? landingAgents : defaultGlobalAgents;
+    setDoc(docRef, { list: dataToSave, updatedAt: serverTimestamp() })
+      .then(() => toast({ title: "Landing Agents Saved", description: "Public infrastructure list updated." }))
+      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
+      .finally(() => setIsUpdatingLanding(false));
+  };
+
+  const handleAddAgent = async () => {
+    if (!regionName || !agentUrl) return;
     setIsAddingAgent(true);
     const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
     const agentRef = doc(db, "infrastructure_agents", agentId);
-    const agentData = {
-      regionName,
-      agentUrl,
-      status: "online",
-      createdAt: serverTimestamp(),
-      load: Math.floor(Math.random() * 20) + 5
-    };
-
-    setDoc(agentRef, agentData)
+    setDoc(agentRef, { regionName, agentUrl, status: "online", createdAt: serverTimestamp(), load: Math.floor(Math.random() * 20) + 5 })
       .then(() => {
-        toast({ title: "Agent Registered", description: `New agent cluster at ${regionName} is now active.` });
+        toast({ title: "Agent Registered", description: `Node active at ${regionName}.` });
         setIsDialogOpen(false);
         setRegionName("");
         setAgentUrl("");
       })
-      .catch(async (err) => {
-        toast({ variant: "destructive", title: "Error", description: err.message });
-      })
-      .finally(() => {
-        setIsAddingAgent(false);
-      });
+      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
+      .finally(() => setIsAddingAgent(false));
   };
 
   const handleSignOut = async () => {
@@ -250,13 +281,6 @@ export default function DevConsole() {
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "Dev Account";
   const userInitial = displayName.charAt(0).toUpperCase();
-
-  const filteredUsers = usersList.filter(u => 
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Calculate real-time stats
   const totalRevenue = transactions.reduce((acc, tx) => acc + (tx.status === 'success' ? tx.amount : 0), 0);
   const avgGlobalLoad = agentsList.length > 0 
     ? (agentsList.reduce((acc, a) => acc + (a.load || 0), 0) / agentsList.length).toFixed(1)
@@ -322,42 +346,19 @@ export default function DevConsole() {
               <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50 rounded-lg">
                 <DialogHeader>
                   <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
-                  <DialogDescription>
-                    Add a new infrastructure node to the global cluster.
-                  </DialogDescription>
+                  <DialogDescription>Add a new infrastructure node to the global cluster.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="region-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Region Name</Label>
-                    <Input 
-                      id="region-name" 
-                      placeholder="e.g. Singapore SG-01" 
-                      className="bg-secondary/30 border-none h-11"
-                      value={regionName}
-                      onChange={(e) => setRegionName(e.target.value)}
-                    />
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Region Name</Label>
+                    <Input placeholder="e.g. Singapore SG-01" className="bg-secondary/30 border-none h-11" value={regionName} onChange={(e) => setRegionName(e.target.value)} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="agent-url" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent URL</Label>
-                    <Input 
-                      id="agent-url" 
-                      placeholder="node.domain.com" 
-                      className="bg-secondary/30 border-none h-11"
-                      value={agentUrl}
-                      onChange={(e) => setAgentUrl(e.target.value)}
-                    />
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agent URL</Label>
+                    <Input placeholder="node.domain.com" className="bg-secondary/30 border-none h-11" value={agentUrl} onChange={(e) => setAgentUrl(e.target.value)} />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button 
-                    className="w-full bg-primary text-white font-bold h-11" 
-                    onClick={handleAddAgent}
-                    disabled={isAddingAgent}
-                  >
-                    {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}
-                    Add Agent
-                  </Button>
-                </DialogFooter>
+                <DialogFooter><Button className="w-full bg-primary text-white font-bold h-11" onClick={handleAddAgent} disabled={isAddingAgent}>{isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}Add Agent</Button></DialogFooter>
               </DialogContent>
             </Dialog>
             <Button variant="outline" size="sm" className="gap-2 h-10"><Terminal className="size-4" /> Global Logs</Button>
@@ -366,21 +367,12 @@ export default function DevConsole() {
 
         <Tabs defaultValue="overview" className="space-y-8">
           <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto w-full sm:w-fit overflow-x-auto justify-start flex border border-border/50">
-            <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <Activity className="size-4" /> Overview
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <Globe className="size-4" /> Agents
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <Tag className="size-4" /> Pricing
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <CreditCard className="size-4" /> Billing
-            </TabsTrigger>
-            <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-              <Users className="size-4" /> Users
-            </TabsTrigger>
+            <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Activity className="size-4" /> Overview</TabsTrigger>
+            <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Tag className="size-4" /> Pricing</TabsTrigger>
+            <TabsTrigger value="landing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Layout className="size-4" /> Landing Config</TabsTrigger>
+            <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
+            <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><CreditCard className="size-4" /> Billing</TabsTrigger>
+            <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Users className="size-4" /> Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
@@ -390,141 +382,62 @@ export default function DevConsole() {
               <StatCard title="Active Agents" value={agentsList.filter(a => a.status === 'online').length} trend="Online" icon={Activity} color="text-primary" />
               <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 bg-card border-border/50 flex flex-col">
-                <CardHeader>
-                  <CardTitle className="font-headline flex items-center gap-2">
-                    <Terminal className="size-5 text-primary" /> Global Live Feed
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 min-h-[300px] font-code text-xs space-y-2 overflow-y-auto max-h-[400px] p-6 bg-black/40 rounded-xl m-4 border border-border/30 custom-scrollbar">
-                  {transactions.length === 0 && agentsList.length === 0 && (
-                    <div className="text-muted-foreground opacity-30 h-full flex items-center justify-center">No recent activity detected.</div>
-                  )}
-                  {transactions.slice(0, 10).map((tx, i) => (
-                    <div key={i} className="flex gap-4 border-b border-border/10 pb-2">
-                      <span className="text-muted-foreground tabular-nums">[{tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleTimeString() : 'RECENT'}]</span>
-                      <span className="font-bold uppercase px-1.5 rounded bg-green-500/10 text-green-400">Payment</span>
-                      <span className="text-foreground">Verified for {tx.userEmail} ({tx.amount})</span>
-                    </div>
-                  ))}
-                  {agentsList.map((agent, i) => (
-                    <div key={`agent-${i}`} className="flex gap-4 border-b border-border/10 pb-2">
-                      <span className="text-muted-foreground tabular-nums">[{agent.createdAt?.toDate ? agent.createdAt.toDate().toLocaleTimeString() : 'INIT'}]</span>
-                      <span className="font-bold uppercase px-1.5 rounded bg-blue-500/10 text-blue-400">Agent</span>
-                      <span className="text-foreground">Cluster registered in {agent.regionName}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-border/50">
-                <CardHeader>
-                  <CardTitle className="font-headline text-lg">System Integrity</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <IntegrityItem name="Authentication API" status="online" />
-                  <IntegrityItem name="SValePay Connector" status="online" />
-                  <IntegrityItem name="Agent Provisioner" status="online" />
-                  <IntegrityItem 
-                    name="Global Agents" 
-                    status={agentsList.some(a => a.status === 'offline') ? 'warning' : 'online'} 
-                    message={agentsList.some(a => a.status === 'offline') ? 'Partial Downtime' : 'All Systems GO'} 
-                  />
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
             <Card className="bg-card border-border/50">
               <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
-                <div>
-                  <CardTitle className="font-headline">Product Tiers Management</CardTitle>
-                  <CardDescription>Configure global resources and pricing for all server plans.</CardDescription>
-                </div>
+                <div><CardTitle className="font-headline">Product Tiers Management</CardTitle><CardDescription>Configure global resources and pricing for all server plans.</CardDescription></div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializePricing} disabled={isUpdatingPricing}>
-                    <RefreshCw className={cn("size-4", isUpdatingPricing && "animate-spin")} /> Initialize Default
-                  </Button>
-                  <Button className="bg-primary text-white gap-2 font-bold" onClick={savePricingToDB} disabled={isUpdatingPricing}>
-                    <Save className="size-4" /> Save Changes
-                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializePricing} disabled={isUpdatingPricing}><RefreshCw className={cn("size-4", isUpdatingPricing && "animate-spin")} /> Initialize Default</Button>
+                  <Button className="bg-primary text-white gap-2 font-bold" onClick={savePricingToDB} disabled={isUpdatingPricing}><Save className="size-4" /> Save Changes</Button>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-border/50">
-                      <TableHead className="w-[100px]">Tier Name</TableHead>
-                      <TableHead>Price Display</TableHead>
-                      <TableHead>Value (IDR)</TableHead>
-                      <TableHead>RAM</TableHead>
-                      <TableHead>CPU</TableHead>
-                      <TableHead>Disk</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead className="w-[100px]">Tier</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {(pricingData.length > 0 ? pricingData : defaultPricingTiers).map((tier) => (
                       <TableRow key={tier.id} className="border-border/30 hover:bg-secondary/10">
                         <TableCell className="font-bold">{tier.name}</TableCell>
-                        <TableCell>
-                          <Input 
-                            className="bg-secondary/30 border-none h-9 text-xs w-32" 
-                            value={tier.price} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input 
-                            type="number"
-                            className="bg-secondary/30 border-none h-9 text-xs w-32" 
-                            value={tier.priceValue} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input 
-                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
-                            value={tier.ram} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input 
-                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
-                            value={tier.cpu} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input 
-                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
-                            value={tier.disk} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={cn("h-7 px-2 text-[10px] uppercase font-bold", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")}
-                            onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}
-                          >
-                            {tier.popular ? 'Recommended' : 'Standard'}
-                          </Button>
-                        </TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={tier.price} onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)} /></TableCell>
+                        <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-32" value={tier.priceValue} onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
+                        <TableCell><Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] uppercase font-bold", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>{tier.popular ? 'Recommended' : 'Standard'}</Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                {pricingData.length === 0 && (
-                  <div className="p-12 text-center text-muted-foreground italic border-t border-border/50">
-                    Database empty. Click "Initialize Default" to populate pricing data.
-                  </div>
-                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="landing" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
+                <div><CardTitle className="font-headline">Landing Infrastructure List</CardTitle><CardDescription>Manage the region cards displayed in the "Global Provisioning" section.</CardDescription></div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializeLandingAgents} disabled={isUpdatingLanding}><RefreshCw className={cn("size-4", isUpdatingLanding && "animate-spin")} /> Initialize Default</Button>
+                  <Button className="bg-primary text-white gap-2 font-bold" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead>Region</TableHead><TableHead>Location Details</TableHead><TableHead>Latency</TableHead><TableHead>Color (Tailwind)</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {(landingAgents.length > 0 ? landingAgents : defaultGlobalAgents).map((agent) => (
+                      <TableRow key={agent.id} className="border-border/30 hover:bg-secondary/10">
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={agent.latency} onChange={(e) => handleUpdateLandingAgent(agent.id, 'latency', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={agent.color} onChange={(e) => handleUpdateLandingAgent(agent.id, 'color', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={agent.status} onChange={(e) => handleUpdateLandingAgent(agent.id, 'status', e.target.value)} /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
@@ -534,56 +447,25 @@ export default function DevConsole() {
               {agentsList.map((agent) => (
                 <AgentCard key={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} />
               ))}
-              {agentsList.length === 0 && (
-                <div className="col-span-full py-20 text-center opacity-50 border border-dashed border-border/50 rounded-2xl">
-                  <Globe className="size-12 mx-auto mb-3" />
-                  <p>No infrastructure agents registered yet.</p>
-                </div>
-              )}
             </div>
           </TabsContent>
-
+          
           <TabsContent value="billing" className="space-y-6">
              <Card className="bg-card border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="font-headline">Recent Transactions</CardTitle>
-                    <CardDescription>Latest payments processed via SValePay.</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm">Export CSV</Button>
-                </CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between"><div className="space-y-1"><CardTitle className="font-headline">Recent Transactions</CardTitle><CardDescription>Latest payments processed via SValePay.</CardDescription></div></CardHeader>
                 <CardContent>
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Plan</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Time</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Time</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {transactions.map((tx) => (
                         <TableRow key={tx.id}>
                           <TableCell className="font-medium text-xs truncate max-w-[200px]">{tx.userEmail}</TableCell>
                           <TableCell><Badge variant="outline" className="text-[10px]">{tx.plan || 'Custom'}</Badge></TableCell>
                           <TableCell className="font-bold text-xs">IDR {tx.amount?.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge className={cn("text-[10px] uppercase font-bold", tx.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500')}>
-                              {tx.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground text-xs">
-                            {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : 'Just now'}
-                          </TableCell>
+                          <TableCell><Badge className={cn("text-[10px] uppercase font-bold", tx.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500')}>{tx.status}</Badge></TableCell>
+                          <TableCell className="text-right text-muted-foreground text-xs">{tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : 'Just now'}</TableCell>
                         </TableRow>
                       ))}
-                      {transactions.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No transactions recorded.</TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -591,51 +473,11 @@ export default function DevConsole() {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="flex items-center gap-4 mb-6 px-1">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search users by email or name..." 
-                  className="pl-10 bg-secondary/30 border-none h-11" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-               {filteredUsers.map((u, i) => (
+            <div className="relative flex-1 mb-6"><Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="Search users..." className="pl-10 bg-secondary/30 border-none h-11" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+               {usersList.filter(u => u.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => (
                  <Link key={u.id} href={`/dev/users/${u.id}`}>
-                   <Card className="bg-card border-border/50 hover:bg-secondary/20 hover:border-primary/30 transition-all cursor-pointer group h-full">
-                     <CardContent className="p-3 md:p-6">
-                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                         <div className="flex items-center gap-3">
-                           <Avatar className="size-8 md:size-10">
-                             <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                               {u.displayName?.charAt(0) || u.email?.charAt(0) || "U"}
-                             </AvatarFallback>
-                           </Avatar>
-                           <div className="min-w-0">
-                             <div className="text-xs md:sm font-bold truncate pr-4">{u.displayName || "No Name"}</div>
-                             <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{u.email}</div>
-                           </div>
-                         </div>
-                         <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-                            {u.dev && <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] uppercase">Admin</Badge>}
-                            <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-colors hidden sm:block" />
-                         </div>
-                       </div>
-                       <div className="flex gap-2">
-                          <div className="flex-1 text-center p-1.5 md:p-2 bg-background/50 rounded-lg border border-border/30">
-                             <div className="text-xs md:text-lg font-bold">--</div>
-                             <div className="text-[7px] md:text-[8px] text-muted-foreground uppercase font-bold">Servers</div>
-                          </div>
-                          <div className="flex-1 text-center p-1.5 md:p-2 bg-background/50 rounded-lg border border-border/30">
-                             <div className="text-xs md:text-lg font-bold">Active</div>
-                             <div className="text-[7px] md:text-[8px] text-muted-foreground uppercase font-bold">Status</div>
-                          </div>
-                       </div>
-                     </CardContent>
-                   </Card>
+                   <Card className="bg-card border-border/50 hover:bg-secondary/20 transition-all cursor-pointer h-full"><CardContent className="p-3 md:p-6"><div className="flex items-center gap-3"><Avatar className="size-8"><AvatarFallback>{u.email?.charAt(0)}</AvatarFallback></Avatar><div><div className="text-xs font-bold truncate">{u.displayName || "User"}</div><div className="text-[9px] text-muted-foreground uppercase">{u.email}</div></div></div></CardContent></Card>
                  </Link>
                ))}
             </div>
@@ -650,36 +492,10 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
   return (
     <Card className="bg-card border-border/50 overflow-hidden relative group">
       <CardContent className="p-3 md:p-6">
-        <div className="flex items-center justify-between mb-3 md:mb-4">
-          <div className={cn("size-8 md:size-10 rounded-lg md:rounded-xl bg-secondary flex items-center justify-center", color)}>
-            <Icon className="size-4 md:size-5" />
-          </div>
-          <Badge variant="outline" className={cn(
-            "text-[8px] md:text-[10px] border-none font-bold px-1.5 md:px-2.5",
-            trend === "Live" || trend === "Online" || trend === "Stable" || trend === "+New" ? "text-green-400" : "text-red-400"
-          )}>{trend}</Badge>
-        </div>
-        <div className="space-y-0.5 md:space-y-1">
-          <div className="text-lg md:text-2xl font-bold font-headline">{value}</div>
-          <div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-tight">{title}</div>
-        </div>
+        <div className="flex items-center justify-between mb-3 md:mb-4"><div className={cn("size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center", color)}><Icon className="size-4 md:size-5" /></div><Badge variant="outline" className="text-[8px] md:text-[10px] border-none font-bold text-green-400">{trend}</Badge></div>
+        <div className="space-y-0.5 md:space-y-1"><div className="text-lg md:text-2xl font-bold font-headline">{value}</div><div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{title}</div></div>
       </CardContent>
     </Card>
-  );
-}
-
-function IntegrityItem({ name, status, message }: { name: string, status: 'online' | 'warning' | 'offline', message?: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className={cn(
-        "size-2 mt-1.5 rounded-full shrink-0",
-        status === 'online' ? "bg-green-500 animate-pulse" : status === 'warning' ? "bg-yellow-500" : "bg-red-500"
-      )} />
-      <div className="space-y-0.5">
-        <div className="text-sm font-bold">{name}</div>
-        {message && <div className="text-[10px] text-yellow-500 uppercase font-bold tracking-wider">{message}</div>}
-      </div>
-    </div>
   );
 }
 
@@ -688,33 +504,10 @@ function AgentCard({ location, dc, load, status }: { location: string, dc: strin
     <Card className="bg-card border-border/50 group hover:border-primary/50 transition-colors">
       <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-              <Globe className="size-4 md:size-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <div className="font-bold font-headline text-xs md:text-base truncate">{location}</div>
-              <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{dc}</div>
-            </div>
-          </div>
-          <Badge className={cn(
-            "uppercase text-[8px] md:text-[10px] font-bold tracking-widest h-5 px-1.5 md:px-2.5 w-fit",
-            status === 'online' ? "bg-green-500/10 text-green-500 border-green-500/20" : status === 'warning' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-          )} variant="outline">{status}</Badge>
+          <div className="flex items-center gap-2 md:gap-3"><div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"><Globe className="size-4 md:size-5 text-primary" /></div><div className="min-w-0"><div className="font-bold font-headline text-xs md:text-base truncate">{location}</div><div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{dc}</div></div></div>
+          <Badge className={cn("uppercase text-[8px] md:text-[10px] font-bold tracking-widest h-5 px-1.5", status === 'online' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")} variant="outline">{status}</Badge>
         </div>
-
-        <div className="space-y-1.5 md:space-y-2">
-          <div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
-            <span className="text-muted-foreground">Load</span>
-            <span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span>
-          </div>
-          <div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-            <div 
-              className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} 
-              style={{ width: `${load}%` }} 
-            />
-          </div>
-        </div>
+        <div className="space-y-1.5 md:space-y-2"><div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest"><span className="text-muted-foreground">Load</span><span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span></div><div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden"><div className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} style={{ width: `${load}%` }} /></div></div>
       </CardContent>
     </Card>
   );
