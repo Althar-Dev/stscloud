@@ -70,7 +70,7 @@ const defaultPricingTiers = [
   { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false },
 ];
 
-const defaultLandingAgents = [
+const defaultGlobalAgents = [
   { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", latency: "< 5ms", status: "active", color: "text-primary" },
   { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", latency: "< 15ms", status: "active", color: "text-blue-400" },
   { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", latency: "< 20ms", status: "active", color: "text-red-400" },
