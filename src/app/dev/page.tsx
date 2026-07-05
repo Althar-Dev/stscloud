@@ -372,6 +372,8 @@ export default function DevConsole() {
         <Tabs defaultValue="overview" className="space-y-8">
           <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto w-full sm:w-fit overflow-x-auto justify-start flex border border-border/50">
             <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Activity className="size-4" /> Overview</TabsTrigger>
+            <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Users className="size-4" /> Users</TabsTrigger>
+            <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><CreditCard className="size-4" /> Billing</TabsTrigger>
             <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Tag className="size-4" /> Pricing</TabsTrigger>
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
           </TabsList>
@@ -383,6 +385,111 @@ export default function DevConsole() {
               <StatCard title="Active Agents" value={agentsList.filter(a => a.status === 'online').length} trend="Online" icon={Activity} color="text-primary" />
               <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
             </div>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader>
+                <CardTitle className="font-headline">User Directory</CardTitle>
+                <CardDescription>Manage application users and roles.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usersList.map((u) => (
+                      <TableRow key={u.id} className="hover:bg-secondary/10">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-8">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                                {(u.displayName || u.email || "?").charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-bold text-xs">{u.displayName || "Standard User"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("text-[8px] uppercase px-1.5", u.dev ? "border-primary text-primary bg-primary/5" : "text-muted-foreground")}>
+                            {u.dev ? "DEVELOPER" : "USER"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/dev/users/${u.id}`}>
+                            <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
+                              Detail <ChevronRight className="size-3" />
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader>
+                <CardTitle className="font-headline">Transaction History</CardTitle>
+                <CardDescription>Monitor platform revenue and payments.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((tx) => (
+                      <TableRow key={tx.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-code text-[10px] text-primary">{tx.externalId || tx.id}</TableCell>
+                        <TableCell className="text-xs">{tx.userEmail || "Anonymous"}</TableCell>
+                        <TableCell className="text-xs font-bold">IDR {tx.amount?.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs uppercase font-bold text-muted-foreground">{tx.plan || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "text-[8px] font-bold uppercase",
+                            tx.status === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                            tx.status === "pending" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                            "bg-red-500/10 text-red-500 border-red-500/20"
+                          )}>
+                            {tx.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : "N/A"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {transactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-20 opacity-50 text-sm">No transactions found.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
