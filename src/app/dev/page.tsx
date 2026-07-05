@@ -26,7 +26,9 @@ import {
   Layout,
   Trash2,
   PlusCircle,
-  X
+  X,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,7 +57,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -107,6 +108,9 @@ export default function DevConsole() {
 
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
+
+  // Real-time probing for management table
+  const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
@@ -174,6 +178,50 @@ export default function DevConsole() {
       unsubLandingAgents();
     };
   }, [profile, db]);
+
+  // Probing effect for management table
+  React.useEffect(() => {
+    if (landingAgents.length === 0) return;
+
+    const checkAgent = async (agent: any) => {
+      const url = agent.url;
+      if (!url) return;
+
+      setAgentLiveInfo(prev => ({ 
+        ...prev, 
+        [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
+      }));
+
+      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+      if (isLocal) {
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Local)", isChecking: false } 
+        }));
+        return;
+      }
+
+      const start = performance.now();
+      try {
+        const targetUrl = url.startsWith("http") ? url : `https://${url}`;
+        await fetch(targetUrl, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+        const end = performance.now();
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } 
+        }));
+      } catch (e) {
+        setAgentLiveInfo(prev => ({ 
+          ...prev, 
+          [agent.id]: { status: "DOWN", latency: "TIMEOUT", isChecking: false } 
+        }));
+      }
+    };
+
+    landingAgents.forEach(checkAgent);
+    const interval = setInterval(() => landingAgents.forEach(checkAgent), 15000);
+    return () => clearInterval(interval);
+  }, [landingAgents]);
 
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
     const updated = pricingData.map(t => t.id === tierId ? { ...t, [field]: value } : t);
@@ -380,18 +428,40 @@ export default function DevConsole() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url</TableHead><TableHead>Latency</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url</TableHead><TableHead>Latency (Live)</TableHead><TableHead>Status (Live)</TableHead><TableHead></TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {landingAgents.map((agent) => (
-                      <TableRow key={agent.id} className="hover:bg-secondary/10">
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'url', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.latency} onChange={(e) => handleUpdateLandingAgent(agent.id, 'latency', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.status} onChange={(e) => handleUpdateLandingAgent(agent.id, 'status', e.target.value)} /></TableCell>
-                        <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}><Trash2 className="size-4" /></Button></TableCell>
-                      </TableRow>
-                    ))}
+                    {landingAgents.map((agent) => {
+                      const live = agentLiveInfo[agent.id];
+                      const isChecking = live?.isChecking || !live;
+                      const isActive = live?.status === "ACTIVE";
+
+                      return (
+                        <TableRow key={agent.id} className="hover:bg-secondary/10">
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'url', e.target.value)} /></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-2">
+                              {isChecking ? (
+                                <Loader2 className="size-3 animate-spin opacity-50" />
+                              ) : (
+                                <span className={cn(isActive ? "text-primary" : "text-destructive")}>{live.latency}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn(
+                              "text-[8px] uppercase font-bold tracking-widest px-2 h-5",
+                              isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
+                              isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                            )}>
+                              {isChecking ? "PROBING" : live.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}><Trash2 className="size-4" /></Button></TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
