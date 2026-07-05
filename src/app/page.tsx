@@ -96,6 +96,8 @@ export default function LandingPage() {
           setPricingTiers(data.tiers);
         }
       }
+    }, (error) => {
+      console.warn("Pricing Listener fallback to static:", error.message);
     });
 
     return () => unsub();

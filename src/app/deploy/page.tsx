@@ -125,6 +125,8 @@ export default function DeployPage() {
           }
         }
       }
+    }, (error) => {
+      console.warn("Deploy Pricing Listener fallback:", error.message);
     });
 
     return () => {
