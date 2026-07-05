@@ -83,9 +83,9 @@ const defaultPricingTiers = [
 ];
 
 const defaultGlobalAgents = [
-  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", latency: "< 5ms", status: "active", color: "text-primary" },
-  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", latency: "< 15ms", status: "active", color: "text-blue-400" },
-  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", latency: "< 20ms", status: "active", color: "text-red-400" },
+  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "node-id-1.stscloud.id", latency: "< 5ms", status: "active", color: "text-primary" },
+  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", url: "node-sg-1.stscloud.id", latency: "< 15ms", status: "active", color: "text-blue-400" },
+  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "node-my-1.stscloud.id", latency: "< 20ms", status: "active", color: "text-red-400" },
 ];
 
 export default function DevConsole() {
@@ -264,6 +264,7 @@ export default function DevConsole() {
       id: `ag-${Math.random().toString(36).substring(2, 7)}`,
       name: "New Region",
       location: "City, Country",
+      url: "node.domain.com",
       latency: "< 50ms",
       status: "active",
       color: "text-primary"
@@ -469,14 +470,14 @@ export default function DevConsole() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead>Region Name</TableHead><TableHead>Location Details</TableHead><TableHead>Latency</TableHead><TableHead>Tailwind Color</TableHead><TableHead>Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url</TableHead><TableHead>Latency</TableHead><TableHead>Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
                   <TableBody>
                     {landingAgents.map((agent) => (
                       <TableRow key={agent.id} className="border-border/30 hover:bg-secondary/10">
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'url', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.latency} onChange={(e) => handleUpdateLandingAgent(agent.id, 'latency', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-code" value={agent.color} onChange={(e) => handleUpdateLandingAgent(agent.id, 'color', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.status} onChange={(e) => handleUpdateLandingAgent(agent.id, 'status', e.target.value)} /></TableCell>
                         <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}><Trash2 className="size-4" /></Button></TableCell>
                       </TableRow>
