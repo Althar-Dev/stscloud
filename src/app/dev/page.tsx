@@ -29,7 +29,8 @@ import {
   X,
   Wifi,
   WifiOff,
-  AlertTriangle
+  AlertTriangle,
+  Bot
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,11 @@ const defaultGlobalAgents = [
   { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "127.0.0.1", latency: "< 20ms", status: "active", color: "text-red-400" },
 ];
 
+const defaultTemplates = [
+  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400" },
+  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400" },
+];
+
 export default function DevConsole() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
@@ -107,13 +113,16 @@ export default function DevConsole() {
   // Tables State
   const [pricingData, setPricingData] = React.useState<any[]>([]);
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
+  const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   
   // Dirty flags to prevent onSnapshot from overwriting unsaved local edits
   const [isPricingDirty, setIsPricingDirty] = React.useState(false);
   const [isLandingDirty, setIsLandingDirty] = React.useState(false);
+  const [isTemplatesDirty, setIsTemplatesDirty] = React.useState(false);
   
   const [isUpdatingPricing, setIsUpdatingPricing] = React.useState(false);
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
+  const [isUpdatingTemplates, setIsUpdatingTemplates] = React.useState(false);
 
   // Probing state for URLs
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
@@ -186,14 +195,27 @@ export default function DevConsole() {
       }
     });
 
+    // Listen for template changes
+    const unsubTemplates = onSnapshot(doc(db, "main", "templates"), (docSnap) => {
+      if (!isTemplatesDirty) {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.list) setTemplatesData(data.list);
+        } else {
+          setTemplatesData(defaultTemplates);
+        }
+      }
+    });
+
     return () => {
       unsubUsers();
       unsubAgents();
       unsubTransactions();
       unsubPricing();
       unsubLandingAgents();
+      unsubTemplates();
     };
-  }, [profile, db, isPricingDirty, isLandingDirty]);
+  }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty]);
 
   // Real-time URL Probing Logic
   React.useEffect(() => {
@@ -312,6 +334,41 @@ export default function DevConsole() {
       })
       .catch((err) => toast({ variant: "destructive", title: "Save Error", description: err.message }))
       .finally(() => setIsUpdatingLanding(false));
+  };
+
+  // --- Templates Management ---
+  const handleUpdateTemplate = (id: string, field: string, value: any) => {
+    setIsTemplatesDirty(true);
+    setTemplatesData(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const handleAddTemplateRow = () => {
+    setIsTemplatesDirty(true);
+    const newTemplate = {
+      id: `tmpl-${Math.random().toString(36).substring(2, 7)}`,
+      name: "New Template",
+      group: "Cloud",
+      icon: "Layout",
+      color: "text-primary"
+    };
+    setTemplatesData(prev => [...prev, newTemplate]);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    setIsTemplatesDirty(true);
+    setTemplatesData(prev => prev.filter(t => t.id !== id));
+    toast({ title: "Template removed locally", description: "Click Save to confirm." });
+  };
+
+  const saveTemplatesToDB = async () => {
+    setIsUpdatingTemplates(true);
+    setDoc(doc(db, "main", "templates"), { list: templatesData, updatedAt: serverTimestamp() })
+      .then(() => {
+        setIsTemplatesDirty(false);
+        toast({ title: "Templates Saved", description: "Deployment categories updated." });
+      })
+      .catch((err) => toast({ variant: "destructive", title: "Save Error", description: err.message }))
+      .finally(() => setIsUpdatingTemplates(false));
   };
 
   // --- Infrastructure Agents (Real Nodes) ---
@@ -439,6 +496,7 @@ export default function DevConsole() {
             <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Users className="size-4" /> Users</TabsTrigger>
             <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><CreditCard className="size-4" /> Billing</TabsTrigger>
             <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Tag className="size-4" /> Pricing</TabsTrigger>
+            <TabsTrigger value="templates" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Layout className="size-4" /> Templates</TabsTrigger>
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
           </TabsList>
 
@@ -607,6 +665,56 @@ export default function DevConsole() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="templates" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
+                <div>
+                  <CardTitle className="font-headline">Deployment Templates</CardTitle>
+                  <CardDescription>Manage available categories for server creation. {isTemplatesDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTemplateRow}>
+                    <PlusCircle className="size-4" /> Add Template
+                  </Button>
+                  <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={saveTemplatesToDB} disabled={isUpdatingTemplates}>
+                    {isUpdatingTemplates ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Template Name</TableHead>
+                      <TableHead>Group</TableHead>
+                      <TableHead>Icon (Lucide)</TableHead>
+                      <TableHead>Color Class</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {templatesData.map((tmpl) => (
+                      <TableRow key={tmpl.id} className="hover:bg-secondary/10">
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tmpl.name} onChange={(e) => handleUpdateTemplate(tmpl.id, 'name', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs" value={tmpl.group} onChange={(e) => handleUpdateTemplate(tmpl.id, 'group', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.icon} onChange={(e) => handleUpdateTemplate(tmpl.id, 'icon', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.color} onChange={(e) => handleUpdateTemplate(tmpl.id, 'color', e.target.value)} /></TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTemplate(tmpl.id)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {templatesData.length === 0 && (
+                       <TableRow><TableCell colSpan={5} className="text-center py-10 opacity-50 text-xs">No templates defined.</TableCell></TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
