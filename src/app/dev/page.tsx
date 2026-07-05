@@ -23,7 +23,10 @@ import {
   RefreshCw,
   Database,
   HardDrive,
-  Layout
+  Layout,
+  Trash2,
+  PlusCircle,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,19 +50,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 const defaultPricingTiers = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000, popular: false },
@@ -172,9 +184,14 @@ export default function DevConsole() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.tiers) setPricingData(data.tiers);
+        } else {
+          setPricingData(defaultPricingTiers);
         }
       }, 
-      (err) => console.warn("Pricing listener error:", err)
+      (err) => {
+        console.warn("Pricing listener error:", err);
+        setPricingData(defaultPricingTiers);
+      }
     );
 
     // Landing Agents Listener
@@ -184,9 +201,14 @@ export default function DevConsole() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.list) setLandingAgents(data.list);
+        } else {
+          setLandingAgents(defaultGlobalAgents);
         }
       },
-      (err) => console.warn("Landing agents listener error:", err)
+      (err) => {
+        console.warn("Landing agents listener error:", err);
+        setLandingAgents(defaultGlobalAgents);
+      }
     );
 
     return () => {
@@ -199,63 +221,70 @@ export default function DevConsole() {
   }, [profile, db]);
 
   // Pricing Functions
-  const handleInitializePricing = async () => {
-    setIsUpdatingPricing(true);
-    const docRef = doc(db, "main", "product");
-    setDoc(docRef, { tiers: defaultPricingTiers, updatedAt: serverTimestamp() })
-      .then(() => {
-        setPricingData(defaultPricingTiers);
-        toast({ title: "Pricing Initialized", description: "Default product tiers written." });
-      })
-      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
-      .finally(() => setIsUpdatingPricing(false));
+  const handleUpdateTier = (tierId: string, field: string, value: any) => {
+    const updated = pricingData.map(t => t.id === tierId ? { ...t, [field]: value } : t);
+    setPricingData(updated);
   };
 
-  const handleUpdateTier = (tierId: string, field: string, value: any) => {
-    const base = pricingData.length > 0 ? pricingData : defaultPricingTiers;
-    const updated = base.map(t => t.id === tierId ? { ...t, [field]: value } : t);
-    setPricingData(updated);
+  const handleAddTierRow = () => {
+    const newTier = {
+      id: `p-${Math.random().toString(36).substring(2, 7)}`,
+      name: "New Tier",
+      ram: "1GB",
+      cpu: "100%",
+      disk: "1GB",
+      price: "IDR 0",
+      priceValue: 0,
+      popular: false
+    };
+    setPricingData([...pricingData, newTier]);
+  };
+
+  const handleDeleteTier = (id: string) => {
+    setPricingData(pricingData.filter(t => t.id !== id));
   };
 
   const savePricingToDB = async () => {
     setIsUpdatingPricing(true);
     const docRef = doc(db, "main", "product");
-    const dataToSave = pricingData.length > 0 ? pricingData : defaultPricingTiers;
-    setDoc(docRef, { tiers: dataToSave, updatedAt: serverTimestamp() })
+    setDoc(docRef, { tiers: pricingData, updatedAt: serverTimestamp() })
       .then(() => toast({ title: "Pricing Saved", description: "Changes synchronized." }))
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsUpdatingPricing(false));
   };
 
-  // Landing Agents Functions
-  const handleInitializeLandingAgents = async () => {
-    setIsUpdatingLanding(true);
-    const docRef = doc(db, "main", "agents");
-    setDoc(docRef, { list: defaultGlobalAgents, updatedAt: serverTimestamp() })
-      .then(() => {
-        setLandingAgents(defaultGlobalAgents);
-        toast({ title: "Landing Agents Initialized", description: "Default region list written." });
-      })
-      .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
-      .finally(() => setIsUpdatingLanding(false));
+  // Landing Agents (Map) Functions
+  const handleUpdateLandingAgent = (id: string, field: string, value: any) => {
+    const updated = landingAgents.map(a => a.id === id ? { ...a, [field]: value } : a);
+    setLandingAgents(updated);
   };
 
-  const handleUpdateLandingAgent = (id: string, field: string, value: any) => {
-    const base = landingAgents.length > 0 ? landingAgents : defaultGlobalAgents;
-    const updated = base.map(a => a.id === id ? { ...a, [field]: value } : a);
-    setLandingAgents(updated);
+  const handleAddLandingAgentRow = () => {
+    const newAgent = {
+      id: `ag-${Math.random().toString(36).substring(2, 7)}`,
+      name: "New Region",
+      location: "City, Country",
+      latency: "< 50ms",
+      status: "active",
+      color: "text-primary"
+    };
+    setLandingAgents([...landingAgents, newAgent]);
+  };
+
+  const handleDeleteLandingAgent = (id: string) => {
+    setLandingAgents(landingAgents.filter(a => a.id !== id));
   };
 
   const saveLandingAgentsToDB = async () => {
     setIsUpdatingLanding(true);
     const docRef = doc(db, "main", "agents");
-    const dataToSave = landingAgents.length > 0 ? landingAgents : defaultGlobalAgents;
-    setDoc(docRef, { list: dataToSave, updatedAt: serverTimestamp() })
+    setDoc(docRef, { list: landingAgents, updatedAt: serverTimestamp() })
       .then(() => toast({ title: "Landing Agents Saved", description: "Public infrastructure list updated." }))
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsUpdatingLanding(false));
   };
 
+  // Infrastructure Functions (Actual Nodes)
   const handleAddAgent = async () => {
     if (!regionName || !agentUrl) return;
     setIsAddingAgent(true);
@@ -270,6 +299,16 @@ export default function DevConsole() {
       })
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsAddingAgent(false));
+  };
+
+  const handleDeleteInfraAgent = async (id: string) => {
+    const agentRef = doc(db, "infrastructure_agents", id);
+    try {
+      await deleteDoc(agentRef);
+      toast({ title: "Agent Removed", description: "Infrastructure node decommissioned." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    }
   };
 
   const handleSignOut = async () => {
@@ -291,9 +330,7 @@ export default function DevConsole() {
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-[#0c0c0f]/80 backdrop-blur-md z-40">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="object-cover" />
-            </div>
+            <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} className="object-contain" />
             <span className="font-headline font-bold text-lg tracking-tight">
               <span className="text-primary">Dev</span>Console
             </span>
@@ -341,7 +378,7 @@ export default function DevConsole() {
           <div className="flex items-center gap-2">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Agent</Button>
+                <Button className="bg-primary text-white gap-2 font-bold"><Plus className="size-4" /> Register Node</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-lg bg-card border-border/50 rounded-lg">
                 <DialogHeader>
@@ -385,28 +422,32 @@ export default function DevConsole() {
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
             <Card className="bg-card border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
                 <div><CardTitle className="font-headline">Product Tiers Management</CardTitle><CardDescription>Configure global resources and pricing for all server plans.</CardDescription></div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializePricing} disabled={isUpdatingPricing}><RefreshCw className={cn("size-4", isUpdatingPricing && "animate-spin")} /> Initialize Default</Button>
-                  <Button className="bg-primary text-white gap-2 font-bold" onClick={savePricingToDB} disabled={isUpdatingPricing}><Save className="size-4" /> Save Changes</Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}><PlusCircle className="size-4" /> Add Row</Button>
+                  <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={savePricingToDB} disabled={isUpdatingPricing}><Save className="size-4" /> Save Changes</Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead className="w-[100px]">Tier</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead className="w-[120px]">Tier</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {(pricingData.length > 0 ? pricingData : defaultPricingTiers).map((tier) => (
+                    {pricingData.map((tier) => (
                       <TableRow key={tier.id} className="border-border/30 hover:bg-secondary/10">
-                        <TableCell className="font-bold">{tier.name}</TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={tier.price} onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)} /></TableCell>
-                        <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-32" value={tier.priceValue} onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
-                        <TableCell><Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] uppercase font-bold", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>{tier.popular ? 'Recommended' : 'Standard'}</Button></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tier.name} onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.price} onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)} /></TableCell>
+                        <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.priceValue} onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
+                        <TableCell><Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] uppercase font-bold", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>{tier.popular ? 'Popular' : 'Standard'}</Button></TableCell>
+                        <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}><Trash2 className="size-4" /></Button></TableCell>
                       </TableRow>
                     ))}
+                    {pricingData.length === 0 && (
+                      <TableRow><TableCell colSpan={8} className="text-center py-12 opacity-50">No pricing tiers defined. Add a row to get started.</TableCell></TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -414,31 +455,35 @@ export default function DevConsole() {
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-12 animate-in slide-in-from-bottom-4 duration-500">
-            {/* Public Map Config - Formerly Landing Config */}
+            {/* Public Map Config */}
             <Card className="bg-card border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
                 <div>
                   <CardTitle className="font-headline">Public Map Configuration</CardTitle>
                   <CardDescription>Manage the region cards displayed on the Landing Page world map.</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializeLandingAgents} disabled={isUpdatingLanding}><RefreshCw className={cn("size-4", isUpdatingLanding && "animate-spin")} /> Initialize Default</Button>
-                  <Button className="bg-primary text-white gap-2 font-bold" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddLandingAgentRow}><PlusCircle className="size-4" /> Add Region</Button>
+                  <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead>Region</TableHead><TableHead>Location Details</TableHead><TableHead>Latency</TableHead><TableHead>Color (Tailwind)</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent border-border/50"><TableHead>Region Name</TableHead><TableHead>Location Details</TableHead><TableHead>Latency</TableHead><TableHead>Tailwind Color</TableHead><TableHead>Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {(landingAgents.length > 0 ? landingAgents : defaultGlobalAgents).map((agent) => (
+                    {landingAgents.map((agent) => (
                       <TableRow key={agent.id} className="border-border/30 hover:bg-secondary/10">
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={agent.latency} onChange={(e) => handleUpdateLandingAgent(agent.id, 'latency', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32" value={agent.color} onChange={(e) => handleUpdateLandingAgent(agent.id, 'color', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-24" value={agent.status} onChange={(e) => handleUpdateLandingAgent(agent.id, 'status', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.latency} onChange={(e) => handleUpdateLandingAgent(agent.id, 'latency', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-code" value={agent.color} onChange={(e) => handleUpdateLandingAgent(agent.id, 'color', e.target.value)} /></TableCell>
+                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={agent.status} onChange={(e) => handleUpdateLandingAgent(agent.id, 'status', e.target.value)} /></TableCell>
+                        <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}><Trash2 className="size-4" /></Button></TableCell>
                       </TableRow>
                     ))}
+                    {landingAgents.length === 0 && (
+                      <TableRow><TableCell colSpan={6} className="text-center py-12 opacity-50">No regions configured. Add a region to display it on the Landing Page.</TableCell></TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -454,9 +499,24 @@ export default function DevConsole() {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {agentsList.map((agent) => (
-                  <AgentCard key={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} />
+                  <AgentCard 
+                    key={agent.id} 
+                    id={agent.id}
+                    location={agent.regionName} 
+                    dc={agent.agentUrl} 
+                    load={agent.load || 0} 
+                    status={agent.status} 
+                    onDelete={() => handleDeleteInfraAgent(agent.id)}
+                  />
                 ))}
               </div>
+              {agentsList.length === 0 && (
+                <div className="py-20 text-center border border-dashed border-border/50 rounded-2xl opacity-50">
+                  <Globe className="size-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="font-bold">No active nodes registered.</p>
+                  <p className="text-xs">Register a new node to begin monitoring.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
           
@@ -509,15 +569,53 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
   );
 }
 
-function AgentCard({ location, dc, load, status }: { location: string, dc: string, load: number, status: 'online' | 'warning' | 'offline' }) {
+function AgentCard({ id, location, dc, load, status, onDelete }: { id: string, location: string, dc: string, load: number, status: 'online' | 'warning' | 'offline', onDelete: () => void }) {
   return (
-    <Card className="bg-card border-border/50 group hover:border-primary/50 transition-colors">
+    <Card className="bg-card border-border/50 group relative hover:border-primary/50 transition-colors overflow-hidden">
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive">
+              <X className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Decommission Node?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the node <strong>{location}</strong> from the production cluster. This action is permanent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete} className="bg-destructive text-white">Delete Node</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+      
       <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-3"><div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"><Globe className="size-4 md:size-5 text-primary" /></div><div className="min-w-0"><div className="font-bold font-headline text-xs md:text-base truncate">{location}</div><div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{dc}</div></div></div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+              <Globe className="size-4 md:size-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold font-headline text-xs md:text-base truncate">{location}</div>
+              <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{dc}</div>
+            </div>
+          </div>
           <Badge className={cn("uppercase text-[8px] md:text-[10px] font-bold tracking-widest h-5 px-1.5", status === 'online' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")} variant="outline">{status}</Badge>
         </div>
-        <div className="space-y-1.5 md:space-y-2"><div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest"><span className="text-muted-foreground">Load</span><span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span></div><div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden"><div className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} style={{ width: `${load}%` }} /></div></div>
+        <div className="space-y-1.5 md:space-y-2">
+          <div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
+            <span className="text-muted-foreground">Load</span>
+            <span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span>
+          </div>
+          <div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+            <div className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} style={{ width: `${load}%` }} />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
