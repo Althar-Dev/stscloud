@@ -17,7 +17,12 @@ import {
   Search,
   ChevronRight,
   Plus,
-  Loader2
+  Loader2,
+  Tag,
+  Save,
+  RefreshCw,
+  Database,
+  HardDrive
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,13 +52,22 @@ import { Label } from "@/components/ui/label";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+
+const defaultPricingTiers = [
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000, popular: false },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000, popular: false },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000, popular: true },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", priceValue: 30000, popular: false },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", priceValue: 35000, popular: false },
+  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false },
+];
 
 export default function DevConsole() {
   const router = useRouter();
@@ -69,6 +83,10 @@ export default function DevConsole() {
   const [agentsList, setAgentsList] = React.useState<any[]>([]);
   const [transactions, setTransactions] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+
+  // Pricing State
+  const [pricingData, setPricingData] = React.useState<any[]>([]);
+  const [isUpdatingPricing, setIsUpdatingPricing] = React.useState(false);
 
   // Agent Registration State
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
@@ -157,12 +175,61 @@ export default function DevConsole() {
       }
     );
 
+    // Pricing Listener
+    const pricingDocRef = doc(db, "main", "product");
+    const unsubPricing = onSnapshot(pricingDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers) setPricingData(data.tiers);
+      }
+    });
+
     return () => {
       unsubUsers();
       unsubAgents();
       unsubTransactions();
+      unsubPricing();
     };
   }, [profile, db]);
+
+  const handleInitializePricing = async () => {
+    setIsUpdatingPricing(true);
+    const docRef = doc(db, "main", "product");
+    setDoc(docRef, { tiers: defaultPricingTiers, updatedAt: serverTimestamp() })
+      .then(() => {
+        toast({ title: "Pricing Initialized", description: "Default product tiers have been written to database." });
+      })
+      .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'create',
+          requestResourceData: { tiers: defaultPricingTiers }
+        }));
+      })
+      .finally(() => setIsUpdatingPricing(false));
+  };
+
+  const handleUpdateTier = async (tierId: string, field: string, value: any) => {
+    const updatedTiers = pricingData.map(t => t.id === tierId ? { ...t, [field]: value } : t);
+    setPricingData(updatedTiers);
+  };
+
+  const savePricingToDB = async () => {
+    setIsUpdatingPricing(true);
+    const docRef = doc(db, "main", "product");
+    setDoc(docRef, { tiers: pricingData, updatedAt: serverTimestamp() })
+      .then(() => {
+        toast({ title: "Pricing Saved", description: "All changes have been synchronized to production." });
+      })
+      .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'write',
+          requestResourceData: { tiers: pricingData }
+        }));
+      })
+      .finally(() => setIsUpdatingPricing(false));
+  };
 
   const handleAddAgent = async () => {
     if (!regionName || !agentUrl) {
@@ -331,6 +398,9 @@ export default function DevConsole() {
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
               <Globe className="size-4" /> Agents
             </TabsTrigger>
+            <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
+              <Tag className="size-4" /> Pricing
+            </TabsTrigger>
             <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
               <CreditCard className="size-4" /> Billing
             </TabsTrigger>
@@ -392,6 +462,98 @@ export default function DevConsole() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
+                <div>
+                  <CardTitle className="font-headline">Product Tiers Management</CardTitle>
+                  <CardDescription>Configure global resources and pricing for all server plans.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializePricing} disabled={isUpdatingPricing}>
+                    <RefreshCw className={cn("size-4", isUpdatingPricing && "animate-spin")} /> Initialize Default
+                  </Button>
+                  <Button className="bg-primary text-white gap-2 font-bold" onClick={savePricingToDB} disabled={isUpdatingPricing}>
+                    <Save className="size-4" /> Save Changes
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-border/50">
+                      <TableHead className="w-[100px]">Tier Name</TableHead>
+                      <TableHead>Price Display</TableHead>
+                      <TableHead>Value (IDR)</TableHead>
+                      <TableHead>RAM</TableHead>
+                      <TableHead>CPU</TableHead>
+                      <TableHead>Disk</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(pricingData.length > 0 ? pricingData : defaultPricingTiers).map((tier) => (
+                      <TableRow key={tier.id} className="border-border/30 hover:bg-secondary/10">
+                        <TableCell className="font-bold">{tier.name}</TableCell>
+                        <TableCell>
+                          <Input 
+                            className="bg-secondary/30 border-none h-9 text-xs w-32" 
+                            value={tier.price} 
+                            onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            type="number"
+                            className="bg-secondary/30 border-none h-9 text-xs w-32" 
+                            value={tier.priceValue} 
+                            onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value))}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
+                            value={tier.ram} 
+                            onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
+                            value={tier.cpu} 
+                            onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            className="bg-secondary/30 border-none h-9 text-xs w-24" 
+                            value={tier.disk} 
+                            onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn("h-7 px-2 text-[10px] uppercase font-bold", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")}
+                            onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}
+                          >
+                            {tier.popular ? 'Recommended' : 'Standard'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {pricingData.length === 0 && (
+                  <div className="p-12 text-center text-muted-foreground italic border-t border-border/50">
+                    Database empty. Click "Initialize Default" to populate pricing data.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="agents" className="animate-in slide-in-from-bottom-4 duration-500">
