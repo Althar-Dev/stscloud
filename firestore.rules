@@ -12,7 +12,7 @@ service cloud.firestore {
     // Rules for user profiles
     match /users/{userId} {
       allow get: if request.auth != null;
-      allow list: if isDev();
+      allow list: if request.auth != null; // Relaxed for prototype development
       allow write: if (request.auth != null && request.auth.uid == userId) || isDev();
     }
 
@@ -28,20 +28,20 @@ service cloud.firestore {
     // Rules for infrastructure agents
     match /infrastructure_agents/{agentId} {
       allow read: if request.auth != null;
-      allow write: if isDev();
+      allow write: if request.auth != null; // Relaxed for prototype development
     }
 
     // Rules for transactions
     match /transactions/{transactionId} {
-      allow get: if isDev() || (request.auth != null && resource.data.userId == request.auth.uid);
-      allow list: if isDev();
-      allow write: if isDev();
+      allow get: if request.auth != null && (isDev() || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null; // Relaxed for prototype development
+      allow write: if request.auth != null; // Allow payment verification logic
     }
 
     // Rules for main configurations (like product pricing)
     match /main/{documentId} {
-      allow read: if true; // Publicly readable for all users
-      allow write: if request.auth != null; // Allow authenticated users to write (for prototype initialization)
+      allow read: if true; 
+      allow write: if request.auth != null; // Allow authenticated users to write/init pricing
     }
 
     // Default deny

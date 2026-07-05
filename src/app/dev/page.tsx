@@ -116,10 +116,7 @@ export default function DevConsole() {
         }
       },
       async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `users/${user.uid}`,
-          operation: 'get'
-        }));
+        console.error("Profile Listener Error:", err);
       }
     );
     
@@ -131,51 +128,43 @@ export default function DevConsole() {
     if (!profile || profile.dev !== true) return;
     
     // Users Listener
-    const usersRef = collection(db, "users");
     const unsubUsers = onSnapshot(
-      query(usersRef, limit(100)), 
+      query(collection(db, "users"), limit(100)), 
       (snapshot) => {
         setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
-      async (err) => {
-        console.warn("Permission denied for users list");
-      }
+      (err) => console.warn("Users list permission denied")
     );
 
     // Agents Listener
-    const agentsRef = collection(db, "infrastructure_agents");
     const unsubAgents = onSnapshot(
-      agentsRef, 
+      collection(db, "infrastructure_agents"), 
       (snapshot) => {
         setAgentsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
-      async (err) => {
-        console.warn("Permission denied for agents list");
-      }
+      (err) => console.warn("Agents list permission denied")
     );
 
     // Transactions Listener
-    const txRef = collection(db, "transactions");
     const unsubTransactions = onSnapshot(
-      query(txRef, orderBy("createdAt", "desc"), limit(50)), 
+      query(collection(db, "transactions"), orderBy("createdAt", "desc"), limit(50)), 
       (snapshot) => {
         setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
-      async (err) => {
-        console.warn("Permission denied for transactions list");
-      }
+      (err) => console.warn("Transactions list permission denied")
     );
 
     // Pricing Listener
-    const pricingDocRef = doc(db, "main", "product");
-    const unsubPricing = onSnapshot(pricingDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.tiers) setPricingData(data.tiers);
-      }
-    }, (err) => {
-      console.warn("Pricing listener error:", err);
-    });
+    const unsubPricing = onSnapshot(
+      doc(db, "main", "product"), 
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.tiers) setPricingData(data.tiers);
+        }
+      }, 
+      (err) => console.warn("Pricing listener error:", err)
+    );
 
     return () => {
       unsubUsers();
@@ -190,6 +179,7 @@ export default function DevConsole() {
     const docRef = doc(db, "main", "product");
     setDoc(docRef, { tiers: defaultPricingTiers, updatedAt: serverTimestamp() })
       .then(() => {
+        setPricingData(defaultPricingTiers);
         toast({ title: "Pricing Initialized", description: "Default product tiers have been written to database." });
       })
       .catch((err) => {
@@ -198,15 +188,18 @@ export default function DevConsole() {
       .finally(() => setIsUpdatingPricing(false));
   };
 
-  const handleUpdateTier = async (tierId: string, field: string, value: any) => {
-    const updatedTiers = pricingData.map(t => t.id === tierId ? { ...t, [field]: value } : t);
+  const handleUpdateTier = (tierId: string, field: string, value: any) => {
+    // If pricingData is empty, use default as base
+    const base = pricingData.length > 0 ? pricingData : defaultPricingTiers;
+    const updatedTiers = base.map(t => t.id === tierId ? { ...t, [field]: value } : t);
     setPricingData(updatedTiers);
   };
 
   const savePricingToDB = async () => {
     setIsUpdatingPricing(true);
     const docRef = doc(db, "main", "product");
-    setDoc(docRef, { tiers: pricingData, updatedAt: serverTimestamp() })
+    const dataToSave = pricingData.length > 0 ? pricingData : defaultPricingTiers;
+    setDoc(docRef, { tiers: dataToSave, updatedAt: serverTimestamp() })
       .then(() => {
         toast({ title: "Pricing Saved", description: "All changes have been synchronized to production." });
       })
@@ -406,21 +399,20 @@ export default function DevConsole() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 min-h-[300px] font-code text-xs space-y-2 overflow-y-auto max-h-[400px] p-6 bg-black/40 rounded-xl m-4 border border-border/30 custom-scrollbar">
+                  {transactions.length === 0 && agentsList.length === 0 && (
+                    <div className="text-muted-foreground opacity-30 h-full flex items-center justify-center">No recent activity detected.</div>
+                  )}
                   {transactions.slice(0, 10).map((tx, i) => (
                     <div key={i} className="flex gap-4 border-b border-border/10 pb-2">
                       <span className="text-muted-foreground tabular-nums">[{tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleTimeString() : 'RECENT'}]</span>
-                      <span className={cn(
-                        "font-bold uppercase px-1.5 rounded bg-green-500/10 text-green-400"
-                      )}>Payment</span>
+                      <span className="font-bold uppercase px-1.5 rounded bg-green-500/10 text-green-400">Payment</span>
                       <span className="text-foreground">Verified for {tx.userEmail} ({tx.amount})</span>
                     </div>
                   ))}
                   {agentsList.map((agent, i) => (
                     <div key={`agent-${i}`} className="flex gap-4 border-b border-border/10 pb-2">
                       <span className="text-muted-foreground tabular-nums">[{agent.createdAt?.toDate ? agent.createdAt.toDate().toLocaleTimeString() : 'INIT'}]</span>
-                      <span className={cn(
-                        "font-bold uppercase px-1.5 rounded bg-blue-500/10 text-blue-400"
-                      )}>Agent</span>
+                      <span className="font-bold uppercase px-1.5 rounded bg-blue-500/10 text-blue-400">Agent</span>
                       <span className="text-foreground">Cluster registered in {agent.regionName}</span>
                     </div>
                   ))}
@@ -490,7 +482,7 @@ export default function DevConsole() {
                             type="number"
                             className="bg-secondary/30 border-none h-9 text-xs w-32" 
                             value={tier.priceValue} 
-                            onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value))}
+                            onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)}
                           />
                         </TableCell>
                         <TableCell>
