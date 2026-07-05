@@ -312,7 +312,7 @@ export default function DevConsole() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
                 <Avatar className="size-8">
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">{userInitial}</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline">{displayName}</span>
@@ -369,7 +369,6 @@ export default function DevConsole() {
           <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto w-full sm:w-fit overflow-x-auto justify-start flex border border-border/50">
             <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Activity className="size-4" /> Overview</TabsTrigger>
             <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Tag className="size-4" /> Pricing</TabsTrigger>
-            <TabsTrigger value="landing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Layout className="size-4" /> Landing Config</TabsTrigger>
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
             <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><CreditCard className="size-4" /> Billing</TabsTrigger>
             <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Users className="size-4" /> Users</TabsTrigger>
@@ -414,10 +413,14 @@ export default function DevConsole() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="landing" className="space-y-6 animate-in fade-in duration-500">
+          <TabsContent value="agents" className="space-y-12 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Public Map Config - Formerly Landing Config */}
             <Card className="bg-card border-border/50">
               <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6">
-                <div><CardTitle className="font-headline">Landing Infrastructure List</CardTitle><CardDescription>Manage the region cards displayed in the "Global Provisioning" section.</CardDescription></div>
+                <div>
+                  <CardTitle className="font-headline">Public Map Configuration</CardTitle>
+                  <CardDescription>Manage the region cards displayed on the Landing Page world map.</CardDescription>
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="gap-2" onClick={handleInitializeLandingAgents} disabled={isUpdatingLanding}><RefreshCw className={cn("size-4", isUpdatingLanding && "animate-spin")} /> Initialize Default</Button>
                   <Button className="bg-primary text-white gap-2 font-bold" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
@@ -440,13 +443,20 @@ export default function DevConsole() {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="agents" className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {agentsList.map((agent) => (
-                <AgentCard key={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} />
-              ))}
+            {/* Live Infrastructure Monitoring */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-1">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-headline font-bold">Live Cluster Nodes</h3>
+                  <p className="text-xs text-muted-foreground">Real-time status of production infrastructure units.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                {agentsList.map((agent) => (
+                  <AgentCard key={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} />
+                ))}
+              </div>
             </div>
           </TabsContent>
           
