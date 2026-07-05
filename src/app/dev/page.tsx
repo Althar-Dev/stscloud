@@ -28,7 +28,8 @@ import {
   PlusCircle,
   X,
   Wifi,
-  WifiOff
+  WifiOff,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogDescription,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -101,7 +103,6 @@ export default function DevConsole() {
   const [usersList, setUsersList] = React.useState<any[]>([]);
   const [agentsList, setAgentsList] = React.useState<any[]>([]);
   const [transactions, setTransactions] = React.useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = React.useState("");
 
   const [pricingData, setPricingData] = React.useState<any[]>([]);
   const [isUpdatingPricing, setIsUpdatingPricing] = React.useState(false);
@@ -109,7 +110,6 @@ export default function DevConsole() {
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
 
-  // Real-time probing for management table
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
@@ -179,7 +179,6 @@ export default function DevConsole() {
     };
   }, [profile, db]);
 
-  // Probing effect for management table
   React.useEffect(() => {
     if (landingAgents.length === 0) return;
 
@@ -224,8 +223,7 @@ export default function DevConsole() {
   }, [landingAgents]);
 
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
-    const updated = pricingData.map(t => t.id === tierId ? { ...t, [field]: value } : t);
-    setPricingData(updated);
+    setPricingData(prev => prev.map(t => t.id === tierId ? { ...t, [field]: value } : t));
   };
 
   const handleAddTierRow = () => {
@@ -239,11 +237,12 @@ export default function DevConsole() {
       priceValue: 0,
       popular: false
     };
-    setPricingData([...pricingData, newTier]);
+    setPricingData(prev => [...prev, newTier]);
   };
 
   const handleDeleteTier = (id: string) => {
-    setPricingData(pricingData.filter(t => t.id !== id));
+    setPricingData(prev => prev.filter(t => t.id !== id));
+    toast({ title: "Tier removed locally", description: "Changes will be permanent once you click Save Changes." });
   };
 
   const savePricingToDB = async () => {
@@ -255,8 +254,7 @@ export default function DevConsole() {
   };
 
   const handleUpdateLandingAgent = (id: string, field: string, value: any) => {
-    const updated = landingAgents.map(a => a.id === id ? { ...a, [field]: value } : a);
-    setLandingAgents(updated);
+    setLandingAgents(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
   };
 
   const handleAddLandingAgentRow = () => {
@@ -269,11 +267,12 @@ export default function DevConsole() {
       status: "active",
       color: "text-primary"
     };
-    setLandingAgents([...landingAgents, newAgent]);
+    setLandingAgents(prev => [...prev, newAgent]);
   };
 
   const handleDeleteLandingAgent = (id: string) => {
-    setLandingAgents(landingAgents.filter(a => a.id !== id));
+    setLandingAgents(prev => prev.filter(a => a.id !== id));
+    toast({ title: "Region removed locally", description: "Changes will be permanent once you click Save Changes." });
   };
 
   const saveLandingAgentsToDB = async () => {
@@ -397,7 +396,7 @@ export default function DevConsole() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Tier Name</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Tier Name</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Status</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
                   <TableBody>
                     {pricingData.map((tier) => (
                       <TableRow key={tier.id} className="hover:bg-secondary/10">
@@ -408,7 +407,16 @@ export default function DevConsole() {
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
                         <TableCell><Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>{tier.popular ? 'Popular' : 'Standard'}</Button></TableCell>
-                        <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}><Trash2 className="size-4" /></Button></TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-8 text-muted-foreground hover:text-destructive" 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteTier(tier.id); }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -423,12 +431,12 @@ export default function DevConsole() {
                 <div><CardTitle className="font-headline">Public Map Configuration</CardTitle><CardDescription>Real-time status tracking for agents on Landing Page.</CardDescription></div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddLandingAgentRow}><PlusCircle className="size-4" /> Add Region</Button>
-                  <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
+                  <Button className="bg-primary text-white font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}><Save className="size-4" /> Save Changes</Button>
                 </div>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url</TableHead><TableHead>Latency (Live)</TableHead><TableHead>Status (Live)</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url</TableHead><TableHead>Latency (Live)</TableHead><TableHead>Status (Live)</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
                   <TableBody>
                     {landingAgents.map((agent) => {
                       const live = agentLiveInfo[agent.id];
@@ -458,7 +466,16 @@ export default function DevConsole() {
                               {isChecking ? "PROBING" : live.status}
                             </Badge>
                           </TableCell>
-                          <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}><Trash2 className="size-4" /></Button></TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="size-8 text-muted-foreground hover:text-destructive" 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteLandingAgent(agent.id); }}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -471,7 +488,15 @@ export default function DevConsole() {
               <h3 className="text-xl font-headline font-bold">Live Cluster Nodes</h3>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {agentsList.map((agent) => (
-                  <AgentCard key={agent.id} id={agent.id} location={agent.regionName} dc={agent.agentUrl} load={agent.load || 0} status={agent.status} onDelete={() => handleDeleteInfraAgent(agent.id)} />
+                  <AgentCard 
+                    key={agent.id} 
+                    id={agent.id} 
+                    location={agent.regionName} 
+                    dc={agent.agentUrl} 
+                    load={agent.load || 0} 
+                    status={agent.status} 
+                    onDelete={() => handleDeleteInfraAgent(agent.id)} 
+                  />
                 ))}
               </div>
             </div>
@@ -496,7 +521,30 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
 function AgentCard({ id, location, dc, load, status, onDelete }: any) {
   return (
     <Card className="bg-card border-border/50 group relative hover:border-primary/50 transition-colors overflow-hidden">
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"><Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive" onClick={onDelete}><X className="size-4" /></Button></div>
+      <div className="absolute top-2 right-2 z-20">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+              <X className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="w-[95vw] max-w-md rounded-xl border-border/50">
+            <AlertDialogHeader>
+              <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive mb-2">
+                <AlertTriangle className="size-6" />
+              </div>
+              <AlertDialogTitle className="font-headline font-bold">Decommission Agent?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the infrastructure node <strong>{location}</strong> from the live cluster. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete} className="bg-destructive text-white rounded-lg">Yes, Remove Node</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
       <CardContent className="p-3 md:p-6 space-y-4">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"><Globe className="size-4 md:size-5 text-primary" /></div>
