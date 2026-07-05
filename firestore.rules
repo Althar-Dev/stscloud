@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -32,6 +33,12 @@ service cloud.firestore {
     // Rules for transactions
     match /transactions/{transactionId} {
       allow read: if isDev() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow write: if isDev();
+    }
+
+    // Rules for main configurations (like product pricing)
+    match /main/{documentId} {
+      allow read: if true; // Publicly readable for all users
       allow write: if isDev();
     }
 

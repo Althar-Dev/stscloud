@@ -68,6 +68,29 @@
         "externalId": { "type": "string" }
       },
       "required": ["userId", "amount", "status"]
+    },
+    "ProductPricing": {
+      "title": "Product Pricing",
+      "description": "Global pricing configuration for server tiers.",
+      "type": "object",
+      "properties": {
+        "tiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "ram": { "type": "string" },
+              "cpu": { "type": "string" },
+              "disk": { "type": "string" },
+              "price": { "type": "string" },
+              "priceValue": { "type": "number" },
+              "popular": { "type": "boolean" }
+            }
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -89,6 +112,10 @@
     "/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "Billing records for the platform."
+    },
+    "/main/{documentId}": {
+      "schema": "ProductPricing",
+      "description": "Core configuration documents for the application."
     }
   }
 }

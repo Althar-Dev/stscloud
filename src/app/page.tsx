@@ -35,8 +35,10 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import Lottie from "lottie-react";
+import { useFirestore } from "@/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
-const pricingTiers = [
+const defaultPricingTiers = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", popular: false },
   { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", popular: false },
   { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", popular: true },
@@ -65,8 +67,10 @@ const faqs = [
 ];
 
 export default function LandingPage() {
+  const db = useFirestore();
   const [planetJson, setPlanetJson] = React.useState<any>(null);
   const [worldJson, setWorldJson] = React.useState<any>(null);
+  const [pricingTiers, setPricingTiers] = React.useState<any[]>(defaultPricingTiers);
 
   React.useEffect(() => {
     const loadLottie = async (url: string, setter: (data: any) => void) => {
@@ -83,7 +87,19 @@ export default function LandingPage() {
     };
     loadLottie("/lottie/planet.json", setPlanetJson);
     loadLottie("/lottie/world.json", setWorldJson);
-  }, []);
+
+    // Fetch dynamic pricing from Firestore
+    const unsub = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers && Array.isArray(data.tiers)) {
+          setPricingTiers(data.tiers);
+        }
+      }
+    });
+
+    return () => unsub();
+  }, [db]);
 
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
@@ -120,12 +136,10 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
-        {/* Background Dot Pattern Decor - Restricted to Hero only */}
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
         
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]" />
         
-        {/* Mobile Lottie Background - 200% width, opacity 60% */}
         <div className="lg:hidden absolute inset-0 z-0 flex items-center justify-center opacity-60 pointer-events-none overflow-hidden">
           <div className="w-[200%] max-w-none transform scale-110">
             {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -159,7 +173,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Desktop Lottie Right Side */}
           <div className="hidden lg:flex flex-1 items-center justify-center max-w-lg z-10 animate-fade-in [animation-delay:400ms]">
             <div className="w-full">
               {planetJson && <Lottie animationData={planetJson} loop={true} />}
@@ -167,13 +180,12 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Animated Scroll Indicator */}
         <div className="relative pb-8 opacity-20 hidden md:block animate-bounce">
           <ChevronRight className="size-5 rotate-90 text-primary" />
         </div>
       </section>
 
-      {/* Trust & Stats Marquee - 20s speed with blur edges */}
+      {/* Trust & Stats Marquee */}
       <section className="py-12 border-b border-border/50 bg-secondary relative overflow-hidden">
         <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
@@ -228,7 +240,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* UI Showcase / Command Center Section */}
+      {/* Command Center */}
       <section className="py-24 relative overflow-hidden border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -301,7 +313,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Infrastructure Section */}
+      {/* Global Provisioning */}
       <section id="infrastructure" className="py-20 bg-background border-y border-border/50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-12">
           <div className="space-y-3">
@@ -391,7 +403,7 @@ export default function LandingPage() {
                     Recommended
                   </div>
                 )}
-                <CardHeader className="p-6 md:px-8 md:pt-8 md:pb-0 space-y-0">
+                <CardHeader className="p-6 md:px-8 md:pt-8 md:pb-0 space-y-0 relative">
                   <div className="flex items-start justify-between mb-4 md:mb-6">
                     <div className="flex items-center gap-4">
                       <div className={cn(
@@ -406,17 +418,18 @@ export default function LandingPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-baseline gap-1 pt-1 shrink-0">
+                    <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-baseline gap-1 shrink-0">
                       <span className="text-lg md:text-xl font-headline font-bold text-primary">{tier.price}</span>
                       <span className="text-muted-foreground text-[7px] uppercase font-bold tracking-widest">/mo</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 md:p-8 pt-0 flex-1">
-                  {/* Resource Specs: Full-width border-y container with #0A0A0A background */}
                   <div className="flex items-center justify-between py-6 border-y border-border/50 -mx-6 md:-mx-8 px-6 md:px-8 bg-[#0A0A0A]">
                     <div className="flex items-center gap-3">
-                      <Database className="size-5 text-primary shrink-0" />
+                      <div className="size-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <Database className="size-4 text-primary" />
+                      </div>
                       <div className="flex flex-col leading-none">
                         <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Ram</span>
                         <span className="text-[11px] font-bold">{tier.ram}</span>
@@ -424,7 +437,9 @@ export default function LandingPage() {
                     </div>
                     
                     <div className="flex items-center gap-3 border-x border-border/50 px-4 h-10">
-                      <Cpu className="size-5 text-primary shrink-0" />
+                      <div className="size-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <Cpu className="size-4 text-primary" />
+                      </div>
                       <div className="flex flex-col leading-none">
                         <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">CPU</span>
                         <span className="text-[11px] font-bold">{tier.cpu}</span>
@@ -432,7 +447,9 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <HardDrive className="size-5 text-primary shrink-0" />
+                      <div className="size-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <HardDrive className="size-4 text-primary" />
+                      </div>
                       <div className="flex flex-col leading-none">
                         <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Disk</span>
                         <span className="text-[11px] font-bold">{tier.disk}</span>
@@ -455,7 +472,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* FAQ */}
       <section id="faq" className="py-20 bg-secondary/20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
@@ -482,7 +499,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Ready to Scale CTA */}
+      {/* Ready to Scale */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-primary/5 -z-10" />
         <div className="max-w-5xl mx-auto px-4 text-center space-y-8">

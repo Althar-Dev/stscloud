@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,7 +56,7 @@ const templates = [
   { id: "bots", name: "Bots", group: "Cloud", icon: Bot, color: "text-indigo-400" },
 ];
 
-const resourcePresets = [
+const defaultResourcePresets = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000 },
   { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000 },
   { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000 },
@@ -89,6 +90,7 @@ export default function DeployPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const [profile, setProfile] = React.useState<any>(null);
+  const [resourcePresets, setResourcePresets] = React.useState<any[]>(defaultResourcePresets);
   
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
@@ -105,13 +107,31 @@ export default function DeployPage() {
 
   React.useEffect(() => {
     if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists()) {
-        setProfile(doc.data());
+    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setProfile(docSnap.data());
       }
     });
-    return () => unsub();
-  }, [user, db]);
+
+    // Fetch dynamic resource presets from Firestore
+    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers && Array.isArray(data.tiers)) {
+          setResourcePresets(data.tiers);
+          // If the selected preset doesn't exist in new data, default to first one
+          if (!data.tiers.find((t: any) => t.id === selectedPreset)) {
+            setSelectedPreset(data.tiers[0]?.id || "p1");
+          }
+        }
+      }
+    });
+
+    return () => {
+      unsubProfile();
+      unsubPricing();
+    };
+  }, [user, db, selectedPreset]);
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   const selectedPresetData = resourcePresets.find(p => p.id === selectedPreset);
