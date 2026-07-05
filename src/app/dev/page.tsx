@@ -138,10 +138,7 @@ export default function DevConsole() {
         setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
       async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: usersRef.path,
-          operation: 'list'
-        }));
+        console.warn("Permission denied for users list");
       }
     );
 
@@ -153,10 +150,7 @@ export default function DevConsole() {
         setAgentsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
       async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: agentsRef.path,
-          operation: 'list'
-        }));
+        console.warn("Permission denied for agents list");
       }
     );
 
@@ -168,10 +162,7 @@ export default function DevConsole() {
         setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
       async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: txRef.path,
-          operation: 'list'
-        }));
+        console.warn("Permission denied for transactions list");
       }
     );
 
@@ -182,6 +173,8 @@ export default function DevConsole() {
         const data = docSnap.data();
         if (data.tiers) setPricingData(data.tiers);
       }
+    }, (err) => {
+      console.warn("Pricing listener error:", err);
     });
 
     return () => {
@@ -200,11 +193,7 @@ export default function DevConsole() {
         toast({ title: "Pricing Initialized", description: "Default product tiers have been written to database." });
       })
       .catch((err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'create',
-          requestResourceData: { tiers: defaultPricingTiers }
-        }));
+        toast({ variant: "destructive", title: "Error", description: err.message });
       })
       .finally(() => setIsUpdatingPricing(false));
   };
@@ -222,11 +211,7 @@ export default function DevConsole() {
         toast({ title: "Pricing Saved", description: "All changes have been synchronized to production." });
       })
       .catch((err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'write',
-          requestResourceData: { tiers: pricingData }
-        }));
+        toast({ variant: "destructive", title: "Error", description: err.message });
       })
       .finally(() => setIsUpdatingPricing(false));
   };
@@ -256,11 +241,7 @@ export default function DevConsole() {
         setAgentUrl("");
       })
       .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: agentRef.path,
-          operation: 'create',
-          requestResourceData: agentData
-        }));
+        toast({ variant: "destructive", title: "Error", description: err.message });
       })
       .finally(() => {
         setIsAddingAgent(false);
@@ -642,7 +623,7 @@ export default function DevConsole() {
                              </AvatarFallback>
                            </Avatar>
                            <div className="min-w-0">
-                             <div className="text-xs md:text-sm font-bold truncate pr-4">{u.displayName || "No Name"}</div>
+                             <div className="text-xs md:sm font-bold truncate pr-4">{u.displayName || "No Name"}</div>
                              <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">{u.email}</div>
                            </div>
                          </div>

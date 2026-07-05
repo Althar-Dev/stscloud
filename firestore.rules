@@ -11,7 +11,8 @@ service cloud.firestore {
 
     // Rules for user profiles
     match /users/{userId} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
+      allow list: if isDev();
       allow write: if (request.auth != null && request.auth.uid == userId) || isDev();
     }
 
@@ -32,14 +33,15 @@ service cloud.firestore {
 
     // Rules for transactions
     match /transactions/{transactionId} {
-      allow read: if isDev() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow get: if isDev() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow list: if isDev();
       allow write: if isDev();
     }
 
     // Rules for main configurations (like product pricing)
     match /main/{documentId} {
       allow read: if true; // Publicly readable for all users
-      allow write: if isDev();
+      allow write: if request.auth != null; // Allow authenticated users to write (for prototype initialization)
     }
 
     // Default deny
