@@ -6,8 +6,7 @@ import path from 'path';
 import AdmZip from 'adm-zip';
 
 /**
- * @fileOverview Server actions for managing server-specific files and logs with sub-directory support.
- * Enhanced to ensure process termination during decommissioning.
+ * @fileOverview Server actions for managing server-specific files and logs.
  */
 
 function getSafePath(serverId: string, subPath: string = '') {
@@ -111,18 +110,6 @@ export async function renameServerPath(serverId: string, oldName: string, newNam
     const currentDirPath = getSafePath(serverId, subPath);
     const oldPath = path.join(currentDirPath, oldName);
     const newPath = path.join(currentDirPath, newName);
-    
-    // Check if source exists
-    await fs.access(oldPath);
-    
-    // Check if destination exists
-    try {
-      await fs.access(newPath);
-      return { success: false, error: "A file or folder with that name already exists." };
-    } catch {
-      // Destination doesn't exist, proceed
-    }
-
     await fs.rename(oldPath, newPath);
     return { success: true };
   } catch (error: any) {
@@ -163,7 +150,6 @@ export async function moveServerPaths(serverId: string, names: string[], current
     for (const name of names) {
       const oldPath = path.join(sourceDir, name);
       const newPath = path.join(targetDir, name);
-      if (newPath.startsWith(oldPath + path.sep) || newPath === oldPath) continue;
       await fs.rename(oldPath, newPath);
     }
     return { success: true };
@@ -198,13 +184,10 @@ export async function getServerLogs(serverId: string) {
     try {
       await fs.access(logPath);
       const content = await fs.readFile(logPath, 'utf8');
-      
-      // Limit to 200 lines tail for performance
       const lines = content.split('\n');
-      if (lines.length > 200) {
-        return { success: true, content: lines.slice(-200).join('\n') };
+      if (lines.length > 300) {
+        return { success: true, content: lines.slice(-300).join('\n') };
       }
-      
       return { success: true, content };
     } catch {
       return { success: true, content: "" };
@@ -218,7 +201,7 @@ export async function clearServerLogs(serverId: string) {
   try {
     const logPath = getLogPath(serverId);
     await fs.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.writeFile(logPath, ""); // Fully empty
+    await fs.writeFile(logPath, "");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -262,22 +245,10 @@ export async function getServerDiskUsage(serverId: string) {
 export async function decommissionServerFiles(serverId: string) {
   try {
     const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
-    const pidPath = path.join(serverDir, 'files', '.sts', 'run.pid');
-    
-    // Safety Kill: Ensure process is dead before deletion
-    try {
-      const pidStr = await fs.readFile(pidPath, 'utf8');
-      const pid = parseInt(pidStr.trim());
-      if (!isNaN(pid)) {
-        try { process.kill(-pid, 'SIGKILL'); } catch (e) { try { process.kill(pid, 'SIGKILL'); } catch (e2) {} }
-      }
-    } catch (e) {}
-
     try {
       await fs.access(serverDir);
       await fs.rm(serverDir, { recursive: true, force: true });
     } catch {}
-    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

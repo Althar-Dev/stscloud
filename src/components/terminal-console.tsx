@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getServerLogs } from "@/app/actions/server-files";
+import { getServerLogs, clearServerLogs } from "@/app/actions/server-files";
 import AnsiFilter from "ansi-to-html";
 
 const ansiConverter = new AnsiFilter({
@@ -37,6 +38,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [isSticky, setIsSticky] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastRawLogs = React.useRef<string>("");
+  const hasClearedOnMount = React.useRef(false);
 
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
@@ -49,7 +51,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       }
       
       lastRawLogs.current = result.content;
-      // We don't filter out empty lines to preserve spacing and formatting
       const lines = result.content.split('\n');
       const mappedLogs: LogLine[] = lines.map((line, i) => {
         let type: LogLine["type"] = "user";
@@ -80,7 +81,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         };
       });
       
-      setLogs(mappedLogs.slice(-300)); // Increased buffer for better history
+      setLogs(mappedLogs.slice(-300));
     } else if (result.success && !result.content) {
       if (lastRawLogs.current !== "") {
         lastRawLogs.current = "";
@@ -89,6 +90,17 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     }
     setIsInitializing(false);
   }, [serverId]);
+
+  // Special logic: Clear console on mount if offline
+  React.useEffect(() => {
+    if (serverId && externalStatus === "offline" && !hasClearedOnMount.current) {
+      hasClearedOnMount.current = true;
+      clearServerLogs(serverId).then(() => {
+        setLogs([]);
+        lastRawLogs.current = "";
+      });
+    }
+  }, [serverId, externalStatus]);
 
   React.useEffect(() => {
     fetchLogs();

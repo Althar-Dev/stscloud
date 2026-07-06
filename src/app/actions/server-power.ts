@@ -225,7 +225,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           finalStartup = `npx -y -p node@${config.version} -- ${finalStartup}`;
         }
 
-        logStream.write(`\n[STS] [${timestamp()}] Starting application: ${finalStartup}\n`);
+        logStream.write(`\n[STS] [${timestamp()}] Starting application\n`);
 
         const child = spawn(finalStartup, {
           shell: true,

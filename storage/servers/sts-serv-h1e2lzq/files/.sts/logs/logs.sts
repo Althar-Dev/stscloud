@@ -2,16 +2,16 @@
 ░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
-[STS] [22:43:51] Checking environment... [32mOk[0m
-[STS] [22:43:51] Runtime: Node.Js v20
-[STS] [22:43:51] System warming up...
+[STS] [22:47:49] Checking environment... [32mOk[0m
+[STS] [22:47:49] Runtime: Node.Js v20
+[STS] [22:47:49] System warming up...
 
-[STS] [22:43:51] Starting application
+[STS] [22:47:49] Starting application: npx -y -p node@20 -- npm start
 
 > premium-emoji-id-bot@1.0.0 start
 > node index.js
 
 Bot aktif
-[STS] [22:43:55] Terminating process... Status: Offline.
+[STS] [22:48:26] Terminating process... Status: Offline.
 
-[STS] [22:43:55] Process exited (code null)
+[STS] [22:48:26] Process exited (code null)
