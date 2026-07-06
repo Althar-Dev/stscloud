@@ -34,6 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import { sendVerificationCode } from "@/app/actions/auth-actions";
 import { cn } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 function AuthContent() {
   const searchParams = useSearchParams();
   const router = useRouter();

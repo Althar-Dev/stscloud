@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -61,7 +62,7 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
+import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
 
 const nodeVersions = ["16", "18", "20", "22"];
@@ -102,7 +103,6 @@ export default function ServerPage() {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
         
-        // Use runtimeVersion if present, fallback to nodeVersion or pythonVersion
         const currentVersion = data.runtimeVersion || data.nodeVersion || data.pythonVersion || "";
         
         setServerName(prev => prev === data.name ? prev : (data.name || ""));
@@ -122,7 +122,7 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // Real-time status monitor
+  // Real-time status monitor: Clears logs instantly when offline transition detected
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
@@ -130,7 +130,9 @@ export default function ServerPage() {
       try {
         const status = await getServerProcessStatus(id as string);
         if (!status.running && server.status === 'online') {
-          updateDoc(doc(db, "servers", id as string), { status: 'offline' });
+          // Process died unexpectedly: Clear logs and update status
+          await clearServerLogs(id as string);
+          await updateDoc(doc(db, "servers", id as string), { status: 'offline' });
         } else if (status.running && server.status === 'offline') {
           updateDoc(doc(db, "servers", id as string), { status: 'online' });
         }
@@ -177,7 +179,6 @@ export default function ServerPage() {
         toast({ variant: "destructive", title: "Execution Error", description: result.error });
       }
       
-      // Jeda untuk memastikan status sinkron
       setTimeout(async () => {
         const check = await getServerProcessStatus(id as string);
         await updateDoc(doc(db, "servers", id as string), { status: check.running ? "online" : "offline" });
@@ -201,7 +202,6 @@ export default function ServerPage() {
       entryFile
     };
 
-    // Keep compatibility with older field names
     if (server.runtime === 'nodejs') updatePayload.nodeVersion = runtimeVersion;
     if (server.runtime === 'python') updatePayload.pythonVersion = runtimeVersion;
 

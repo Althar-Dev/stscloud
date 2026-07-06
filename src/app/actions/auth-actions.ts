@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 export async function sendVerificationCode(email: string, code: string) {
   try {
     const mailOptions = {
-      from: '"STSCloud Infrastructure" <stscloud.id@gmail.com>',
+      from: '"STSCloud" <stscloud.id@gmail.com>',
       to: email,
       subject: 'Verify your STSCloud Account',
       html: `
