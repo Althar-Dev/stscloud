@@ -7,7 +7,7 @@ import gradient from 'gradient-string';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Enhanced to support automatic dependency installation (pip/npm) before execution.
+ * Enhanced to support automatic dependency installation (pip/npm) and forced unbuffered Python output.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -103,7 +103,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
       
-      const ascii = gradient(['blue', 'blue'])(asciiRaw);
+      const ascii = gradient(['#4f46e5', '#3b82f6'])(asciiRaw);
       
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
@@ -126,7 +126,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         // --- Dependency Installation Phase ---
 
         if (config.runtime === 'python') {
-          // Check for requirements.txt
           let hasRequirements = false;
           try { await fs.access(requirementsPath); hasRequirements = true; } catch (e) {}
 
@@ -135,7 +134,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             await new Promise((resolve) => {
               const installProcess = spawn('python3', ['-m', 'pip', 'install', '-r', 'requirements.txt'], {
                 cwd: filesDir,
-                env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
+                env: { 
+                  ...process.env, 
+                  PYTHONUNBUFFERED: '1', 
+                  FORCE_COLOR: '1',
+                  PYTHONIOENCODING: 'utf-8'
+                }
               });
               installProcess.stdout?.on('data', (data) => logStream.write(data));
               installProcess.stderr?.on('data', (data) => logStream.write(data));
@@ -146,7 +150,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             });
           }
         } else {
-          // Node.js: Check if node_modules exists OR package.json is present
           let modulesExist = false;
           let hasPackageJson = false;
           try { await fs.access(nodeModulesPath); modulesExist = true; } catch (e) {}
@@ -177,11 +180,24 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         let child;
 
         if (config.runtime === 'python') {
-          child = spawn(config.commandRun || 'python3', commandParts.slice(1), {
+          // Robust Python spawn: ensure runner is correct and output is unbuffered
+          const runner = config.commandRun || 'python3';
+          let args = commandParts;
+          if (commandParts[0] === runner || commandParts[0] === 'python') {
+            args = commandParts.slice(1);
+          }
+
+          child = spawn(runner, args, {
             cwd: filesDir,
             detached: true,
             stdio: ['ignore', 'pipe', 'pipe'],
-            env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
+            env: { 
+              ...process.env, 
+              PYTHONUNBUFFERED: '1', 
+              FORCE_COLOR: '1',
+              PYTHONIOENCODING: 'utf-8',
+              PYTHONPATH: filesDir
+            }
           });
         } else {
           // Node.js dynamic versioning via npx
@@ -194,7 +210,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
 
         if (child.pid) {
-          // Store the leader PID for process group management
           await fs.writeFile(pidPath, child.pid.toString());
         }
 

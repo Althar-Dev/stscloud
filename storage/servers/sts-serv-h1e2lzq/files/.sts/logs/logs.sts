@@ -1,10 +1,19 @@
 [94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [15:29:28] Checking available disk... [32mOk[0m
-[STS] [15:29:28] Checking node_modules... [32mOk[0m
-[STS] [15:29:28] Starting with Node.Js v20
-[STS] [15:29:28] Executing npm start
+[STS] [20:00:49] Checking available disk... [32mOk[0m
+[STS] [20:00:49] Runtime: Node.Js v20
+[STS] [20:00:49] Preparing environment...
+
+[STS] [20:00:49] package.json detected without node_modules. Running npm install...
+npm warn config production Use `--omit=dev` instead.
+
+added 17 packages, and audited 18 packages in 6s
+
+found 0 vulnerabilities
+[STS] [20:01:01] Npm exited with code 0
+
+[STS] [20:01:01] Booting application: npm start
 
 
 > premium-emoji-id-bot@1.0.0 start

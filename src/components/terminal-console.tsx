@@ -43,15 +43,14 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     
     const result = await getServerLogs(serverId);
     if (result.success && result.content !== undefined) {
-      // ONLY update state if log content actually changed
-      // This prevents terminal re-renders that mess up text selection
       if (result.content === lastRawLogs.current) {
         setIsInitializing(false);
         return;
       }
       
       lastRawLogs.current = result.content;
-      const lines = result.content.split('\n').filter(l => l.trim());
+      // We don't filter out empty lines to preserve spacing and formatting
+      const lines = result.content.split('\n');
       const mappedLogs: LogLine[] = lines.map((line, i) => {
         let type: LogLine["type"] = "user";
         let isSystem = false;
@@ -81,7 +80,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         };
       });
       
-      setLogs(mappedLogs.slice(-200));
+      setLogs(mappedLogs.slice(-300)); // Increased buffer for better history
     } else if (result.success && !result.content) {
       if (lastRawLogs.current !== "") {
         lastRawLogs.current = "";
@@ -161,7 +160,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
       <div 
         ref={scrollRef} 
         onScroll={handleScroll}
-        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-[1.15] custom-scrollbar scroll-smooth overflow-x-auto"
+        className="flex-1 p-3 md:p-5 overflow-y-auto font-code text-[11px] md:text-sm leading-[1.2] custom-scrollbar scroll-smooth overflow-x-auto"
       >
         {isInitializing && logs.length === 0 ? (
           <div className="flex items-center gap-2 opacity-50">
@@ -196,7 +195,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
               ) : (
                 <span 
                   className={cn(
-                    "break-normal",
+                    "break-normal min-h-[1em]",
                     log.type === "error" ? "text-red-400 font-bold" :
                     log.type === "warn" ? "text-yellow-400" :
                     log.type === "success" ? "text-green-400 font-semibold" : 
