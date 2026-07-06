@@ -30,7 +30,9 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
-  Bot
+  Bot,
+  Power,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,8 +95,8 @@ const defaultGlobalAgents = [
 ];
 
 const defaultTemplates = [
-  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400" },
-  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400" },
+  { id: "website", name: "Website", group: "Cloud", icon: "Globe", status: "active" },
+  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", status: "active" },
 ];
 
 export default function DevConsole() {
@@ -349,7 +351,7 @@ export default function DevConsole() {
       name: "New Template",
       group: "Cloud",
       icon: "Layout",
-      color: "text-primary"
+      status: "active"
     };
     setTemplatesData(prev => [...prev, newTemplate]);
   };
@@ -694,7 +696,7 @@ export default function DevConsole() {
                       <TableHead>Template Name</TableHead>
                       <TableHead>Group</TableHead>
                       <TableHead>Icon (Lucide)</TableHead>
-                      <TableHead>Color Class</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -704,7 +706,20 @@ export default function DevConsole() {
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tmpl.name} onChange={(e) => handleUpdateTemplate(tmpl.id, 'name', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs" value={tmpl.group} onChange={(e) => handleUpdateTemplate(tmpl.id, 'group', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.icon} onChange={(e) => handleUpdateTemplate(tmpl.id, 'icon', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.color} onChange={(e) => handleUpdateTemplate(tmpl.id, 'color', e.target.value)} /></TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn(
+                              "h-8 gap-2 text-[10px] font-bold uppercase px-3",
+                              tmpl.status === "active" ? "text-green-500 bg-green-500/10" : "text-muted-foreground bg-secondary/50"
+                            )}
+                            onClick={() => handleUpdateTemplate(tmpl.id, 'status', tmpl.status === 'active' ? 'inactive' : 'active')}
+                          >
+                            <Power className="size-3" />
+                            {tmpl.status === "active" ? "Active" : "Inactive"}
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTemplate(tmpl.id)}>
                             <Trash2 className="size-4" />
@@ -883,3 +898,4 @@ function AgentCard({ id, location, dc, load, status, onDelete }: any) {
     </Card>
   );
 }
+

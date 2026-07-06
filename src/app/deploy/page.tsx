@@ -36,7 +36,8 @@ import {
   Settings,
   LogOut,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Layout
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -51,9 +52,9 @@ import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-ac
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
 
-const templates = [
-  { id: "website", name: "Website", group: "Cloud", icon: Globe, color: "text-blue-400" },
-  { id: "bots", name: "Bots", group: "Cloud", icon: Bot, color: "text-indigo-400" },
+const defaultTemplates = [
+  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400" },
+  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400" },
 ];
 
 const defaultResourcePresets = [
@@ -83,6 +84,17 @@ const runtimeIconNames: Record<string, string> = {
   php: "logos:php",
 };
 
+// Icon component mapping for Lucide
+const LucideIconMap: Record<string, any> = {
+  Globe,
+  Bot,
+  Cpu,
+  Database,
+  Layout,
+  Rocket,
+  Code2
+};
+
 export default function DeployPage() {
   const router = useRouter();
   const { user } = useUser();
@@ -91,6 +103,7 @@ export default function DeployPage() {
   const { toast } = useToast();
   const [profile, setProfile] = React.useState<any>(null);
   const [resourcePresets, setResourcePresets] = React.useState<any[]>(defaultResourcePresets);
+  const [templates, setTemplates] = React.useState<any[]>(defaultTemplates);
   
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
@@ -119,25 +132,35 @@ export default function DeployPage() {
         const data = docSnap.data();
         if (data.tiers && Array.isArray(data.tiers)) {
           setResourcePresets(data.tiers);
-          // If the selected preset doesn't exist in new data, default to first one
           if (!data.tiers.find((t: any) => t.id === selectedPreset)) {
             setSelectedPreset(data.tiers[0]?.id || "p1");
           }
         }
       }
-    }, (error) => {
-      console.warn("Deploy Pricing Listener fallback:", error.message);
+    });
+
+    // Fetch dynamic templates from Firestore and filter by ACTIVE status
+    const unsubTemplates = onSnapshot(doc(db, "main", "templates"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.list && Array.isArray(data.list)) {
+          // FILTER: Only active templates
+          const activeList = data.list.filter((t: any) => t.status === "active");
+          setTemplates(activeList);
+        }
+      }
     });
 
     return () => {
       unsubProfile();
       unsubPricing();
+      unsubTemplates();
     };
   }, [user, db, selectedPreset]);
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   const selectedPresetData = resourcePresets.find(p => p.id === selectedPreset);
-  const availableAppTypes = selectedTemplate ? applicationTypes[selectedTemplate] : [];
+  const availableAppTypes = selectedTemplate ? (applicationTypes[selectedTemplate] || applicationTypes.website) : [];
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -196,11 +219,9 @@ export default function DeployPage() {
     const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
 
     try {
-      // 1. Provision Storage Folders
       const provision = await provisionServerFiles(serverId);
       if (!provision.success) throw new Error("File provisioning failed");
 
-      // 2. Create Firestore Record
       await setDoc(doc(db, "servers", serverId), {
         name: serverName || "Cloud Server",
         ownerId: user.uid,
@@ -341,29 +362,32 @@ export default function DeployPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              {templates.map((t) => (
-                <Card 
-                  key={t.id} 
-                  className={cn(
-                    "cursor-pointer transition-all group overflow-hidden relative border-border/50",
-                    selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
-                  )}
-                  onClick={() => {
-                    setSelectedTemplate(t.id);
-                    setSelectedAppType(null);
-                  }}
-                >
-                  <CardContent className="p-6 md:p-8 text-center space-y-4">
-                    <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color)}>
-                      <t.icon className="size-6 md:size-8" />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
-                      <Badge variant="secondary" className="text-[9px] uppercase tracking-widest px-2 font-bold opacity-70">Infrastructure</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {templates.map((t) => {
+                const IconComponent = LucideIconMap[t.icon] || Layout;
+                return (
+                  <Card 
+                    key={t.id} 
+                    className={cn(
+                      "cursor-pointer transition-all group overflow-hidden relative border-border/50",
+                      selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
+                    )}
+                    onClick={() => {
+                      setSelectedTemplate(t.id);
+                      setSelectedAppType(null);
+                    }}
+                  >
+                    <CardContent className="p-6 md:p-8 text-center space-y-4">
+                      <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color || "text-primary")}>
+                        <IconComponent className="size-6 md:size-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
+                        <Badge variant="secondary" className="text-[9px] uppercase tracking-widest px-2 font-bold opacity-70">{t.group || 'Infrastructure'}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             <div className="flex justify-end pt-4">
@@ -667,3 +691,4 @@ export default function DeployPage() {
     </div>
   );
 }
+
