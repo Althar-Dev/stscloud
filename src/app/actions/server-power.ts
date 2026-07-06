@@ -8,7 +8,7 @@ import crypto from 'crypto';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Enhanced with requirements.txt hashing to avoid redundant slow installs and unbuffered python output.
+ * Enhanced with requirements.txt hashing and local dependency isolation via --target.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -94,7 +94,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const asciiRaw = `░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
-      const ascii = gradient(['#4f46e5', '#3b82f6'])(asciiRaw);
+      const ascii = gradient(['#4f46e5', '#4f46e5'])(asciiRaw);
       
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
@@ -108,6 +108,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         // --- Dependency Phase ---
         if (config.runtime === 'python') {
           const reqPath = path.join(filesDir, 'requirements.txt');
+          const localPkgDir = path.join(filesDir, '.python_packages');
           let hasReq = false;
           try { await fs.access(reqPath); hasReq = true; } catch {}
 
@@ -117,9 +118,18 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             try { oldHash = await fs.readFile(hashPath, 'utf8'); } catch {}
 
             if (currentHash !== oldHash) {
-              logStream.write(`[STS] [${timestamp()}] Changes detected in requirements.txt. Installing...\n`);
+              logStream.write(`[STS] [${timestamp()}] Changes detected in requirements.txt. Installing to local directory...\n`);
+              
+              // Ensure local packages directory exists
+              try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
+
               await new Promise((resolve) => {
-                const pip = spawn('python3', ['-m', 'pip', 'install', '--upgrade', '-r', 'requirements.txt'], {
+                const pip = spawn('python3', [
+                  '-m', 'pip', 'install', 
+                  '--upgrade', 
+                  '-r', 'requirements.txt', 
+                  '--target', '.python_packages'
+                ], {
                   cwd: filesDir,
                   env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
                 });
@@ -132,7 +142,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
                 });
               });
             } else {
-              logStream.write(`[STS] [${timestamp()}] No changes in requirements.txt. Skipping install.\n`);
+              logStream.write(`[STS] [${timestamp()}] No changes in requirements.txt. Using cached .python_packages.\n`);
             }
           }
         } else {
@@ -170,7 +180,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           let args = cmdParts;
           if (cmdParts[0] === runner || cmdParts[0] === 'python') args = cmdParts.slice(1);
           
-          // Force unbuffered with -u flag for maximum log visibility
+          // Construct PYTHONPATH to include the local target directory
+          const localPkgDir = path.join(filesDir, '.python_packages');
+          const pythonPath = process.env.PYTHONPATH 
+            ? `${localPkgDir}${path.delimiter}${process.env.PYTHONPATH}`
+            : localPkgDir;
+
           child = spawn(runner, ['-u', ...args], {
             cwd: filesDir,
             detached: true,
@@ -179,7 +194,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               ...process.env, 
               PYTHONUNBUFFERED: '1', 
               PYTHONIOENCODING: 'utf-8',
-              FORCE_COLOR: '1'
+              FORCE_COLOR: '1',
+              PYTHONPATH: pythonPath // Tell Python to look into our local folder
             }
           });
         } else {
@@ -198,7 +214,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
         child.on('close', (code) => {
           fs.appendFile(logPath, `\n[STS] [${timestamp()}] Process exited with code ${code}\n`).catch(() => {});
-          fs.unlink(pidPath).catch(() => {});
+          fs.unlink(pidPidPath).catch(() => {});
         });
 
         child.unref();
