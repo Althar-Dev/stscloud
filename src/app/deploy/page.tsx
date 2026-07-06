@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -390,15 +389,19 @@ export default function DeployPage() {
                 const live = regionLiveInfo[region.id];
                 const isChecking = live?.isChecking || !live;
                 const isActive = live?.status === "ACTIVE";
+                const isDown = !isChecking && live?.status === "DOWN";
 
                 return (
                   <Card 
                     key={region.id}
                     className={cn(
-                      "cursor-pointer transition-all border-border/50 relative overflow-hidden group",
-                      selectedRegion === region.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
+                      "transition-all border-border/50 relative overflow-hidden group",
+                      isDown ? "opacity-50 grayscale cursor-not-allowed border-dashed bg-secondary/10" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
+                      selectedRegion === region.id && !isDown && "bg-primary/5 border-primary ring-1 ring-primary/50"
                     )}
-                    onClick={() => setSelectedRegion(region.id)}
+                    onClick={() => {
+                      if (!isDown) setSelectedRegion(region.id);
+                    }}
                   >
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-center justify-between">
@@ -408,13 +411,14 @@ export default function DeployPage() {
                           </div>
                           <span className="font-bold font-headline">{region.name}</span>
                         </div>
-                        {selectedRegion === region.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                        {selectedRegion === region.id && !isDown && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                        {isDown && <WifiOff className="size-4 text-destructive" />}
                       </div>
                       <div className="space-y-1">
                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
                          <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
-                            {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />)}
-                            {isChecking ? "Pinging..." : `Latency: ${live.latency}`}
+                            {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />)}
+                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : `Latency: ${live.latency}`}
                          </div>
                       </div>
                     </CardContent>
@@ -424,7 +428,7 @@ export default function DeployPage() {
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
               <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
-              <Button onClick={() => setStep(3)} disabled={!selectedRegion} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Configure Resources <ArrowRight className="size-4" /></Button>
+              <Button onClick={() => setStep(3)} disabled={!selectedRegion || regionLiveInfo[selectedRegion!]?.status === "DOWN"} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Configure Resources <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
