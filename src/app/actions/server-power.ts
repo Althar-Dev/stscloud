@@ -59,8 +59,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
-  const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -118,31 +116,49 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             try { oldHash = await fs.readFile(hashPath, 'utf8'); } catch {}
 
             if (currentHash !== oldHash) {
-              logStream.write(`[STS] [${timestamp()}] Changes detected in requirements.txt. Installing to local directory...\n`);
+              logStream.write(`[STS] [${timestamp()}] Changes in requirements.txt detected. Installing packages to local directory...\n`);
               
-              // Ensure local packages directory exists
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
-              await new Promise((resolve) => {
+              const pipSuccess = await new Promise((resolve) => {
                 const pip = spawn('python3', [
                   '-m', 'pip', 'install', 
                   '--upgrade', 
+                  '--no-cache-dir',
+                  '--disable-pip-version-check',
+                  '--no-input',
                   '-r', 'requirements.txt', 
                   '--target', '.python_packages'
                 ], {
                   cwd: filesDir,
                   env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
                 });
+
                 pip.stdout?.on('data', (d) => logStream.write(d));
                 pip.stderr?.on('data', (d) => logStream.write(d));
+
+                pip.on('error', (err) => {
+                  logStream.write(`[STS] [${timestamp()}] [ERROR] Failed to launch pip: ${err.message}\n`);
+                  resolve(false);
+                });
+
                 pip.on('close', async (code) => {
-                  if (code === 0) await fs.writeFile(hashPath, currentHash);
-                  logStream.write(`[STS] [${timestamp()}] Pip finished (code ${code})\n`);
-                  resolve(true);
+                  if (code === 0) {
+                    await fs.writeFile(hashPath, currentHash);
+                    logStream.write(`[STS] [${timestamp()}] Pip finished successfully.\n`);
+                    resolve(true);
+                  } else {
+                    logStream.write(`[STS] [${timestamp()}] [ERROR] Pip failed with code ${code}\n`);
+                    resolve(false);
+                  }
                 });
               });
+
+              if (!pipSuccess) {
+                 logStream.write(`[STS] [${timestamp()}] [WARN] Proceeding with existing packages despite pip failure.\n`);
+              }
             } else {
-              logStream.write(`[STS] [${timestamp()}] No changes in requirements.txt. Using cached .python_packages.\n`);
+              logStream.write(`[STS] [${timestamp()}] requirements.txt is up to date. Using cached .python_packages.\n`);
             }
           }
         } else {
@@ -180,7 +196,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           let args = cmdParts;
           if (cmdParts[0] === runner || cmdParts[0] === 'python') args = cmdParts.slice(1);
           
-          // Construct PYTHONPATH to include the local target directory
           const localPkgDir = path.join(filesDir, '.python_packages');
           const pythonPath = process.env.PYTHONPATH 
             ? `${localPkgDir}${path.delimiter}${process.env.PYTHONPATH}`
@@ -195,7 +210,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               PYTHONUNBUFFERED: '1', 
               PYTHONIOENCODING: 'utf-8',
               FORCE_COLOR: '1',
-              PYTHONPATH: pythonPath // Tell Python to look into our local folder
+              PYTHONPATH: pythonPath
             }
           });
         } else {
@@ -214,7 +229,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
         child.on('close', (code) => {
           fs.appendFile(logPath, `\n[STS] [${timestamp()}] Process exited with code ${code}\n`).catch(() => {});
-          fs.unlink(pidPidPath).catch(() => {});
+          fs.unlink(pidPath).catch(() => {});
         });
 
         child.unref();

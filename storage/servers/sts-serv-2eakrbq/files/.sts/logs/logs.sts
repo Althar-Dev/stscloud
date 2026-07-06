@@ -1,9 +1,9 @@
 [94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [20:06:50] Checking disk... [32mOk[0m
-[STS] [20:06:50] Runtime: Python 3.10
-[STS] [20:06:50] Environment warming up...
+[STS] [20:10:35] Checking disk... [32mOk[0m
+[STS] [20:10:35] Runtime: Python 3.10
+[STS] [20:10:35] Environment warming up...
 
-[STS] [20:06:50] Changes detected in requirements.txt. Installing...
-[STS] [20:08:14] Terminating process... Status: Offline.
+[STS] [20:10:35] Changes detected in requirements.txt. Installing to local directory...
+[STS] [20:16:22] Terminating process... Status: Offline.
