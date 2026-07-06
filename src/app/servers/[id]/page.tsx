@@ -91,6 +91,9 @@ export default function ServerPage() {
   
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
+  // Status ref for cleanup logic
+  const serverStatusRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
@@ -102,6 +105,7 @@ export default function ServerPage() {
       if (doc.exists()) {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
+        serverStatusRef.current = data.status;
         
         const currentVersion = data.runtimeVersion || data.nodeVersion || data.pythonVersion || "";
         
@@ -122,7 +126,16 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // Real-time status monitor: Clears logs instantly when offline transition detected
+  // Logic: Clear logs ONLY when leaving the page while offline
+  React.useEffect(() => {
+    return () => {
+      if (serverStatusRef.current === "offline" && id) {
+        clearServerLogs(id as string).catch(() => {});
+      }
+    };
+  }, [id]);
+
+  // Real-time process monitor
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
@@ -130,8 +143,7 @@ export default function ServerPage() {
       try {
         const status = await getServerProcessStatus(id as string);
         if (!status.running && server.status === 'online') {
-          // Process died unexpectedly: Clear logs and update status
-          await clearServerLogs(id as string);
+          // Process died: update status, but DON'T clear logs yet (per user request)
           await updateDoc(doc(db, "servers", id as string), { status: 'offline' });
         } else if (status.running && server.status === 'offline') {
           updateDoc(doc(db, "servers", id as string), { status: 'online' });

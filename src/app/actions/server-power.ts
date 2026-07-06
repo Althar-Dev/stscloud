@@ -9,7 +9,6 @@ import crypto from 'crypto';
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
  * Optimized for Python with fast local package installation and robust binary detection.
- * Feature: Automatically clears logs when stopping.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -107,9 +106,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    // Aggressively clear logs on shutdown
-    await fs.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.writeFile(logPath, ""); 
+    // DO NOT clear logs here. User wants to see logs until they exit the page.
     await killExisting();
     if (action === 'restart') await new Promise(resolve => setTimeout(resolve, 1000));
     if (action === 'stop') return { success: true };
@@ -130,6 +127,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
       const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n`;
+      // Clear logs ONLY when starting a fresh session
       await fs.writeFile(logPath, initialLogs);
 
       (async () => {
@@ -156,7 +154,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                // Optimized PIP: removed --no-cache-dir, added --prefer-binary for speed
                 const pipCmd = `"${pythonBinary}" -m pip install --prefer-binary --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
                 
                 const pip = spawn(pipCmd, {
@@ -207,7 +204,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               npm.stdout?.on('data', (d) => logStream.write(d));
               npm.stderr?.on('data', (d) => logStream.write(d));
               npm.on('close', (code) => {
-                logStream.write(`[STS] [${timestamp()}] Npm finished (code ${code})\n`);
+                logStream.write(`[STS] [${timestamp()}] Install finished (code ${code})`);
                 resolve(true);
               });
             });
