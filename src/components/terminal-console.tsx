@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -38,8 +39,9 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastRawLogs = React.useRef<string>("");
   
-  // Track if we have handled the initial "clear on mount" logic
-  const hasCheckedInitialStatus = React.useRef(false);
+  // Track status awal untuk menentukan logika clear
+  const initialStatusRef = React.useRef<string | null>(null);
+  const hasClearedOnMount = React.useRef(false);
 
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
@@ -92,22 +94,19 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setIsInitializing(false);
   }, [serverId]);
 
-  // Special logic: Clear console on mount ONLY IF server is already offline.
-  // If server is online, we mark it as checked so that if it STOPS later, we don't clear it.
+  // Logika Mount: Clear hanya jika status pertama kali dibuka adalah offline
   React.useEffect(() => {
-    if (!serverId || hasCheckedInitialStatus.current) return;
-
-    if (externalStatus === "offline") {
-      hasCheckedInitialStatus.current = true;
-      clearServerLogs(serverId).then(() => {
-        setLogs([]);
-        lastRawLogs.current = "";
-      });
-    } else if (externalStatus === "online") {
-      // If we see it's online once, we prevent the "clear on offline" logic for this session
-      hasCheckedInitialStatus.current = true;
+    if (externalStatus && initialStatusRef.current === null) {
+      initialStatusRef.current = externalStatus;
+      if (externalStatus === "offline" && !hasClearedOnMount.current && serverId) {
+        hasClearedOnMount.current = true;
+        clearServerLogs(serverId).then(() => {
+          setLogs([]);
+          lastRawLogs.current = "";
+        });
+      }
     }
-  }, [serverId, externalStatus]);
+  }, [externalStatus, serverId]);
 
   React.useEffect(() => {
     fetchLogs();

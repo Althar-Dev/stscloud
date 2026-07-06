@@ -5,10 +5,12 @@ import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
 import { spawn, execSync } from 'child_process';
 import crypto from 'crypto';
+import { getServerDiskUsage } from './server-files';
+import { sendResourceLimitNotification } from '@/lib/email/notifications';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Optimized for Python with fast local package installation and robust binary detection.
+ * Features: Resource Guard (Disk/CPU/RAM) and Email Alerts.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -20,9 +22,6 @@ async function getFileHash(filePath: string): Promise<string> {
   }
 }
 
-/**
- * Aggressively detects the available python binary path and returns the ABSOLUTE path.
- */
 function getPythonBinary(): string {
   const absolutePaths = [
     '/usr/bin/python3', 
@@ -40,16 +39,17 @@ function getPythonBinary(): string {
       return bin;
     } catch (e) {}
   }
-  
-  try {
-    const whichPath = execSync('which python3', { encoding: 'utf8' }).trim();
-    if (whichPath && whichPath.startsWith('/')) return whichPath;
-  } catch (e) {}
-  
   return 'python3'; 
 }
 
-export async function getServerProcessStatus(serverId: string) {
+function parseResourceValue(str: string = ""): number {
+  const val = parseFloat(str);
+  if (isNaN(val)) return 0;
+  if (str.toUpperCase().includes("GB")) return val * 1024;
+  return val;
+}
+
+export async function getServerProcessStatus(serverId: string, config?: { ramLimit: string; cpuLimit: string; serverName: string; userEmail: string }) {
   const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
     const pidStr = await fs.readFile(pidPath, 'utf8');
@@ -62,6 +62,25 @@ export async function getServerProcessStatus(serverId: string) {
     
     try {
       process.kill(pid, 0);
+      
+      // Resource Monitoring Logic
+      if (config && config.userEmail) {
+        try {
+          const stats = execSync(`ps -p ${pid} -o %cpu,%mem --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
+          const cpuUsage = parseFloat(stats[0]);
+          const memUsage = parseFloat(stats[1]); // Percentage of total system mem
+          
+          const cpuLimit = parseFloat(config.cpuLimit) || 100;
+          
+          if (cpuUsage > cpuLimit + 10) { // Grace buffer of 10%
+             process.kill(pid, 'SIGKILL');
+             await fs.unlink(pidPath).catch(() => {});
+             sendResourceLimitNotification(config.userEmail, config.serverName, 'CPU', `${cpuUsage}%`, config.cpuLimit);
+             return { running: false, killed: 'CPU' };
+          }
+        } catch (e) {}
+      }
+
       return { running: true, pid };
     } catch (e) {
       await fs.unlink(pidPath).catch(() => {});
@@ -78,6 +97,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   commandRun: string;
   entryFile: string;
   startupCommand: string;
+  limits?: { ram: string; disk: string; cpu: string };
+  serverName?: string;
+  userEmail?: string;
 }) {
   const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
   const filesDir = path.join(baseDir, 'files');
@@ -88,6 +110,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
+  const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -106,7 +129,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   };
 
   if (action === 'stop' || action === 'restart') {
-    // DO NOT clear logs here. User wants to see logs until they exit the page.
     await killExisting();
     if (action === 'restart') await new Promise(resolve => setTimeout(resolve, 1000));
     if (action === 'stop') return { success: true };
@@ -126,8 +148,25 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
-      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n`;
-      // Clear logs ONLY when starting a fresh session
+      let initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n`;
+      initialLogs += `[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
+      initialLogs += `[STS] [${timestamp()}] Checking available disk... `;
+      
+      const diskRes = await getServerDiskUsage(serverId);
+      const currentMB = diskRes.sizeInMB || 0;
+      const limitMB = parseResourceValue(config.limits?.disk || "2GB");
+
+      if (currentMB > limitMB) {
+        initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] Disk usage (${currentMB.toFixed(1)}MB) exceeds limit (${limitMB}MB).\n`;
+        await fs.writeFile(logPath, initialLogs);
+        await fs.unlink(pidPath).catch(() => {});
+        if (config.userEmail && config.serverName) {
+           sendResourceLimitNotification(config.userEmail, config.serverName, 'Disk', `${currentMB.toFixed(1)}MB`, config.limits?.disk || "2GB");
+        }
+        return { success: false, error: "Disk limit reached" };
+      }
+
+      initialLogs += `${green('Ok')} (${currentMB.toFixed(1)}MB)\n[STS] [${timestamp()}] System warming up...\n`;
       await fs.writeFile(logPath, initialLogs);
 
       (async () => {

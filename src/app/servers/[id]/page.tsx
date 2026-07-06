@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -90,8 +91,8 @@ export default function ServerPage() {
   
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Status ref for cleanup logic
-  const serverStatusRef = React.useRef<string | null>(null);
+  // Sesi Aktif tracker
+  const wasOnlineOnMount = React.useRef(false);
 
   React.useEffect(() => {
     if (!user?.uid || !id) return;
@@ -104,8 +105,11 @@ export default function ServerPage() {
       if (doc.exists()) {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
-        serverStatusRef.current = data.status;
         
+        if (data.status === "online" && !wasOnlineOnMount.current) {
+          wasOnlineOnMount.current = true;
+        }
+
         const currentVersion = data.runtimeVersion || data.nodeVersion || data.pythonVersion || "";
         
         setServerName(prev => prev === data.name ? prev : (data.name || ""));
@@ -125,22 +129,28 @@ export default function ServerPage() {
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // Logic: Clear logs ONLY when leaving the page while offline
+  // Unmount Logic: Clear ONLY if offline when leaving
   React.useEffect(() => {
     return () => {
-      if (serverStatusRef.current === "offline" && id) {
+      if (server?.status === "offline" && id) {
         clearServerLogs(id as string).catch(() => {});
       }
     };
-  }, [id]);
+  }, [id, server?.status]);
 
-  // Real-time process monitor
+  // Real-time process monitor with Resource Guard config
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
     const monitorInterval = setInterval(async () => {
       try {
-        const status = await getServerProcessStatus(id as string);
+        const status = await getServerProcessStatus(id as string, {
+          cpuLimit: server.resources?.cpu || "100%",
+          ramLimit: server.resources?.ram || "1.5GB",
+          serverName: server.name,
+          userEmail: user?.email || ""
+        });
+        
         if (!status.running && server.status === 'online') {
           await updateDoc(doc(db, "servers", id as string), { status: 'offline' });
         } else if (status.running && server.status === 'offline') {
@@ -150,7 +160,7 @@ export default function ServerPage() {
     }, 3000);
 
     return () => clearInterval(monitorInterval);
-  }, [id, server, db, powerActionActive]);
+  }, [id, server, db, powerActionActive, user?.email]);
 
   // Disk usage update
   React.useEffect(() => {
@@ -181,7 +191,10 @@ export default function ServerPage() {
         version: runtimeVersion,
         commandRun: commandRun || (server.runtime === 'python' ? 'python3' : 'node'),
         entryFile: entryFile || (server.runtime === 'python' ? 'main.py' : 'index.js'),
-        startupCommand: startupCommand || (server.runtime === 'python' ? 'python3 main.py' : 'npm start')
+        startupCommand: startupCommand || (server.runtime === 'python' ? 'python3 main.py' : 'npm start'),
+        limits: server.resources,
+        serverName: server.name,
+        userEmail: user?.email || ""
       });
 
       if (!result.success) {
