@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -143,7 +142,6 @@ export default function ServerPage() {
       try {
         const status = await getServerProcessStatus(id as string);
         if (!status.running && server.status === 'online') {
-          // Process died: update status, but DON'T clear logs yet (per user request)
           await updateDoc(doc(db, "servers", id as string), { status: 'offline' });
         } else if (status.running && server.status === 'offline') {
           updateDoc(doc(db, "servers", id as string), { status: 'online' });

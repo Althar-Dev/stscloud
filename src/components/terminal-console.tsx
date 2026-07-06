@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -38,7 +37,9 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [isSticky, setIsSticky] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastRawLogs = React.useRef<string>("");
-  const hasClearedOnMount = React.useRef(false);
+  
+  // Track if we have handled the initial "clear on mount" logic
+  const hasCheckedInitialStatus = React.useRef(false);
 
   const fetchLogs = React.useCallback(async () => {
     if (!serverId) return;
@@ -91,14 +92,20 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setIsInitializing(false);
   }, [serverId]);
 
-  // Special logic: Clear console on mount if offline
+  // Special logic: Clear console on mount ONLY IF server is already offline.
+  // If server is online, we mark it as checked so that if it STOPS later, we don't clear it.
   React.useEffect(() => {
-    if (serverId && externalStatus === "offline" && !hasClearedOnMount.current) {
-      hasClearedOnMount.current = true;
+    if (!serverId || hasCheckedInitialStatus.current) return;
+
+    if (externalStatus === "offline") {
+      hasCheckedInitialStatus.current = true;
       clearServerLogs(serverId).then(() => {
         setLogs([]);
         lastRawLogs.current = "";
       });
+    } else if (externalStatus === "online") {
+      // If we see it's online once, we prevent the "clear on offline" logic for this session
+      hasCheckedInitialStatus.current = true;
     }
   }, [serverId, externalStatus]);
 
