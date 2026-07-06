@@ -2,7 +2,7 @@
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import gradient from 'gradient-string';
 import crypto from 'crypto';
 
@@ -17,6 +17,23 @@ async function getFileHash(filePath: string): Promise<string> {
     return crypto.createHash('md5').update(content).digest('hex');
   } catch {
     return "";
+  }
+}
+
+/**
+ * Detects the available python binary on the system (python3 or python).
+ */
+function getPythonBinary(): string {
+  try {
+    execSync('python3 --version', { stdio: 'ignore' });
+    return 'python3';
+  } catch {
+    try {
+      execSync('python --version', { stdio: 'ignore' });
+      return 'python';
+    } catch {
+      return 'python3'; // Fallback to python3 and let it fail with a clear log
+    }
   }
 }
 
@@ -105,6 +122,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
+        const pythonBinary = getPythonBinary();
         
         // --- Dependency Phase ---
         if (config.runtime === 'python') {
@@ -124,8 +142,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                // Use shell: true to help find python3 in PATH
-                const pipCmd = `python3 -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
+                // Use detected python binary for pip
+                const pipCmd = `${pythonBinary} -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
                 
                 const pip = spawn(pipCmd, {
                   shell: true,
@@ -197,12 +215,18 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             ? `${localPkgDir}${path.delimiter}${process.env.PYTHONPATH}`
             : localPkgDir;
 
-          // Add -u for unbuffered output to ensure print() statements appear instantly
-          const pythonCmd = config.startupCommand.includes(' -u ') 
-            ? config.startupCommand 
-            : config.startupCommand.replace('python3', 'python3 -u').replace('python ', 'python -u ');
+          // Replace python3 or python with the detected binary and add -u
+          let finalStartup = config.startupCommand;
+          if (finalStartup.startsWith('python3 ') || finalStartup === 'python3') {
+            finalStartup = finalStartup.replace('python3', `${pythonBinary} -u`);
+          } else if (finalStartup.startsWith('python ') || finalStartup === 'python') {
+            finalStartup = finalStartup.replace('python', `${pythonBinary} -u`);
+          } else if (!finalStartup.includes(' -u ')) {
+             // If custom command, try to inject -u after binary
+             finalStartup = finalStartup.replace(/^(python[3]?)/, `$1 -u`);
+          }
 
-          child = spawn(pythonCmd, {
+          child = spawn(finalStartup, {
             shell: true,
             cwd: filesDir,
             detached: true,
