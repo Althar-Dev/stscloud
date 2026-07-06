@@ -1,9 +1,14 @@
 [94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [20:10:35] Checking disk... [32mOk[0m
-[STS] [20:10:35] Runtime: Python 3.10
-[STS] [20:10:35] Environment warming up...
+[STS] [20:19:01] Checking disk... [32mOk[0m
+[STS] [20:19:01] Runtime: Python 3.10
+[STS] [20:19:01] Environment warming up...
 
-[STS] [20:10:35] Changes detected in requirements.txt. Installing to local directory...
-[STS] [20:16:22] Terminating process... Status: Offline.
+[STS] [20:19:01] Changes in requirements.txt detected. Installing packages to local directory...
+[STS] [20:19:01] [ERROR] Failed to launch pip: spawn python3 ENOENT
+[STS] [20:19:01] [WARN] Proceeding with existing packages despite pip failure.
+
+[STS] [20:19:01] Starting application: python3 main.py
+
+[STS] [20:19:01] [ERROR] Pip failed with code -2

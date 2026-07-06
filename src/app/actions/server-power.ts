@@ -8,7 +8,7 @@ import crypto from 'crypto';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Enhanced with requirements.txt hashing and local dependency isolation via --target.
+ * Enhanced with requirements.txt hashing, local dependency isolation, and shell-based spawning.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -32,9 +32,11 @@ export async function getServerProcessStatus(serverId: string) {
     if (isNaN(pid)) return { running: false };
     
     try {
+      // Check if process exists
       process.kill(pid, 0);
       return { running: true, pid };
     } catch (e) {
+      // Process is dead, clean up pid file
       await fs.unlink(pidPath).catch(() => {});
       return { running: false };
     }
@@ -67,6 +69,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       if (trimmedPid && trimmedPid !== 'BOOTING') {
         const pid = parseInt(trimmedPid);
         if (!isNaN(pid)) {
+          // Attempt to kill process group if possible
           try { process.kill(-pid, 'SIGKILL'); } catch (e) {
             try { process.kill(pid, 'SIGKILL'); } catch (e2) {}
           }
@@ -97,7 +100,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
-      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking disk... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] Environment warming up...\n\n`;
+      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n\n`;
       await fs.writeFile(logPath, initialLogs);
 
       (async () => {
@@ -121,15 +124,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                const pip = spawn('python3', [
-                  '-m', 'pip', 'install', 
-                  '--upgrade', 
-                  '--no-cache-dir',
-                  '--disable-pip-version-check',
-                  '--no-input',
-                  '-r', 'requirements.txt', 
-                  '--target', '.python_packages'
-                ], {
+                // Use shell: true to help find python3 in PATH
+                const pipCmd = `python3 -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
+                
+                const pip = spawn(pipCmd, {
+                  shell: true,
                   cwd: filesDir,
                   env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
                 });
@@ -171,7 +170,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           if (hasPkg && !hasMod) {
             logStream.write(`[STS] [${timestamp()}] Missing node_modules. Running npm install...\n`);
             await new Promise((resolve) => {
-              const npm = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', 'npm', 'install', '--production'], {
+              const npmCmd = `npx -y -p node@${config.version} -- npm install --production`;
+              const npm = spawn(npmCmd, {
+                shell: true,
                 cwd: filesDir,
                 env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
               });
@@ -188,20 +189,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         // --- Execution Phase ---
         logStream.write(`\n[STS] [${timestamp()}] Starting application: ${config.startupCommand}\n\n`);
 
-        const cmdParts = config.startupCommand.split(' ');
         let child;
 
         if (config.runtime === 'python') {
-          const runner = config.commandRun || 'python3';
-          let args = cmdParts;
-          if (cmdParts[0] === runner || cmdParts[0] === 'python') args = cmdParts.slice(1);
-          
           const localPkgDir = path.join(filesDir, '.python_packages');
           const pythonPath = process.env.PYTHONPATH 
             ? `${localPkgDir}${path.delimiter}${process.env.PYTHONPATH}`
             : localPkgDir;
 
-          child = spawn(runner, ['-u', ...args], {
+          // Add -u for unbuffered output to ensure print() statements appear instantly
+          const pythonCmd = config.startupCommand.includes(' -u ') 
+            ? config.startupCommand 
+            : config.startupCommand.replace('python3', 'python3 -u').replace('python ', 'python -u ');
+
+          child = spawn(pythonCmd, {
+            shell: true,
             cwd: filesDir,
             detached: true,
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -214,7 +216,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             }
           });
         } else {
-          child = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', ...cmdParts], {
+          const nodeCmd = `npx -y -p node@${config.version} -- ${config.startupCommand}`;
+          child = spawn(nodeCmd, {
+            shell: true,
             cwd: filesDir,
             detached: true,
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -227,6 +231,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         child.stdout?.on('data', (d) => logStream.write(d));
         child.stderr?.on('data', (d) => logStream.write(d));
 
+        child.on('error', (err) => {
+          fs.appendFile(logPath, `[STS] [${timestamp()}] [ERROR] Failed to start application: ${err.message}\n`).catch(() => {});
+          fs.unlink(pidPath).catch(() => {});
+        });
+
         child.on('close', (code) => {
           fs.appendFile(logPath, `\n[STS] [${timestamp()}] Process exited with code ${code}\n`).catch(() => {});
           fs.unlink(pidPath).catch(() => {});
@@ -234,7 +243,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
         child.unref();
       })().catch(err => {
-        fs.appendFile(logPath, `\n[STS] [${timestamp()}] [ERROR] ${err.message}\n`).catch(() => {});
+        fs.appendFile(logPath, `\n[STS] [${timestamp()}] [SYSTEM ERROR] ${err.message}\n`).catch(() => {});
         fs.unlink(pidPath).catch(() => {});
       });
 
