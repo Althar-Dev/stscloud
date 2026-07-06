@@ -30,6 +30,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverActions: {
+    bodySizeLimit: '10mb',
+    allowedOrigins: ['*'],
+    // Increase timeout to 2 minutes for long-running tasks like pip/npm install
+    relay: true,
+  },
+  experimental: {
+    serverActions: {
+      timeout: 120, 
+    }
+  }
 };
 
 export default nextConfig;
