@@ -1,4 +1,3 @@
-
 "use server";
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -63,21 +62,25 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
     try {
       process.kill(pid, 0);
       
-      // Resource Monitoring Logic
+      // Active Resource Monitoring Logic
       if (config && config.userEmail) {
         try {
+          // Get CPU and RAM usage percentage from OS
           const stats = execSync(`ps -p ${pid} -o %cpu,%mem --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
           const cpuUsage = parseFloat(stats[0]);
-          const memUsage = parseFloat(stats[1]); // Percentage of total system mem
+          const memUsage = parseFloat(stats[1]);
           
           const cpuLimit = parseFloat(config.cpuLimit) || 100;
           
-          if (cpuUsage > cpuLimit + 10) { // Grace buffer of 10%
+          // CPU Guard (with a small grace buffer)
+          if (cpuUsage > cpuLimit + 10) {
              process.kill(pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
              sendResourceLimitNotification(config.userEmail, config.serverName, 'CPU', `${cpuUsage}%`, config.cpuLimit);
              return { running: false, killed: 'CPU' };
           }
+          
+          // RAM Guard could be implemented here similarly if we have a way to translate %mem to actual values vs limits
         } catch (e) {}
       }
 
@@ -152,6 +155,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       initialLogs += `[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
       initialLogs += `[STS] [${timestamp()}] Checking available disk... `;
       
+      // Disk Guard
       const diskRes = await getServerDiskUsage(serverId);
       const currentMB = diskRes.sizeInMB || 0;
       const limitMB = parseResourceValue(config.limits?.disk || "2GB");
