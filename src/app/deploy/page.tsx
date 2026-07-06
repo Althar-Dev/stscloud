@@ -38,7 +38,9 @@ import {
   Loader2,
   RefreshCw,
   Layout,
-  AlertCircle
+  AlertCircle,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -52,20 +54,6 @@ import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
-
-const defaultTemplates = [
-  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400", status: "active" },
-  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400", status: "active" },
-];
-
-const defaultResourcePresets = [
-  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000 },
-  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000 },
-  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000 },
-  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", priceValue: 30000 },
-  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", priceValue: 35000 },
-  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000 },
-];
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
   bots: [
@@ -101,13 +89,16 @@ export default function DeployPage() {
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
+  
   const [profile, setProfile] = React.useState<any>(null);
-  const [resourcePresets, setResourcePresets] = React.useState<any[]>(defaultResourcePresets);
-  const [templates, setTemplates] = React.useState<any[]>(defaultTemplates);
+  const [resourcePresets, setResourcePresets] = React.useState<any[]>([]);
+  const [templates, setTemplates] = React.useState<any[]>([]);
+  const [regions, setRegions] = React.useState<any[]>([]);
   
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = React.useState<string | null>("p1");
+  const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = React.useState<string | null>(null);
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
   const [serverName, setServerName] = React.useState("");
 
@@ -116,6 +107,9 @@ export default function DeployPage() {
   const [paymentStatus, setPaymentStatus] = React.useState<string>("pending");
   const [isChecking, setIsChecking] = React.useState(false);
   const [isProvisioning, setIsProvisioning] = React.useState(false);
+
+  // Real-time latency for regions
+  const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   React.useEffect(() => {
     if (!user?.uid) return;
@@ -130,8 +124,8 @@ export default function DeployPage() {
         const data = docSnap.data();
         if (data.tiers && Array.isArray(data.tiers)) {
           setResourcePresets(data.tiers);
-          if (!data.tiers.find((t: any) => t.id === selectedPreset)) {
-            setSelectedPreset(data.tiers[0]?.id || "p1");
+          if (!selectedPreset && data.tiers.length > 0) {
+            setSelectedPreset(data.tiers[0].id);
           }
         }
       }
@@ -141,8 +135,19 @@ export default function DeployPage() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.list && Array.isArray(data.list)) {
-          // SHOW ALL templates, but logic will handle isDisabled
           setTemplates(data.list);
+        }
+      }
+    });
+
+    const unsubRegions = onSnapshot(doc(db, "main", "agents"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.list && Array.isArray(data.list)) {
+          setRegions(data.list);
+          if (!selectedRegion && data.list.length > 0) {
+            setSelectedRegion(data.list[0].id);
+          }
         }
       }
     });
@@ -151,10 +156,47 @@ export default function DeployPage() {
       unsubProfile();
       unsubPricing();
       unsubTemplates();
+      unsubRegions();
     };
-  }, [user, db, selectedPreset]);
+  }, [user, db, selectedPreset, selectedRegion]);
+
+  // Handle Latency Probing for Step 2
+  React.useEffect(() => {
+    if (step !== 2 || regions.length === 0) return;
+
+    const checkRegion = async (agent: any) => {
+      const url = agent.url;
+      setRegionLiveInfo(prev => ({ 
+        ...prev, 
+        [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
+      }));
+
+      if (!url) {
+        setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "DOWN", latency: "N/A", isChecking: false } }));
+        return;
+      }
+
+      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+      if (isLocal) {
+        setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "ACTIVE", latency: "< 1ms", isChecking: false } }));
+        return;
+      }
+
+      const start = performance.now();
+      try {
+        await fetch(url.startsWith("http") ? url : `https://${url}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+        const end = performance.now();
+        setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } }));
+      } catch (e) {
+        setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "DOWN", latency: "TIMEOUT", isChecking: false } }));
+      }
+    };
+
+    regions.forEach(checkRegion);
+  }, [step, regions]);
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
+  const selectedRegionData = regions.find(r => r.id === selectedRegion);
   const selectedPresetData = resourcePresets.find(p => p.id === selectedPreset);
   const availableAppTypes = selectedTemplate ? (applicationTypes[selectedTemplate] || applicationTypes.website) : [];
 
@@ -166,7 +208,7 @@ export default function DeployPage() {
   const handleInitializePayment = async () => {
     if (!selectedPresetData || !user?.email) return;
     
-    setStep(5);
+    setStep(6);
     setPaymentLoading(true);
     
     const invoiceId = `STS-${Date.now()}`;
@@ -174,18 +216,14 @@ export default function DeployPage() {
       amount: selectedPresetData.priceValue,
       email: user.email,
       external_id: invoiceId,
-      description: `Deployment Server: ${serverName || 'My Project'}`
+      description: `Server Deployment: ${serverName || 'My Project'}`
     });
 
     if (result.success) {
       setPaymentData(result.data);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Payment Error",
-        description: result.error || "Failed to process payment"
-      });
-      setStep(4);
+      toast({ variant: "destructive", title: "Payment Error", description: result.error || "Failed to process payment" });
+      setStep(5);
     }
     setPaymentLoading(false);
   };
@@ -198,10 +236,7 @@ export default function DeployPage() {
     if (result.success) {
       setPaymentStatus(result.status);
       if (result.status === "success") {
-        toast({
-          title: "Payment Success!",
-          description: "Finalizing server deployment..."
-        });
+        toast({ title: "Payment Success!", description: "Finalizing server deployment..." });
         handleFinalizeDeployment();
       }
     }
@@ -226,6 +261,7 @@ export default function DeployPage() {
         createdAt: serverTimestamp(),
         runtime: selectedAppType,
         template: selectedTemplate,
+        region: selectedRegionData?.name || "Global",
         resources: {
           ram: selectedPresetData.ram,
           cpu: selectedPresetData.cpu,
@@ -233,19 +269,10 @@ export default function DeployPage() {
         }
       });
 
-      toast({
-        title: "Deployment Complete",
-        description: "Your server is now live."
-      });
-
+      toast({ title: "Deployment Complete", description: "Your server is now live." });
       router.push(`/servers/${serverId}`);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Deployment Failed",
-        description: error.message
-      });
-    } finally {
+      toast({ variant: "destructive", title: "Deployment Failed", description: error.message });
       setIsProvisioning(false);
     }
   };
@@ -261,60 +288,37 @@ export default function DeployPage() {
             <div className="w-[40px] h-[40px] rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/img/icons.png" alt="STSCloud" width={40} height={40} className="object-cover" />
             </div>
-            <span className="font-headline font-bold text-xl tracking-tight">
-              <span className="text-primary">Deploy</span>
-            </span>
+            <span className="font-headline font-bold text-xl tracking-tight"><span className="text-primary">Deploy</span></span>
           </Link>
           <div className="h-4 w-px bg-border" />
           <button 
-            onClick={() => step > 1 && step < 5 ? setStep(step - 1) : router.back()}
+            onClick={() => step > 1 && step < 6 ? setStep(step - 1) : router.back()}
             className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
             aria-label="Go back"
-          >
-            <ArrowLeft className="size-4" />
-          </button>
-          <h1 className="font-headline font-semibold text-lg hidden sm:block">Deploy</h1>
+          ><ArrowLeft className="size-4" /></button>
+          <h1 className="font-headline font-semibold text-lg hidden sm:block">Instance Provisioning</h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/support">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex">
-              <Headset className="size-4" />
-              <span className="hidden sm:inline">Support</span>
-            </Button>
-          </Link>
+          <Link href="/support"><Button variant="ghost" size="sm" className="gap-2 text-muted-foreground flex"><Headset className="size-4" /><span className="hidden sm:inline">Support</span></Button></Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
-                <Avatar className="size-8 md:size-9">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                    {userInitial}
-                  </AvatarFallback>
-                </Avatar>
+                <Avatar className="size-8 md:size-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
-                  <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">
-                    {displayName}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
-                    {user?.email}
-                  </span>
+                  <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">{displayName}</span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{user?.email}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2">
               <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2">
-                <User className="size-4" /> Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2">
-                <Settings className="size-4" /> Settings
-              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2"><User className="size-4" /> Profile</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2"><Settings className="size-4" /> Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}>
-                <LogOut className="size-4" /> Sign Out
-              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}><LogOut className="size-4" /> Sign Out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -323,14 +327,11 @@ export default function DeployPage() {
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-5xl mx-auto w-full">
         <div className="max-w-3xl mx-auto relative mb-12 px-8">
           <div className="absolute top-1/2 left-[52px] right-[52px] h-[2px] bg-secondary -translate-y-1/2 overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-500 ease-in-out" 
-              style={{ width: `${(step - 1) * 25}%` }}
-            />
+            <div className="h-full bg-primary transition-all duration-500 ease-in-out" style={{ width: `${(step - 1) * 20}%` }} />
           </div>
 
           <div className="flex items-center justify-between relative z-10">
-            {[1, 2, 3, 4, 5].map((s) => (
+            {[1, 2, 3, 4, 5, 6].map((s) => (
               <div 
                 key={s} 
                 className={cn(
@@ -339,11 +340,7 @@ export default function DeployPage() {
                   step === s && "ring-4 ring-primary/20 scale-110"
                 )}
               >
-                {step > s ? (
-                  <CheckCircle2 className="size-5 md:size-6 fill-primary text-white" />
-                ) : (
-                  <span className="font-bold text-xs md:text-sm">{s}</span>
-                )}
+                {step > s ? <CheckCircle2 className="size-5 md:size-6 fill-primary text-white" /> : <span className="font-bold text-xs md:text-sm">{s}</span>}
               </div>
             ))}
           </div>
@@ -353,72 +350,91 @@ export default function DeployPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Select Template</h2>
-              <p className="text-muted-foreground text-sm">Choose the environment for your project.</p>
+              <p className="text-muted-foreground text-sm">Choose the base environment for your project.</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {templates.map((t) => {
                 const IconComponent = LucideIconMap[t.icon] || Layout;
                 const isInactive = t.status !== "active";
-
                 return (
                   <Card 
                     key={t.id} 
                     className={cn(
-                      "transition-all group overflow-hidden relative border-border/50",
-                      isInactive 
-                        ? "opacity-50 grayscale cursor-not-allowed border-dashed" 
-                        : "cursor-pointer",
-                      !isInactive && selectedTemplate === t.id 
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/50" 
-                        : "bg-card hover:border-primary/30 hover:bg-secondary/20"
+                      "transition-all group cursor-pointer border-border/50 relative overflow-hidden",
+                      isInactive && "opacity-50 grayscale cursor-not-allowed border-dashed",
+                      !isInactive && selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
                     )}
-                    onClick={() => {
-                      if (isInactive) return;
-                      setSelectedTemplate(t.id);
-                      setSelectedAppType(null);
-                    }}
+                    onClick={() => { if (!isInactive) { setSelectedTemplate(t.id); setSelectedAppType(null); } }}
                   >
-                    {isInactive && (
-                      <div className="absolute top-2 right-2 z-20">
-                        <Badge variant="secondary" className="text-[7px] uppercase font-bold bg-background/80 gap-1">
-                          <AlertCircle className="size-2 text-muted-foreground" /> Unavailable
-                        </Badge>
-                      </div>
-                    )}
+                    {isInactive && <div className="absolute top-2 right-2"><Badge variant="secondary" className="text-[7px] uppercase font-bold bg-background/80">Unavailable</Badge></div>}
                     <CardContent className="p-6 md:p-8 text-center space-y-4">
-                      <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color || "text-primary")}>
-                        <IconComponent className="size-6 md:size-8" />
+                      <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color || "text-primary")}><IconComponent className="size-6 md:size-8" /></div>
+                      <div className="space-y-1"><div className="font-headline font-bold text-base md:text-lg">{t.name}</div><Badge variant="secondary" className="text-[9px] uppercase tracking-widest px-2 font-bold opacity-70">{t.group || 'Cloud'}</Badge></div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="flex justify-end pt-4"><Button disabled={!selectedTemplate} onClick={() => setStep(2)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Region <ArrowRight className="size-4" /></Button></div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl md:text-3xl font-headline font-bold">Deploy Location</h2>
+              <p className="text-muted-foreground text-sm">Select the infrastructure node closest to your audience.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {regions.map((region) => {
+                const live = regionLiveInfo[region.id];
+                const isChecking = live?.isChecking || !live;
+                const isActive = live?.status === "ACTIVE";
+
+                return (
+                  <Card 
+                    key={region.id}
+                    className={cn(
+                      "cursor-pointer transition-all border-border/50 relative overflow-hidden group",
+                      selectedRegion === region.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
+                    )}
+                    onClick={() => setSelectedRegion(region.id)}
+                  >
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="size-8 rounded-lg bg-secondary flex items-center justify-center">
+                            <Globe className={cn("size-4", selectedRegion === region.id ? "text-primary" : "text-muted-foreground")} />
+                          </div>
+                          <span className="font-bold font-headline">{region.name}</span>
+                        </div>
+                        {selectedRegion === region.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                       </div>
                       <div className="space-y-1">
-                        <div className="font-headline font-bold text-base md:text-lg">{t.name}</div>
-                        <Badge variant="secondary" className="text-[9px] uppercase tracking-widest px-2 font-bold opacity-70">{t.group || 'Infrastructure'}</Badge>
+                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
+                         <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
+                            {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />)}
+                            {isChecking ? "Pinging..." : `Latency: ${live.latency}`}
+                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
             </div>
-
-            <div className="flex justify-end pt-4">
-              <Button 
-                disabled={!selectedTemplate} 
-                onClick={() => setStep(2)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
-              >
-                Configure Resources <ArrowRight className="size-4" />
-              </Button>
+            <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
+              <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
+              <Button onClick={() => setStep(3)} disabled={!selectedRegion} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Configure Resources <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Select Resources</h2>
-              <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name}.</p>
+              <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name} at {selectedRegionData?.name}.</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => (
                 <Card 
@@ -437,54 +453,29 @@ export default function DeployPage() {
                       </div>
                       {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                     </div>
-                    
                     <div className="space-y-2 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Database className="size-3.5" />
-                        <span className="font-medium">{preset.ram} RAM</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Cpu className="size-3.5" />
-                        <span className="font-medium">CPU {preset.cpu}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <HardDrive className="size-3.5" />
-                        <span className="font-medium">Disk {preset.disk}</span>
-                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground"><Database className="size-3.5" /><span className="font-medium">{preset.ram} RAM</span></div>
+                      <div className="flex items-center gap-2 text-muted-foreground"><Cpu className="size-3.5" /><span className="font-medium">CPU {preset.cpu}</span></div>
+                      <div className="flex items-center gap-2 text-muted-foreground"><HardDrive className="size-3.5" /><span className="font-medium">Disk {preset.disk}</span></div>
                     </div>
-
-                    <div className="pt-3 border-t border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Tag className="size-3.5 text-primary" />
-                        <span className="font-bold text-sm text-primary">{preset.price}</span>
-                      </div>
-                    </div>
+                    <div className="pt-3 border-t border-border/50"><div className="flex items-center gap-2"><Tag className="size-3.5 text-primary" /><span className="font-bold text-sm text-primary">{preset.price}</span></div></div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
-              <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto">
-                <ChevronLeft className="size-4" /> Back
-              </Button>
-              <Button 
-                onClick={() => setStep(3)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
-              >
-                Select Runtime <ArrowRight className="size-4" />
-              </Button>
+              <Button variant="ghost" onClick={() => setStep(2)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
+              <Button onClick={() => setStep(4)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Runtime <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Application Runtime</h2>
               <p className="text-muted-foreground text-sm">Choose the environment for your {selectedTemplateData?.name}.</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {availableAppTypes.map((type) => {
                 const iconName = runtimeIconNames[type.id];
@@ -493,208 +484,84 @@ export default function DeployPage() {
                     key={type.id}
                     className={cn(
                       "relative overflow-hidden group cursor-pointer transition-all duration-300 border-border/50",
-                      selectedAppType === type.id 
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/50" 
-                        : "bg-card hover:bg-secondary/30 hover:border-primary/30"
+                      selectedAppType === type.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:bg-secondary/30 hover:border-primary/30"
                     )}
                     onClick={() => setSelectedAppType(type.id)}
                   >
-                    {selectedAppType === type.id && (
-                      <div className="absolute top-3 right-3">
-                        <CheckCircle2 className="size-4 text-primary fill-primary text-white" />
-                      </div>
-                    )}
+                    {selectedAppType === type.id && <div className="absolute top-3 right-3"><CheckCircle2 className="size-4 text-primary fill-primary text-white" /></div>}
                     <CardContent className="p-8 text-center flex flex-col items-center gap-4">
-                      <div className={cn(
-                        "size-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110",
-                        selectedAppType === type.id ? "bg-primary/20" : "bg-secondary/50"
-                      )}>
-                        {iconName ? (
-                          <Icon icon={iconName} className="size-10" />
-                        ) : (
-                          <Code2 className={cn(
-                            "size-8",
-                            selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                          )} />
-                        )}
+                      <div className={cn("size-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110", selectedAppType === type.id ? "bg-primary/20" : "bg-secondary/50")}>
+                        {iconName ? <Icon icon={iconName} className="size-10" /> : <Code2 className={cn("size-8", selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />}
                       </div>
-                      <div className="space-y-1">
-                        <div className="font-headline font-bold text-lg">{type.name}</div>
-                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Standard Runtime</div>
-                      </div>
+                      <div className="space-y-1"><div className="font-headline font-bold text-lg">{type.name}</div><div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Standard Runtime</div></div>
                     </CardContent>
                   </Card>
                 );
               })}
             </div>
-
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
-              <Button variant="ghost" onClick={() => setStep(2)} className="gap-2 w-full md:w-auto">
-                <ChevronLeft className="size-4" /> Back
-              </Button>
-              <Button 
-                disabled={!selectedAppType}
-                onClick={() => setStep(4)}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
-              >
-                Checkout <ArrowRight className="size-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-             <div className="text-center space-y-2">
-              <h2 className="text-2xl md:text-3xl font-headline font-bold">Review Order</h2>
-              <p className="text-muted-foreground text-sm">Configure your server and review your order.</p>
-            </div>
-
-            <Card className="max-w-xl mx-auto border-border/50 bg-card overflow-hidden">
-              <div className="p-6 bg-secondary/30 border-b border-border/50 flex items-center gap-3">
-                <ShoppingCart className="size-5 text-primary" />
-                <span className="font-bold font-headline">Summary & Config</span>
-              </div>
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="serverName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
-                    <Input 
-                      id="serverName" 
-                      placeholder="e.g., My Project" 
-                      className="bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" 
-                      value={serverName}
-                      onChange={(e) => setServerName(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="h-px bg-border/50 my-2" />
-
-                <div className="grid grid-cols-2 gap-y-5 text-sm">
-                  <div className="text-muted-foreground">Environment</div>
-                  <div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
-                  
-                  <div className="text-muted-foreground">Resources</div>
-                  <div className="font-bold text-right flex items-center justify-end gap-1.5">
-                    <Image src="/img/icons.png" alt="STS" width={16} height={16} className="object-contain" />
-                    {selectedPresetData?.name} ({selectedPresetData?.ram})
-                  </div>
-                  
-                  <div className="text-muted-foreground">Runtime</div>
-                  <div className="font-bold text-right uppercase">{selectedAppType}</div>
-                  
-                  <div className="text-muted-foreground">Storage</div>
-                  <div className="font-bold text-right">{selectedPresetData?.disk} SSD</div>
-                </div>
-                
-                <div className="pt-6 border-t border-border/50 flex items-center justify-between">
-                  <span className="font-bold font-headline text-lg">Total Cost</span>
-                  <span className="font-bold font-headline text-3xl text-primary">{selectedPresetData?.price}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
-              <Button variant="ghost" onClick={() => setStep(3)} className="gap-2 w-full md:w-auto">
-                <ChevronLeft className="size-4" /> Back
-              </Button>
-              <Button 
-                disabled={!serverName.trim()}
-                onClick={handleInitializePayment}
-                className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold"
-              >
-                Continue to Payment <CreditCard className="size-4" />
-              </Button>
+              <Button variant="ghost" onClick={() => setStep(3)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
+              <Button disabled={!selectedAppType} onClick={() => setStep(5)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Checkout <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
 
         {step === 5 && (
-          <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-             <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2>
-              <p className="text-muted-foreground text-sm">
-                Scan QRIS to complete payment
-              </p>
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+             <div className="text-center space-y-2">
+              <h2 className="text-2xl md:text-3xl font-headline font-bold">Review Order</h2>
+              <p className="text-muted-foreground text-sm">Finalize your configuration and deploy.</p>
             </div>
-            
+            <Card className="max-w-xl mx-auto border-border/50 bg-card overflow-hidden">
+              <div className="p-6 bg-secondary/30 border-b border-border/50 flex items-center gap-3"><ShoppingCart className="size-5 text-primary" /><span className="font-bold font-headline">Summary & Config</span></div>
+              <CardContent className="p-8 space-y-6">
+                <div className="space-y-4"><div className="grid gap-2"><Label htmlFor="serverName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label><Input id="serverName" placeholder="e.g., My Cloud Project" className="bg-secondary/30 border-none h-11 focus-visible:ring-primary/40" value={serverName} onChange={(e) => setServerName(e.target.value)} /></div></div>
+                <div className="h-px bg-border/50 my-2" />
+                <div className="grid grid-cols-2 gap-y-5 text-sm">
+                  <div className="text-muted-foreground">Template</div><div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
+                  <div className="text-muted-foreground">Region</div><div className="font-bold text-right uppercase">{selectedRegionData?.name} ({selectedRegionData?.location})</div>
+                  <div className="text-muted-foreground">Resources</div><div className="font-bold text-right flex items-center justify-end gap-1.5"><Image src="/img/icons.png" alt="STS" width={16} height={16} className="object-contain" />{selectedPresetData?.name} ({selectedPresetData?.ram})</div>
+                  <div className="text-muted-foreground">Runtime</div><div className="font-bold text-right uppercase">{selectedAppType}</div>
+                  <div className="text-muted-foreground">Storage</div><div className="font-bold text-right">{selectedPresetData?.disk} SSD</div>
+                </div>
+                <div className="pt-6 border-t border-border/50 flex items-center justify-between"><span className="font-bold font-headline text-lg">Total Cost</span><span className="font-bold font-headline text-3xl text-primary">{selectedPresetData?.price}</span></div>
+              </CardContent>
+            </Card>
+            <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
+              <Button variant="ghost" onClick={() => setStep(4)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
+              <Button disabled={!serverName.trim()} onClick={handleInitializePayment} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Continue to Payment <CreditCard className="size-4" /></Button>
+            </div>
+          </div>
+        )}
+
+        {step === 6 && (
+          <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
+             <div className="space-y-2"><h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2><p className="text-muted-foreground text-sm">Scan QRIS to complete payment</p></div>
             <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
               <div className="bg-white rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
                 {paymentLoading ? (
-                  <div className="w-full h-full p-4 space-y-4">
-                    <Skeleton className="w-full aspect-square rounded-lg bg-secondary/10" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-3/4 mx-auto bg-secondary/10" />
-                      <Skeleton className="h-4 w-1/2 mx-auto bg-secondary/10" />
-                    </div>
-                  </div>
+                  <div className="w-full h-full p-4 space-y-4"><Skeleton className="w-full aspect-square rounded-lg bg-secondary/10" /><div className="space-y-2"><Skeleton className="h-4 w-3/4 mx-auto bg-secondary/10" /><Skeleton className="h-4 w-1/2 mx-auto bg-secondary/10" /></div></div>
                 ) : paymentData?.qr_url ? (
                   <div className="space-y-4">
-                    <img 
-                      src={paymentData.qr_url} 
-                      alt="QRIS Invoice" 
-                      className={cn(
-                        "w-full h-auto transition-opacity duration-1000",
-                        (paymentStatus === "success" || isProvisioning) && "opacity-20 grayscale"
-                      )}
-                    />
+                    <img src={paymentData.qr_url} alt="QRIS Invoice" className={cn("w-full h-auto transition-opacity duration-1000", (paymentStatus === "success" || isProvisioning) && "opacity-20 grayscale")} />
                     {(paymentStatus === "success" || isProvisioning) && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-[2px]">
-                        {isProvisioning ? (
-                          <Loader2 className="size-12 text-primary animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="size-20 text-green-500 fill-white" />
-                        )}
-                        <p className="text-green-600 font-bold text-lg mt-2">
-                          {isProvisioning ? "PROVISIONING..." : "PAID"}
-                        </p>
+                        {isProvisioning ? <Loader2 className="size-12 text-primary animate-spin" /> : <CheckCircle2 className="size-20 text-green-500 fill-white" />}
+                        <p className="text-green-600 font-bold text-lg mt-2">{isProvisioning ? "PROVISIONING..." : "PAID"}</p>
                       </div>
                     )}
                   </div>
-                ) : (
-                  <p className="text-destructive font-bold">Failed to load QRIS</p>
-                )}
+                ) : <p className="text-destructive font-bold">Failed to load QRIS</p>}
               </div>
 
               <div className="space-y-3">
-                <Button 
-                  onClick={handleCheckStatus}
-                  disabled={isChecking || paymentStatus === "success" || isProvisioning}
-                  className={cn(
-                    "w-full h-14 gap-2 text-lg font-bold transition-all",
-                    paymentStatus === "success" ? "bg-green-500" : "bg-primary"
-                  )}
-                >
-                  {isChecking ? (
-                    <Loader2 className="size-5 animate-spin" />
-                  ) : paymentStatus === "success" ? (
-                    <>
-                      <Rocket className="size-5" /> Finalizing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="size-5" /> Check Status
-                    </>
-                  )}
+                <Button onClick={handleCheckStatus} disabled={isChecking || paymentStatus === "success" || isProvisioning} className={cn("w-full h-14 gap-2 text-lg font-bold transition-all", paymentStatus === "success" ? "bg-green-500" : "bg-primary")}>
+                  {isChecking ? <Loader2 className="size-5 animate-spin" /> : paymentStatus === "success" ? <><Rocket className="size-5" /> Finalizing...</> : <><RefreshCw className="size-5" /> Check Status</>}
                 </Button>
-
-                {paymentStatus === "success" && !isProvisioning && (
-                  <Link href="/dashboard" className="block w-full">
-                    <Button variant="outline" className="w-full h-12">To Dashboard</Button>
-                  </Link>
-                )}
+                {paymentStatus === "success" && !isProvisioning && <Link href="/dashboard" className="block w-full"><Button variant="outline" className="w-full h-12">To Dashboard</Button></Link>}
               </div>
             </div>
-
-            <Button 
-              variant="ghost" 
-              onClick={() => setStep(4)} 
-              className="gap-2"
-              disabled={paymentStatus === "success" || isProvisioning}
-            >
-              <ChevronLeft className="size-4" /> Cancel & Back
-            </Button>
+            <Button variant="ghost" onClick={() => setStep(5)} className="gap-2" disabled={paymentStatus === "success" || isProvisioning}><ChevronLeft className="size-4" /> Cancel & Back</Button>
           </div>
         )}
       </main>
