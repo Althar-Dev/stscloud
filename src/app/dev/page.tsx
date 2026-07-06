@@ -89,9 +89,9 @@ const defaultPricingTiers = [
 ];
 
 const defaultGlobalAgents = [
-  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "stscloud.id", latency: "< 5ms", status: "active", color: "text-primary" },
-  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", url: "google.com", latency: "< 15ms", status: "active", color: "text-blue-400" },
-  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "127.0.0.1", latency: "< 20ms", status: "active", color: "text-red-400" },
+  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "stscloud.id", latency: "Checking...", status: "active" },
+  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", url: "google.com", latency: "Checking...", status: "active" },
+  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "127.0.0.1", latency: "Checking...", status: "active" },
 ];
 
 const defaultTemplates = [
@@ -112,12 +112,10 @@ export default function DevConsole() {
   const [agentsList, setAgentsList] = React.useState<any[]>([]);
   const [transactions, setTransactions] = React.useState<any[]>([]);
 
-  // Tables State
   const [pricingData, setPricingData] = React.useState<any[]>([]);
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   
-  // Dirty flags to prevent onSnapshot from overwriting unsaved local edits
   const [isPricingDirty, setIsPricingDirty] = React.useState(false);
   const [isLandingDirty, setIsLandingDirty] = React.useState(false);
   const [isTemplatesDirty, setIsTemplatesDirty] = React.useState(false);
@@ -126,7 +124,6 @@ export default function DevConsole() {
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
   const [isUpdatingTemplates, setIsUpdatingTemplates] = React.useState(false);
 
-  // Probing state for URLs
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
@@ -134,7 +131,6 @@ export default function DevConsole() {
   const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  // Auth & Admin Access Check
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -157,7 +153,6 @@ export default function DevConsole() {
     return () => unsub();
   }, [user, authLoading, db, router]);
 
-  // Main Data Fetching
   React.useEffect(() => {
     if (!profile || profile.dev !== true) return;
     
@@ -173,9 +168,8 @@ export default function DevConsole() {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (err) => console.warn("Transactions list permission denied"));
 
-    // Listen for pricing changes
     const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
-      if (!isPricingDirty) { // Only sync if user hasn't made local edits
+      if (!isPricingDirty) {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.tiers) setPricingData(data.tiers);
@@ -185,9 +179,8 @@ export default function DevConsole() {
       }
     });
 
-    // Listen for landing agent changes
     const unsubLandingAgents = onSnapshot(doc(db, "main", "agents"), (docSnap) => {
-      if (!isLandingDirty) { // Only sync if user hasn't made local edits
+      if (!isLandingDirty) {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.list) setLandingAgents(data.list);
@@ -197,7 +190,6 @@ export default function DevConsole() {
       }
     });
 
-    // Listen for template changes
     const unsubTemplates = onSnapshot(doc(db, "main", "templates"), (docSnap) => {
       if (!isTemplatesDirty) {
         if (docSnap.exists()) {
@@ -219,7 +211,6 @@ export default function DevConsole() {
     };
   }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty]);
 
-  // Real-time URL Probing Logic
   React.useEffect(() => {
     if (landingAgents.length === 0) return;
 
@@ -263,7 +254,6 @@ export default function DevConsole() {
     return () => clearInterval(interval);
   }, [landingAgents]);
 
-  // --- Pricing Management ---
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
     setIsPricingDirty(true);
     setPricingData(prev => prev.map(t => t.id === tierId ? { ...t, [field]: value } : t));
@@ -301,7 +291,6 @@ export default function DevConsole() {
       .finally(() => setIsUpdatingPricing(false));
   };
 
-  // --- Landing Agents Management ---
   const handleUpdateLandingAgent = (id: string, field: string, value: any) => {
     setIsLandingDirty(true);
     setLandingAgents(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
@@ -315,8 +304,7 @@ export default function DevConsole() {
       location: "City, Country",
       url: "localhost",
       latency: "Checking...",
-      status: "active",
-      color: "text-primary"
+      status: "active"
     };
     setLandingAgents(prev => [...prev, newAgent]);
   };
@@ -338,7 +326,6 @@ export default function DevConsole() {
       .finally(() => setIsUpdatingLanding(false));
   };
 
-  // --- Templates Management ---
   const handleUpdateTemplate = (id: string, field: string, value: any) => {
     setIsTemplatesDirty(true);
     setTemplatesData(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
@@ -373,7 +360,6 @@ export default function DevConsole() {
       .finally(() => setIsUpdatingTemplates(false));
   };
 
-  // --- Infrastructure Agents (Real Nodes) ---
   const handleAddAgent = async () => {
     if (!regionName || !agentUrl) return;
     setIsAddingAgent(true);
@@ -898,4 +884,3 @@ function AgentCard({ id, location, dc, load, status, onDelete }: any) {
     </Card>
   );
 }
-

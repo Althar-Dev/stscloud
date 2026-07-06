@@ -37,7 +37,8 @@ import {
   LogOut,
   Loader2,
   RefreshCw,
-  Layout
+  Layout,
+  AlertCircle
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -53,8 +54,8 @@ import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { useToast } from "@/hooks/use-toast";
 
 const defaultTemplates = [
-  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400" },
-  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400" },
+  { id: "website", name: "Website", group: "Cloud", icon: "Globe", color: "text-blue-400", status: "active" },
+  { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", color: "text-indigo-400", status: "active" },
 ];
 
 const defaultResourcePresets = [
@@ -84,7 +85,6 @@ const runtimeIconNames: Record<string, string> = {
   php: "logos:php",
 };
 
-// Icon component mapping for Lucide
 const LucideIconMap: Record<string, any> = {
   Globe,
   Bot,
@@ -111,7 +111,6 @@ export default function DeployPage() {
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
   const [serverName, setServerName] = React.useState("");
 
-  // Payment states
   const [paymentLoading, setPaymentLoading] = React.useState(false);
   const [paymentData, setPaymentData] = React.useState<any>(null);
   const [paymentStatus, setPaymentStatus] = React.useState<string>("pending");
@@ -126,7 +125,6 @@ export default function DeployPage() {
       }
     });
 
-    // Fetch dynamic resource presets from Firestore
     const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -139,14 +137,12 @@ export default function DeployPage() {
       }
     });
 
-    // Fetch dynamic templates from Firestore and filter by ACTIVE status
     const unsubTemplates = onSnapshot(doc(db, "main", "templates"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.list && Array.isArray(data.list)) {
-          // FILTER: Only active templates
-          const activeList = data.list.filter((t: any) => t.status === "active");
-          setTemplates(activeList);
+          // SHOW ALL templates, but logic will handle isDisabled
+          setTemplates(data.list);
         }
       }
     });
@@ -325,7 +321,6 @@ export default function DeployPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-8 max-w-5xl mx-auto w-full">
-        {/* Progress Tracker */}
         <div className="max-w-3xl mx-auto relative mb-12 px-8">
           <div className="absolute top-1/2 left-[52px] right-[52px] h-[2px] bg-secondary -translate-y-1/2 overflow-hidden">
             <div 
@@ -364,18 +359,33 @@ export default function DeployPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {templates.map((t) => {
                 const IconComponent = LucideIconMap[t.icon] || Layout;
+                const isInactive = t.status !== "active";
+
                 return (
                   <Card 
                     key={t.id} 
                     className={cn(
-                      "cursor-pointer transition-all group overflow-hidden relative border-border/50",
-                      selectedTemplate === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
+                      "transition-all group overflow-hidden relative border-border/50",
+                      isInactive 
+                        ? "opacity-50 grayscale cursor-not-allowed border-dashed" 
+                        : "cursor-pointer",
+                      !isInactive && selectedTemplate === t.id 
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/50" 
+                        : "bg-card hover:border-primary/30 hover:bg-secondary/20"
                     )}
                     onClick={() => {
+                      if (isInactive) return;
                       setSelectedTemplate(t.id);
                       setSelectedAppType(null);
                     }}
                   >
+                    {isInactive && (
+                      <div className="absolute top-2 right-2 z-20">
+                        <Badge variant="secondary" className="text-[7px] uppercase font-bold bg-background/80 gap-1">
+                          <AlertCircle className="size-2 text-muted-foreground" /> Unavailable
+                        </Badge>
+                      </div>
+                    )}
                     <CardContent className="p-6 md:p-8 text-center space-y-4">
                       <div className={cn("size-12 md:size-16 mx-auto rounded-2xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-300", t.color || "text-primary")}>
                         <IconComponent className="size-6 md:size-8" />
@@ -691,4 +701,3 @@ export default function DeployPage() {
     </div>
   );
 }
-
