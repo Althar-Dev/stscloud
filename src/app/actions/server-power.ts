@@ -21,19 +21,29 @@ async function getFileHash(filePath: string): Promise<string> {
 }
 
 /**
- * Detects the available python binary on the system (python3 or python).
+ * Aggressively detects the available python binary path.
  */
 function getPythonBinary(): string {
-  const candidates = ['python3', 'python'];
+  // Standard binary names and absolute paths to check
+  const candidates = [
+    'python3', 
+    'python', 
+    '/usr/bin/python3', 
+    '/usr/bin/python', 
+    '/usr/local/bin/python3', 
+    '/usr/local/bin/python',
+    '/opt/homebrew/bin/python3'
+  ];
+
   for (const bin of candidates) {
     try {
-      // Check if command exists by running it with --version
-      execSync(`${bin} --version`, { stdio: 'ignore', timeout: 2000 });
+      // Check if command exists and returns a version
+      execSync(`${bin} --version`, { stdio: 'ignore', timeout: 1500 });
       return bin;
     } catch (e) {}
   }
   
-  // If standard commands fail, try 'which' as a last resort
+  // Try using 'which' to find it in system path
   try {
     const whichPython3 = execSync('which python3', { encoding: 'utf8' }).trim();
     if (whichPython3) return whichPython3;
@@ -44,7 +54,8 @@ function getPythonBinary(): string {
     if (whichPython) return whichPython;
   } catch (e) {}
   
-  return 'python'; // Final fallback to 'python' instead of 'python3' as it's more common
+  // Final desperate fallback
+  return 'python3'; 
 }
 
 export async function getServerProcessStatus(serverId: string) {
@@ -59,11 +70,9 @@ export async function getServerProcessStatus(serverId: string) {
     if (isNaN(pid)) return { running: false };
     
     try {
-      // Check if process exists
       process.kill(pid, 0);
       return { running: true, pid };
     } catch (e) {
-      // Process is dead, clean up pid file
       await fs.unlink(pidPath).catch(() => {});
       return { running: false };
     }
@@ -88,6 +97,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
+  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -96,7 +106,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       if (trimmedPid && trimmedPid !== 'BOOTING') {
         const pid = parseInt(trimmedPid);
         if (!isNaN(pid)) {
-          // Attempt to kill process group
           try { process.kill(-pid, 'SIGKILL'); } catch (e) {
             try { process.kill(pid, 'SIGKILL'); } catch (e2) {}
           }
@@ -130,11 +139,17 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n\n`;
       await fs.writeFile(logPath, initialLogs);
 
-      // Start background task to prevent action timeout (502)
+      // Background task to prevent Server Action Timeout (502)
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
-        const pythonBinary = getPythonBinary();
         
+        // --- Detection Phase ---
+        let pythonBinary = 'python3';
+        if (config.runtime === 'python') {
+          pythonBinary = getPythonBinary();
+          logStream.write(`[STS] [${timestamp()}] Found binary at: ${yellow(pythonBinary)}\n`);
+        }
+
         // --- Dependency Phase ---
         if (config.runtime === 'python') {
           const reqPath = path.join(filesDir, 'requirements.txt');
@@ -152,7 +167,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                // Use detected python binary for pip module
+                // Use explicit detected path to avoid command not found
                 const pipCmd = `${pythonBinary} -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
                 
                 const pip = spawn(pipCmd, {
@@ -184,7 +199,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             }
           }
         } else {
-          // Node logic...
+          // Node Logic
           const pkgPath = path.join(filesDir, 'package.json');
           const modPath = path.join(filesDir, 'node_modules');
           let hasPkg = false, hasMod = false;
@@ -215,21 +230,18 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const localPkgDir = path.join(filesDir, '.python_packages');
         
         if (config.runtime === 'python') {
-          // Robustly replace 'python3' or 'python' with the detected binary path AND inject -u
-          // Case 1: command starts with python3
+          // Ensure we use the detected absolute path and inject -u
           if (finalStartup.startsWith('python3 ')) {
             finalStartup = finalStartup.replace('python3', `${pythonBinary} -u`);
           } 
-          // Case 2: command starts with python
           else if (finalStartup.startsWith('python ')) {
             finalStartup = finalStartup.replace('python', `${pythonBinary} -u`);
           }
-          // Case 3: command IS exactly python3 or python
           else if (finalStartup === 'python3' || finalStartup === 'python') {
             finalStartup = `${pythonBinary} -u`;
           }
-          // Case 4: Any other command, ensure it doesn't already have -u, then try to prefix if it starts with python-like word
-          else if (!finalStartup.includes(' -u ')) {
+          else {
+            // Fallback: try to replace any leading 'python' with the path
             finalStartup = finalStartup.replace(/^(python[3]?)/, `${pythonBinary} -u`);
           }
         } else {
