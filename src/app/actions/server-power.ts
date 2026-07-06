@@ -21,40 +21,49 @@ async function getFileHash(filePath: string): Promise<string> {
 }
 
 /**
- * Aggressively detects the available python binary path.
+ * Aggressively detects the available python binary path and returns the ABSOLUTE path.
  */
 function getPythonBinary(): string {
-  // Standard binary names and absolute paths to check
-  const candidates = [
-    'python3', 
-    'python', 
+  // 1. Check absolute paths directly first to ensure shell reliability
+  const absolutePaths = [
     '/usr/bin/python3', 
     '/usr/bin/python', 
     '/usr/local/bin/python3', 
     '/usr/local/bin/python',
-    '/opt/homebrew/bin/python3'
+    '/opt/homebrew/bin/python3',
+    '/bin/python3',
+    '/bin/python'
   ];
 
-  for (const bin of candidates) {
+  for (const bin of absolutePaths) {
     try {
-      // Check if command exists and returns a version
       execSync(`${bin} --version`, { stdio: 'ignore', timeout: 1500 });
       return bin;
     } catch (e) {}
   }
   
-  // Try using 'which' to find it in system path
+  // 2. Try to resolve via 'which' if candidates failed
   try {
-    const whichPython3 = execSync('which python3', { encoding: 'utf8' }).trim();
-    if (whichPython3) return whichPython3;
+    const whichPath = execSync('which python3', { encoding: 'utf8' }).trim();
+    if (whichPath && whichPath.startsWith('/')) return whichPath;
   } catch (e) {}
   
   try {
-    const whichPython = execSync('which python', { encoding: 'utf8' }).trim();
-    if (whichPython) return whichPython;
+    const whichPath = execSync('which python', { encoding: 'utf8' }).trim();
+    if (whichPath && whichPath.startsWith('/')) return whichPath;
   } catch (e) {}
   
-  // Final desperate fallback
+  // 3. Last resort names (relying on shell PATH, but we prefer absolute)
+  try {
+    execSync('python3 --version', { stdio: 'ignore', timeout: 1500 });
+    return 'python3';
+  } catch (e) {}
+  
+  try {
+    execSync('python --version', { stdio: 'ignore', timeout: 1500 });
+    return 'python';
+  } catch (e) {}
+  
   return 'python3'; 
 }
 
@@ -147,7 +156,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         let pythonBinary = 'python3';
         if (config.runtime === 'python') {
           pythonBinary = getPythonBinary();
-          logStream.write(`[STS] [${timestamp()}] Found binary at: ${yellow(pythonBinary)}\n`);
+          logStream.write(`[STS] [${timestamp()}] Resolved binary: ${yellow(pythonBinary)}\n`);
         }
 
         // --- Dependency Phase ---
@@ -167,8 +176,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                // Use explicit detected path to avoid command not found
-                const pipCmd = `${pythonBinary} -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
+                // Use explicit detected absolute path in quotes to avoid shell lookup failures
+                const pipCmd = `"${pythonBinary}" -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
                 
                 const pip = spawn(pipCmd, {
                   shell: true,
@@ -231,18 +240,20 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         
         if (config.runtime === 'python') {
           // Ensure we use the detected absolute path and inject -u
+          const quotedBin = `"${pythonBinary}"`;
+          
           if (finalStartup.startsWith('python3 ')) {
-            finalStartup = finalStartup.replace('python3', `${pythonBinary} -u`);
+            finalStartup = finalStartup.replace('python3', `${quotedBin} -u`);
           } 
           else if (finalStartup.startsWith('python ')) {
-            finalStartup = finalStartup.replace('python', `${pythonBinary} -u`);
+            finalStartup = finalStartup.replace('python', `${quotedBin} -u`);
           }
           else if (finalStartup === 'python3' || finalStartup === 'python') {
-            finalStartup = `${pythonBinary} -u`;
+            finalStartup = `${quotedBin} -u`;
           }
           else {
             // Fallback: try to replace any leading 'python' with the path
-            finalStartup = finalStartup.replace(/^(python[3]?)/, `${pythonBinary} -u`);
+            finalStartup = finalStartup.replace(/^(python[3]?)/, `${quotedBin} -u`);
           }
         } else {
           finalStartup = `npx -y -p node@${config.version} -- ${finalStartup}`;
