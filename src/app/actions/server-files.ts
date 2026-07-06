@@ -106,6 +106,30 @@ export async function deleteServerPaths(serverId: string, names: string[], subPa
   }
 }
 
+export async function renameServerPath(serverId: string, oldName: string, newName: string, subPath: string = '') {
+  try {
+    const currentDirPath = getSafePath(serverId, subPath);
+    const oldPath = path.join(currentDirPath, oldName);
+    const newPath = path.join(currentDirPath, newName);
+    
+    // Check if source exists
+    await fs.access(oldPath);
+    
+    // Check if destination exists
+    try {
+      await fs.access(newPath);
+      return { success: false, error: "A file or folder with that name already exists." };
+    } catch {
+      // Destination doesn't exist, proceed
+    }
+
+    await fs.rename(oldPath, newPath);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function archiveServerPaths(serverId: string, names: string[], zipName: string, subPath: string = '') {
   try {
     const currentPath = getSafePath(serverId, subPath);

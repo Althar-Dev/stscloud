@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -21,7 +22,8 @@ import {
   Archive,
   FolderOpen,
   ArrowRightLeft,
-  X
+  X,
+  Type
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +63,8 @@ import {
   readFileContent,
   updateFileContent,
   uploadServerFile,
-  unarchiveServerFile
+  unarchiveServerFile,
+  renameServerPath
 } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -102,15 +105,20 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const [targetPathInput, setTargetPathInput] = React.useState("");
   const [isMoving, setIsMoving] = React.useState(false);
 
+  // Rename Modal State
+  const [isRenameOpen, setIsRenameOpen] = React.useState(false);
+  const [renamingItemName, setRenamingItemName] = React.useState("");
+  const [newRenameName, setNewRenameName] = React.useState("");
+  const [isRenaming, setIsRenaming] = React.useState(false);
+
   // Drag and Drop State
   const [isDragging, setIsDragging] = React.useState(false);
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
   // CRITICAL FIX: Aggressive cleanup for Radix UI body-lock bug
-  // This ensures that when any dialog is closed, the UI is never frozen.
   React.useEffect(() => {
-    const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen;
+    const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen || isRenameOpen;
     
     if (!isAnyModalOpen) {
       const forceCleanup = () => {
@@ -119,11 +127,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         document.body.style.paddingRight = "";
         document.documentElement.style.pointerEvents = "auto";
         document.documentElement.style.overflow = "auto";
-        // Also remove Radix's specific lock attribute if present
         document.body.removeAttribute('data-radix-scroll-lock');
       };
 
-      // Execute immediately and with delays to catch late-firing Radix events
       forceCleanup();
       const t1 = setTimeout(forceCleanup, 50);
       const t2 = setTimeout(forceCleanup, 300);
@@ -135,7 +141,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
         clearTimeout(t3);
       };
     }
-  }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen]);
+  }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen, isRenameOpen]);
 
   const fetchFiles = React.useCallback(async () => {
     if (!serverId) return;
@@ -195,6 +201,30 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       toast({ variant: "destructive", title: "Creation Failed", description: error.message });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!serverId || !newRenameName.trim() || newRenameName === renamingItemName) {
+      setIsRenameOpen(false);
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const result = await renameServerPath(serverId, renamingItemName, newRenameName, getSubPathString());
+      if (result.success) {
+        setIsRenameOpen(false);
+        toast({ title: "Renamed", description: `Successfully renamed to ${newRenameName}` });
+        fetchFiles();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Rename Failed", description: error.message });
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -298,7 +328,6 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
     if (result.success) {
       setEditingFileName(name);
       setEditingContent(result.content || "");
-      // Use timeout to ensure any dropdown is closed before modal opens
       setTimeout(() => setIsEditorOpen(true), 10);
     } else toast({ variant: "destructive", title: "Read Error", description: result.error });
     setLoading(false);
@@ -459,6 +488,16 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                         <DropdownMenuContent align="end" className="w-44">
                           {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> Edit</DropdownMenuItem>}
                           {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
+                          
+                          <DropdownMenuItem className="gap-2" onSelect={(e) => { 
+                            e.preventDefault(); 
+                            setRenamingItemName(file.name);
+                            setNewRenameName(file.name);
+                            setTimeout(() => setIsRenameOpen(true), 10);
+                          }}>
+                            <Type className="size-4" /> Rename
+                          </DropdownMenuItem>
+
                           {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
@@ -480,6 +519,29 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           </Table>
         </div>
       </div>
+
+      {/* Rename Dialog */}
+      <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+        <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="font-headline">Rename Item</DialogTitle>
+            <DialogDescription>Enter a new name for your file or folder.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRenameSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="rename-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">New Name</Label>
+                <Input id="rename-name" value={newRenameName} onChange={(e) => setNewRenameName(e.target.value)} className="bg-secondary/30 border-none h-11" autoFocus />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full bg-primary text-white font-bold h-11" disabled={isRenaming || !newRenameName.trim()}>
+                {isRenaming ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />} Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Creation Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
