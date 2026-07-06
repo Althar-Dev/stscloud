@@ -1,14 +1,14 @@
+
 "use server";
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
 import { spawn, execSync } from 'child_process';
-import gradient from 'gradient-string';
 import crypto from 'crypto';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Optimized for Python with local package isolation and robust binary detection.
+ * Optimized for Python with fast local package installation and robust binary detection.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -24,7 +24,6 @@ async function getFileHash(filePath: string): Promise<string> {
  * Aggressively detects the available python binary path and returns the ABSOLUTE path.
  */
 function getPythonBinary(): string {
-  // 1. Check absolute paths directly first to ensure shell reliability
   const absolutePaths = [
     '/usr/bin/python3', 
     '/usr/bin/python', 
@@ -42,26 +41,9 @@ function getPythonBinary(): string {
     } catch (e) {}
   }
   
-  // 2. Try to resolve via 'which' if candidates failed
   try {
     const whichPath = execSync('which python3', { encoding: 'utf8' }).trim();
     if (whichPath && whichPath.startsWith('/')) return whichPath;
-  } catch (e) {}
-  
-  try {
-    const whichPath = execSync('which python', { encoding: 'utf8' }).trim();
-    if (whichPath && whichPath.startsWith('/')) return whichPath;
-  } catch (e) {}
-  
-  // 3. Last resort names (relying on shell PATH, but we prefer absolute)
-  try {
-    execSync('python3 --version', { stdio: 'ignore', timeout: 1500 });
-    return 'python3';
-  } catch (e) {}
-  
-  try {
-    execSync('python --version', { stdio: 'ignore', timeout: 1500 });
-    return 'python';
   } catch (e) {}
   
   return 'python3'; 
@@ -106,7 +88,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -137,29 +118,25 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       await fs.mkdir(path.dirname(pidPath), { recursive: true });
       await fs.writeFile(pidPath, 'BOOTING');
 
-      const asciiRaw = `░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
+      const ascii = `\x1b[38;2;79;70;229m
+░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
-░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
-      const ascii = gradient(['#4f46e5', '#4f46e5'])(asciiRaw);
+░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░\x1b[0m`;
       
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
-      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n\n`;
+      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] System warming up...\n`;
       await fs.writeFile(logPath, initialLogs);
 
-      // Background task to prevent Server Action Timeout (502)
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        // --- Detection Phase ---
         let pythonBinary = 'python3';
         if (config.runtime === 'python') {
           pythonBinary = getPythonBinary();
-          logStream.write(`[STS] [${timestamp()}] Resolved binary: ${yellow(pythonBinary)}\n`);
         }
 
-        // --- Dependency Phase ---
         if (config.runtime === 'python') {
           const reqPath = path.join(filesDir, 'requirements.txt');
           const localPkgDir = path.join(filesDir, '.python_packages');
@@ -171,13 +148,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             let oldHash = "";
             try { oldHash = await fs.readFile(hashPath, 'utf8'); } catch {}
 
+            // Optimization: Remove --no-cache-dir and --upgrade for speed. 
+            // Use --prefer-binary to skip local compilation.
             if (currentHash !== oldHash) {
-              logStream.write(`[STS] [${timestamp()}] Requirements changed. Installing to local directory...\n`);
+              logStream.write(`[STS] [${timestamp()}] Requirements changed. Syncing local packages...\n`);
               try { await fs.mkdir(localPkgDir, { recursive: true }); } catch {}
 
               const pipSuccess = await new Promise((resolve) => {
-                // Use explicit detected absolute path in quotes to avoid shell lookup failures
-                const pipCmd = `"${pythonBinary}" -m pip install --upgrade --no-cache-dir --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
+                const pipCmd = `"${pythonBinary}" -m pip install --prefer-binary --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
                 
                 const pip = spawn(pipCmd, {
                   shell: true,
@@ -194,7 +172,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
                 pip.on('close', async (code) => {
                   if (code === 0) {
                     await fs.writeFile(hashPath, currentHash);
-                    logStream.write(`[STS] [${timestamp()}] Pip finished successfully.\n`);
+                    logStream.write(`[STS] [${timestamp()}] Pip synchronization complete.\n`);
                     resolve(true);
                   } else {
                     logStream.write(`[STS] [${timestamp()}] [ERROR] Pip failed with code ${code}\n`);
@@ -202,9 +180,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
                   }
                 });
               });
-              if (!pipSuccess) logStream.write(`[STS] [${timestamp()}] [WARN] Proceeding despite pip failure.\n`);
+              if (!pipSuccess) logStream.write(`[STS] [${timestamp()}] [WARN] Proceeding with partial/existing packages.\n`);
             } else {
-              logStream.write(`[STS] [${timestamp()}] requirements.txt is up to date.\n`);
+              logStream.write(`[STS] [${timestamp()}] Requirements satisfied (cached).\n`);
             }
           }
         } else {
@@ -234,32 +212,20 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           }
         }
 
-        // --- Execution Phase ---
         let finalStartup = config.startupCommand;
         const localPkgDir = path.join(filesDir, '.python_packages');
         
         if (config.runtime === 'python') {
-          // Ensure we use the detected absolute path and inject -u
           const quotedBin = `"${pythonBinary}"`;
-          
-          if (finalStartup.startsWith('python3 ')) {
-            finalStartup = finalStartup.replace('python3', `${quotedBin} -u`);
-          } 
-          else if (finalStartup.startsWith('python ')) {
-            finalStartup = finalStartup.replace('python', `${quotedBin} -u`);
-          }
-          else if (finalStartup === 'python3' || finalStartup === 'python') {
-            finalStartup = `${quotedBin} -u`;
-          }
-          else {
-            // Fallback: try to replace any leading 'python' with the path
-            finalStartup = finalStartup.replace(/^(python[3]?)/, `${quotedBin} -u`);
-          }
+          if (finalStartup.startsWith('python3 ')) finalStartup = finalStartup.replace('python3', `${quotedBin} -u`);
+          else if (finalStartup.startsWith('python ')) finalStartup = finalStartup.replace('python', `${quotedBin} -u`);
+          else if (finalStartup === 'python3' || finalStartup === 'python') finalStartup = `${quotedBin} -u`;
+          else finalStartup = finalStartup.replace(/^(python[3]?)/, `${quotedBin} -u`);
         } else {
           finalStartup = `npx -y -p node@${config.version} -- ${finalStartup}`;
         }
 
-        logStream.write(`\n[STS] [${timestamp()}] Starting application: ${finalStartup}\n\n`);
+        logStream.write(`\n[STS] [${timestamp()}] Starting application: ${finalStartup}\n`);
 
         const child = spawn(finalStartup, {
           shell: true,

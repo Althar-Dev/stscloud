@@ -1,18 +1,17 @@
-[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
-[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
-[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [20:43:13] Checking environment... [32mOk[0m
-[STS] [20:43:13] Runtime: Node.Js v20
-[STS] [20:43:13] System warming up...
+[38;2;79;70;229m
+░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
+░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
+░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
+[STS] [22:43:51] Checking environment... [32mOk[0m
+[STS] [22:43:51] Runtime: Node.Js v20
+[STS] [22:43:51] System warming up...
 
-
-[STS] [20:43:13] Starting application: npx -y -p node@20 -- npm start
-
+[STS] [22:43:51] Starting application
 
 > premium-emoji-id-bot@1.0.0 start
 > node index.js
 
 Bot aktif
-[STS] [20:43:26] Terminating process... Status: Offline.
+[STS] [22:43:55] Terminating process... Status: Offline.
 
-[STS] [20:43:26] Process exited (code null)
+[STS] [22:43:55] Process exited (code null)
