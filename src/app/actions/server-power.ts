@@ -7,7 +7,7 @@ import gradient from 'gradient-string';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Enhanced to support Node.js and Python runtimes with versioning.
+ * Enhanced to support automatic dependency installation (pip/npm) before execution.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -109,15 +109,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
       const nodeModulesPath = path.join(filesDir, 'node_modules');
-      let modulesStatus = 'Ok';
-      if (config.runtime !== 'python') {
-        try { await fs.access(nodeModulesPath); } catch (e) { modulesStatus = 'No'; }
-      }
+      const packageJsonPath = path.join(filesDir, 'package.json');
+      const requirementsPath = path.join(filesDir, 'requirements.txt');
 
       let diskStatus = 'Ok';
       try { await fs.access(filesDir); } catch (e) { diskStatus = 'Bad'; }
 
-      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
+      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] Preparing environment...\n\n`;
 
       // Always overwrite logs on START to clean previous session
       await fs.writeFile(logPath, initialLogs);
@@ -125,26 +123,60 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        // Handle dependencies for Node.js
-        if (config.runtime !== 'python' && modulesStatus === 'No') {
-          logStream.write(`[STS] [${timestamp()}] Installing Node.js dependencies (npm install)...\n`);
-          await new Promise((resolve) => {
-            const installProcess = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', 'npm', 'install', '--production'], {
-              cwd: filesDir,
-              env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
+        // --- Dependency Installation Phase ---
+
+        if (config.runtime === 'python') {
+          // Check for requirements.txt
+          let hasRequirements = false;
+          try { await fs.access(requirementsPath); hasRequirements = true; } catch (e) {}
+
+          if (hasRequirements) {
+            logStream.write(`[STS] [${timestamp()}] requirements.txt detected. Installing dependencies...\n`);
+            await new Promise((resolve) => {
+              const installProcess = spawn('python3', ['-m', 'pip', 'install', '-r', 'requirements.txt'], {
+                cwd: filesDir,
+                env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
+              });
+              installProcess.stdout?.on('data', (data) => logStream.write(data));
+              installProcess.stderr?.on('data', (data) => logStream.write(data));
+              installProcess.on('close', (code) => {
+                logStream.write(`[STS] [${timestamp()}] Pip exited with code ${code}\n`);
+                resolve(true);
+              });
             });
-            installProcess.stdout?.on('data', (data) => logStream.write(data));
-            installProcess.stderr?.on('data', (data) => logStream.write(data));
-            installProcess.on('close', () => resolve(true));
-          });
+          }
+        } else {
+          // Node.js: Check if node_modules exists OR package.json is present
+          let modulesExist = false;
+          let hasPackageJson = false;
+          try { await fs.access(nodeModulesPath); modulesExist = true; } catch (e) {}
+          try { await fs.access(packageJsonPath); hasPackageJson = true; } catch (e) {}
+
+          if (hasPackageJson && !modulesExist) {
+            logStream.write(`[STS] [${timestamp()}] package.json detected without node_modules. Running npm install...\n`);
+            await new Promise((resolve) => {
+              const installProcess = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', 'npm', 'install', '--production'], {
+                cwd: filesDir,
+                env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
+              });
+              installProcess.stdout?.on('data', (data) => logStream.write(data));
+              installProcess.stderr?.on('data', (data) => logStream.write(data));
+              installProcess.on('close', (code) => {
+                logStream.write(`[STS] [${timestamp()}] Npm exited with code ${code}\n`);
+                resolve(true);
+              });
+            });
+          }
         }
 
-        const commandParts = config.startupCommand.split(' ');
+        // --- Execution Phase ---
         
+        logStream.write(`\n[STS] [${timestamp()}] Booting application: ${config.startupCommand}\n\n`);
+
+        const commandParts = config.startupCommand.split(' ');
         let child;
+
         if (config.runtime === 'python') {
-          // Simplified Python execution for prototype
-          // In a real environment, we'd use virtualenvs or specific python bin paths
           child = spawn(config.commandRun || 'python3', commandParts.slice(1), {
             cwd: filesDir,
             detached: true,
