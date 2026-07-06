@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -91,7 +90,11 @@ const runtimesByTemplate: Record<string, { id: string; name: string }[]> = {
   ],
 };
 
-const nodeVersions = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
+const runtimeVersions: Record<string, string[]> = {
+  nodejs: ["16", "18", "20", "22"],
+  python: ["3.10", "3.11", "3.12", "3.13"],
+  php: ["7.4", "8.1", "8.2", "8.3"],
+};
 
 export default function UserDetailPage() {
   const { userId } = useParams();
@@ -110,7 +113,7 @@ export default function UserDetailPage() {
   const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
   const [provisionTemplate, setProvisionTemplate] = React.useState("website");
   const [provisionRuntime, setProvisionRuntime] = React.useState("nodejs");
-  const [provisionNodeVersion, setProvisionNodeVersion] = React.useState("20");
+  const [provisionVersion, setProvisionVersion] = React.useState("20");
   const [provisionServerName, setProvisionServerName] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -165,6 +168,14 @@ export default function UserDetailPage() {
     };
   }, [userId, db, router, toast]);
 
+  // Sync version when runtime changes
+  React.useEffect(() => {
+    const versions = runtimeVersions[provisionRuntime] || [];
+    if (versions.length > 0) {
+      setProvisionVersion(versions[0]);
+    }
+  }, [provisionRuntime]);
+
   const toggleDevStatus = async () => {
     if (!targetUser || updating) return;
     setUpdating(true);
@@ -207,7 +218,9 @@ export default function UserDetailPage() {
         plan: plan?.name,
         template: provisionTemplate,
         runtime: provisionRuntime,
-        nodeVersion: provisionRuntime === 'nodejs' ? provisionNodeVersion : null,
+        runtimeVersion: provisionVersion,
+        nodeVersion: provisionRuntime === 'nodejs' ? provisionVersion : null,
+        pythonVersion: provisionRuntime === 'python' ? provisionVersion : null,
         status: "online",
         createdAt: serverTimestamp(),
         resources: {
@@ -239,6 +252,7 @@ export default function UserDetailPage() {
   };
 
   const availableRuntimes = runtimesByTemplate[provisionTemplate] || [];
+  const availableVersions = runtimeVersions[provisionRuntime] || [];
 
   if (!targetUser) return null;
 
@@ -336,9 +350,6 @@ export default function UserDetailPage() {
                           <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Template</Label>
                           <Select value={provisionTemplate} onValueChange={(val) => {
                             setProvisionTemplate(val);
-                            if (val === 'bots' && provisionRuntime === 'php') {
-                              setProvisionRuntime('nodejs');
-                            }
                           }}>
                             <SelectTrigger className="bg-secondary/30 border-none h-11">
                               <SelectValue placeholder="Template" />
@@ -373,17 +384,19 @@ export default function UserDetailPage() {
                         </div>
                       </div>
                       
-                      {provisionRuntime === 'nodejs' && (
+                      {availableVersions.length > 0 && (
                         <div className="grid gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Node.js Version</Label>
-                          <Select value={provisionNodeVersion} onValueChange={setProvisionNodeVersion}>
+                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {provisionRuntime === 'python' ? 'Python' : provisionRuntime === 'nodejs' ? 'Node.js' : 'Runtime'} Version
+                          </Label>
+                          <Select value={provisionVersion} onValueChange={setProvisionVersion}>
                             <SelectTrigger className="bg-secondary/30 border-none h-11">
                               <SelectValue placeholder="Select version" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
-                              {nodeVersions.map(v => (
+                              {availableVersions.map(v => (
                                 <SelectItem key={v} value={v}>
-                                  Node.js {v}
+                                  {provisionRuntime === 'python' ? `Python ${v}` : `v${v}`}
                                 </SelectItem>
                               ))}
                             </SelectContent>

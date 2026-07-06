@@ -64,6 +64,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
 
+const nodeVersions = ["16", "18", "20", "22"];
+const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
+
 export default function ServerPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -78,7 +81,7 @@ export default function ServerPage() {
   const [activeTab, setActiveTab] = React.useState("console");
 
   const [serverName, setServerName] = React.useState("");
-  const [nodeVersion, setNodeVersion] = React.useState("");
+  const [runtimeVersion, setRuntimeVersion] = React.useState("");
   const [startupCommand, setStartupCommand] = React.useState("");
   const [commandRun, setCommandRun] = React.useState("");
   const [entryFile, setEntryFile] = React.useState("");
@@ -99,12 +102,14 @@ export default function ServerPage() {
         const data = doc.data();
         setServer({ id: doc.id, ...data });
         
-        // Only update inputs if different to avoid flickering while typing
+        // Use runtimeVersion if present, fallback to nodeVersion or pythonVersion
+        const currentVersion = data.runtimeVersion || data.nodeVersion || data.pythonVersion || "";
+        
         setServerName(prev => prev === data.name ? prev : (data.name || ""));
-        setNodeVersion(prev => prev === data.nodeVersion ? prev : (data.nodeVersion || "20"));
-        setStartupCommand(prev => prev === data.startupCommand ? prev : (data.startupCommand || "npm start"));
-        setCommandRun(prev => prev === data.commandRun ? prev : (data.commandRun || "node"));
-        setEntryFile(prev => prev === data.entryFile ? prev : (data.entryFile || "index.js"));
+        setRuntimeVersion(prev => prev === currentVersion ? prev : currentVersion);
+        setStartupCommand(prev => prev === data.startupCommand ? prev : (data.startupCommand || ""));
+        setCommandRun(prev => prev === data.commandRun ? prev : (data.commandRun || ""));
+        setEntryFile(prev => prev === data.entryFile ? prev : (data.entryFile || ""));
       } else if (!isDeleting) {
         toast({ variant: "destructive", title: "Instance removed", description: "The server instance is no longer available." });
         router.push("/dashboard");
@@ -160,10 +165,11 @@ export default function ServerPage() {
       await updateDoc(doc(db, "servers", id as string), { status: targetStatus });
 
       const result = await executeServerPower(id as string, action, {
-        nodeVersion: nodeVersion || "20",
-        commandRun: commandRun || "node",
-        entryFile: entryFile || "index.js",
-        startupCommand: startupCommand || "npm start"
+        runtime: server.runtime || "nodejs",
+        version: runtimeVersion,
+        commandRun: commandRun || (server.runtime === 'python' ? 'python3' : 'node'),
+        entryFile: entryFile || (server.runtime === 'python' ? 'main.py' : 'index.js'),
+        startupCommand: startupCommand || (server.runtime === 'python' ? 'python3 main.py' : 'npm start')
       });
 
       if (!result.success) {
@@ -186,14 +192,21 @@ export default function ServerPage() {
   const handleSaveSettings = async () => {
     if (!id || !db) return;
     setIsSavingSettings(true);
+    
+    const updatePayload: any = {
+      name: serverName,
+      runtimeVersion: runtimeVersion,
+      startupCommand,
+      commandRun,
+      entryFile
+    };
+
+    // Keep compatibility with older field names
+    if (server.runtime === 'nodejs') updatePayload.nodeVersion = runtimeVersion;
+    if (server.runtime === 'python') updatePayload.pythonVersion = runtimeVersion;
+
     try {
-      await updateDoc(doc(db, "servers", id as string), {
-        name: serverName,
-        nodeVersion,
-        startupCommand,
-        commandRun,
-        entryFile
-      });
+      await updateDoc(doc(db, "servers", id as string), updatePayload);
       toast({ title: "Config Saved", description: "Startup parameters updated." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -224,8 +237,12 @@ export default function ServerPage() {
 
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
+  
   const isNodeJS = server?.runtime === "nodejs";
-  const nodeVersionsList = Array.from({ length: 8 }, (_, i) => (15 + i).toString());
+  const isPython = server?.runtime === "python";
+  const hasStartup = isNodeJS || isPython;
+
+  const currentVersionsList = isPython ? pythonVersions : nodeVersions;
 
   return (
     <div className="bg-background min-h-screen">
@@ -256,7 +273,7 @@ export default function ServerPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
-                <Avatar className="size-8"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
+                <Avatar className="size-8 md:size-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">{displayName}</span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{user?.email}</span>
@@ -282,7 +299,7 @@ export default function ServerPage() {
               <TabsList className="bg-secondary/30 p-1 rounded-xl w-fit h-auto flex whitespace-nowrap">
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>
                 <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><FolderOpen className="size-4" /> Files</TabsTrigger>
-                {isNodeJS && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
+                {hasStartup && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
                 <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><UsersIcon className="size-4" /> Access</TabsTrigger>
                 <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><History className="size-4" /> Activity</TabsTrigger>
                 <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><SettingsIcon className="size-4" /> Settings</TabsTrigger>
@@ -309,24 +326,45 @@ export default function ServerPage() {
 
           <TabsContent value="files" className="animate-in fade-in duration-500"><FileExplorer serverId={id as string} /></TabsContent>
 
-          {isNodeJS && (
+          {hasStartup && (
             <TabsContent value="startup" className="animate-in fade-in duration-500 space-y-8">
               <div className="max-w-3xl bg-card border border-border/50 rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-border/50 bg-secondary/30 flex items-center gap-3">
                   <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Rocket className="size-5" /></div>
-                  <div><h2 className="text-xl font-headline font-bold">Boot Configuration</h2><p className="text-xs text-muted-foreground">Modify script execution parameters.</p></div>
+                  <div>
+                    <h2 className="text-xl font-headline font-bold">Boot Configuration</h2>
+                    <p className="text-xs text-muted-foreground">Modify {isPython ? 'Python' : 'Node.js'} execution parameters.</p>
+                  </div>
                 </div>
                 <CardContent className="p-8 space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">StartUp Command</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} /></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">NodeJs Version</Label>
-                      <Select value={nodeVersion} onValueChange={setNodeVersion}>
-                        <SelectTrigger className="bg-secondary/50 border-none h-11"><SelectValue /></SelectTrigger>
-                        <SelectContent className="max-h-60">{nodeVersionsList.map(v => <SelectItem key={v} value={v}>Node.js {v}</SelectItem>)}</SelectContent>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">StartUp Command</Label>
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} placeholder={isPython ? 'python3 main.py' : 'npm start'} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">{isPython ? 'Python' : 'Node.js'} Version</Label>
+                      <Select value={runtimeVersion} onValueChange={setRuntimeVersion}>
+                        <SelectTrigger className="bg-secondary/50 border-none h-11">
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {currentVersionsList.map(v => (
+                            <SelectItem key={v} value={v}>
+                              {isPython ? 'Python' : 'Node.js'} {v}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Binary Runner</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} /></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Entrypoint</Label><Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} /></div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">Binary Runner</Label>
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} placeholder={isPython ? 'python3' : 'node'} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">Entrypoint</Label>
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} placeholder={isPython ? 'main.py' : 'index.js'} />
+                    </div>
                   </div>
                   <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2"><Save className="size-4" /> Update Startup Config</Button>
                 </CardContent>

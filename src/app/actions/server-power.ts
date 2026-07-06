@@ -1,5 +1,4 @@
-
-'use server';
+"use server";
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
@@ -8,7 +7,7 @@ import gradient from 'gradient-string';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming and process group management.
- * Optimized with stylized ASCII art and colored status indicators.
+ * Enhanced to support Node.js and Python runtimes with versioning.
  */
 
 export async function getServerProcessStatus(serverId: string) {
@@ -37,7 +36,8 @@ export async function getServerProcessStatus(serverId: string) {
 }
 
 export async function executeServerPower(serverId: string, action: 'start' | 'stop' | 'restart', config: {
-  nodeVersion: string;
+  runtime?: string;
+  version: string;
   commandRun: string;
   entryFile: string;
   startupCommand: string;
@@ -65,7 +65,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         if (!isNaN(pid)) {
           try {
             // Kill entire process group aggressively (negative PID)
-            // This ensures all sub-processes spawned by npx/node are killed
             process.kill(-pid, 'SIGKILL'); 
           } catch (e) {
             // Fallback for single process if group kill fails
@@ -104,17 +103,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 ░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
 ░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░`;
       
-      // Gradient ASCII (Purple to Orange)
       const ascii = gradient(['blue', 'blue'])(asciiRaw);
       
+      const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
+      const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
+
       const nodeModulesPath = path.join(filesDir, 'node_modules');
       let modulesStatus = 'Ok';
-      try { await fs.access(nodeModulesPath); } catch (e) { modulesStatus = 'No'; }
+      if (config.runtime !== 'python') {
+        try { await fs.access(nodeModulesPath); } catch (e) { modulesStatus = 'No'; }
+      }
 
       let diskStatus = 'Ok';
       try { await fs.access(filesDir); } catch (e) { diskStatus = 'Bad'; }
 
-      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Checking node_modules... ${modulesStatus === 'Ok' ? green('Ok') : yellow('No')}\n[STS] [${timestamp()}] Starting with Node.Js v${config.nodeVersion}\n[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
+      const initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking available disk... ${diskStatus === 'Ok' ? green('Ok') : red('Bad')}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n[STS] [${timestamp()}] Executing ${config.startupCommand}\n\n`;
 
       // Always overwrite logs on START to clean previous session
       await fs.writeFile(logPath, initialLogs);
@@ -122,10 +125,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        if (modulesStatus === 'No') {
-          logStream.write(`[STS] [${timestamp()}] Installing dependencies (npm install)...\n`);
+        // Handle dependencies for Node.js
+        if (config.runtime !== 'python' && modulesStatus === 'No') {
+          logStream.write(`[STS] [${timestamp()}] Installing Node.js dependencies (npm install)...\n`);
           await new Promise((resolve) => {
-            const installProcess = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', 'npm', 'install', '--production'], {
+            const installProcess = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', 'npm', 'install', '--production'], {
               cwd: filesDir,
               env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
             });
@@ -136,12 +140,26 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
 
         const commandParts = config.startupCommand.split(' ');
-        const child = spawn('npx', ['-y', '-p', `node@${config.nodeVersion}`, '--', ...commandParts], {
-          cwd: filesDir,
-          detached: true,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
-        });
+        
+        let child;
+        if (config.runtime === 'python') {
+          // Simplified Python execution for prototype
+          // In a real environment, we'd use virtualenvs or specific python bin paths
+          child = spawn(config.commandRun || 'python3', commandParts.slice(1), {
+            cwd: filesDir,
+            detached: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
+          });
+        } else {
+          // Node.js dynamic versioning via npx
+          child = spawn('npx', ['-y', '-p', `node@${config.version}`, '--', ...commandParts], {
+            cwd: filesDir,
+            detached: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, NODE_ENV: 'production', FORCE_COLOR: '1' }
+          });
+        }
 
         if (child.pid) {
           // Store the leader PID for process group management

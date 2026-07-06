@@ -16,6 +16,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Rocket, 
   ArrowRight, 
   Cpu, 
@@ -66,6 +73,12 @@ const applicationTypes: Record<string, { id: string; name: string }[]> = {
   ],
 };
 
+const runtimeVersions: Record<string, string[]> = {
+  nodejs: ["16", "18", "20", "22"],
+  python: ["3.10", "3.11", "3.12", "3.13"],
+  php: ["7.4", "8.1", "8.2", "8.3"],
+};
+
 const runtimeIconNames: Record<string, string> = {
   nodejs: "logos:nodejs-icon",
   python: "logos:python",
@@ -99,6 +112,7 @@ export default function DeployPage() {
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = React.useState<string | null>(null);
   const [selectedAppType, setSelectedAppType] = React.useState<string | null>(null);
+  const [selectedVersion, setSelectedVersion] = React.useState<string>("");
   const [serverName, setServerName] = React.useState("");
 
   const [paymentLoading, setPaymentLoading] = React.useState(false);
@@ -194,10 +208,18 @@ export default function DeployPage() {
     regions.forEach(checkRegion);
   }, [step, regions]);
 
+  // Reset version when runtime changes
+  React.useEffect(() => {
+    if (selectedAppType) {
+      setSelectedVersion(runtimeVersions[selectedAppType]?.[0] || "");
+    }
+  }, [selectedAppType]);
+
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   const selectedRegionData = regions.find(r => r.id === selectedRegion);
   const selectedPresetData = resourcePresets.find(p => p.id === selectedPreset);
   const availableAppTypes = selectedTemplate ? (applicationTypes[selectedTemplate] || applicationTypes.website) : [];
+  const availableVersions = selectedAppType ? (runtimeVersions[selectedAppType] || []) : [];
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -259,6 +281,9 @@ export default function DeployPage() {
         status: "online",
         createdAt: serverTimestamp(),
         runtime: selectedAppType,
+        nodeVersion: selectedAppType === 'nodejs' ? selectedVersion : null,
+        pythonVersion: selectedAppType === 'python' ? selectedVersion : null,
+        runtimeVersion: selectedVersion,
         template: selectedTemplate,
         region: selectedRegionData?.name || "Global",
         resources: {
@@ -478,7 +503,7 @@ export default function DeployPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Application Runtime</h2>
-              <p className="text-muted-foreground text-sm">Choose the environment for your {selectedTemplateData?.name}.</p>
+              <p className="text-muted-foreground text-sm">Choose the environment and version for your {selectedTemplateData?.name}.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {availableAppTypes.map((type) => {
@@ -497,15 +522,41 @@ export default function DeployPage() {
                       <div className={cn("size-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110", selectedAppType === type.id ? "bg-primary/20" : "bg-secondary/50")}>
                         {iconName ? <Icon icon={iconName} className="size-10" /> : <Code2 className={cn("size-8", selectedAppType === type.id ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />}
                       </div>
-                      <div className="space-y-1"><div className="font-headline font-bold text-lg">{type.name}</div><div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Standard Runtime</div></div>
+                      <div className="space-y-1">
+                        <div className="font-headline font-bold text-lg">{type.name}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Environment</div>
+                      </div>
                     </CardContent>
                   </Card>
                 );
               })}
             </div>
+
+            {selectedAppType && availableVersions.length > 0 && (
+              <div className="max-w-md mx-auto space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-center block">Select {selectedAppType === 'nodejs' ? 'Node.js' : 'Python'} Version</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {availableVersions.map((v) => (
+                    <Button 
+                      key={v} 
+                      variant="outline" 
+                      onClick={() => setSelectedVersion(v)}
+                      className={cn(
+                        "h-12 border-border/50 bg-secondary/20 hover:bg-primary/5 hover:border-primary/50 transition-all font-bold",
+                        selectedVersion === v && "border-primary bg-primary/10 text-primary ring-1 ring-primary/30"
+                      )}
+                    >
+                      {selectedAppType === 'nodejs' ? `v${v}` : `Python ${v}`}
+                      {selectedVersion === v && <CheckCircle2 className="size-3.5 ml-2 fill-primary text-white" />}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
               <Button variant="ghost" onClick={() => setStep(3)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
-              <Button disabled={!selectedAppType} onClick={() => setStep(5)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Checkout <ArrowRight className="size-4" /></Button>
+              <Button disabled={!selectedAppType || !selectedVersion} onClick={() => setStep(5)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Checkout <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
@@ -525,7 +576,7 @@ export default function DeployPage() {
                   <div className="text-muted-foreground">Template</div><div className="font-bold text-right uppercase text-primary">{selectedTemplateData?.name}</div>
                   <div className="text-muted-foreground">Region</div><div className="font-bold text-right uppercase">{selectedRegionData?.name} ({selectedRegionData?.location})</div>
                   <div className="text-muted-foreground">Resources</div><div className="font-bold text-right flex items-center justify-end gap-1.5"><Image src="/img/icons.png" alt="STS" width={16} height={16} className="object-contain" />{selectedPresetData?.name} ({selectedPresetData?.ram})</div>
-                  <div className="text-muted-foreground">Runtime</div><div className="font-bold text-right uppercase">{selectedAppType}</div>
+                  <div className="text-muted-foreground">Runtime</div><div className="font-bold text-right uppercase">{selectedAppType} ({selectedAppType === 'python' ? 'Python' : 'v'}{selectedVersion})</div>
                   <div className="text-muted-foreground">Storage</div><div className="font-bold text-right">{selectedPresetData?.disk} SSD</div>
                 </div>
                 <div className="pt-6 border-t border-border/50 flex items-center justify-between"><span className="font-bold font-headline text-lg">Total Cost</span><span className="font-bold font-headline text-3xl text-primary">{selectedPresetData?.price}</span></div>
