@@ -34,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { sendVerificationCode } from "@/app/actions/auth-actions";
 import { cn } from "@/lib/utils";
 
-export default function AuthPage() {
+function AuthContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -332,5 +332,13 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>}>
+      <AuthContent />
+    </React.Suspense>
   );
 }
