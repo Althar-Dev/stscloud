@@ -27,11 +27,24 @@ function getPythonBinary(): string {
   const candidates = ['python3', 'python'];
   for (const bin of candidates) {
     try {
+      // Check if command exists by running it with --version
       execSync(`${bin} --version`, { stdio: 'ignore', timeout: 2000 });
       return bin;
     } catch (e) {}
   }
-  return 'python3'; // Final fallback
+  
+  // If standard commands fail, try 'which' as a last resort
+  try {
+    const whichPython3 = execSync('which python3', { encoding: 'utf8' }).trim();
+    if (whichPython3) return whichPython3;
+  } catch (e) {}
+  
+  try {
+    const whichPython = execSync('which python', { encoding: 'utf8' }).trim();
+    if (whichPython) return whichPython;
+  } catch (e) {}
+  
+  return 'python'; // Final fallback to 'python' instead of 'python3' as it's more common
 }
 
 export async function getServerProcessStatus(serverId: string) {
@@ -202,13 +215,22 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         const localPkgDir = path.join(filesDir, '.python_packages');
         
         if (config.runtime === 'python') {
-          // Inject -u for unbuffered logs if it's a python command
-          if (finalStartup.startsWith('python3 ') || finalStartup === 'python3') {
+          // Robustly replace 'python3' or 'python' with the detected binary path AND inject -u
+          // Case 1: command starts with python3
+          if (finalStartup.startsWith('python3 ')) {
             finalStartup = finalStartup.replace('python3', `${pythonBinary} -u`);
-          } else if (finalStartup.startsWith('python ') || finalStartup === 'python') {
+          } 
+          // Case 2: command starts with python
+          else if (finalStartup.startsWith('python ')) {
             finalStartup = finalStartup.replace('python', `${pythonBinary} -u`);
-          } else if (!finalStartup.includes(' -u ')) {
-             finalStartup = finalStartup.replace(/^(python[3]?)/, `$1 -u`);
+          }
+          // Case 3: command IS exactly python3 or python
+          else if (finalStartup === 'python3' || finalStartup === 'python') {
+            finalStartup = `${pythonBinary} -u`;
+          }
+          // Case 4: Any other command, ensure it doesn't already have -u, then try to prefix if it starts with python-like word
+          else if (!finalStartup.includes(' -u ')) {
+            finalStartup = finalStartup.replace(/^(python[3]?)/, `${pythonBinary} -u`);
           }
         } else {
           finalStartup = `npx -y -p node@${config.version} -- ${finalStartup}`;

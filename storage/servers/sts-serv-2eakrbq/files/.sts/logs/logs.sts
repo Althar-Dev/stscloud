@@ -1,14 +1,17 @@
 [94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m█[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m▀[39m[94m▀[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m▀[39m[94m▄[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m░[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m[94m░[39m[94m█[39m
 [94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m░[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m▀[39m[94m░[39m[94m▀[39m[94m▀[39m[94m░[39m
-[STS] [20:39:21] Checking environment... [32mOk[0m
-[STS] [20:39:21] Runtime: Python 3.10
-[STS] [20:39:21] System warming up...
+[STS] [20:41:10] Checking environment... [32mOk[0m
+[STS] [20:41:10] Runtime: Python 3.10
+[STS] [20:41:10] System warming up...
 
-[STS] [20:39:21] Changes in requirements.txt detected. Installing packages to local directory...
+[STS] [20:41:10] Requirements changed. Installing to local directory...
 /bin/sh: line 1: python3: command not found
-[STS] [20:39:21] [ERROR] Pip failed with code 127
-[STS] [20:39:21] [WARN] Proceeding with existing packages despite pip failure.
+[STS] [20:41:10] [ERROR] Pip failed with code 127
+[STS] [20:41:10] [WARN] Proceeding despite pip failure.
 
-[STS] [20:39:21] Starting application: python3 main.py
+[STS] [20:41:10] Starting application: python3 -u main.py
 
+/bin/sh: line 1: python3: command not found
+
+[STS] [20:41:10] Process exited (code 127)
