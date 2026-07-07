@@ -25,15 +25,12 @@ import {
   Wifi,
   WifiOff,
   Loader2,
-  Twitter,
-  Github,
-  Instagram,
-  MessageSquare,
   ShieldCheck,
   Lock,
   Mail,
   MapPin
 } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,11 +71,11 @@ const faqs = [
   },
   {
     question: "Metode pembayaran apa saja yang didukung?",
-    answer: "Kami mendukung berbagai metode pembayaran lokal Indonesia termasuk QRIS, Virtual Account (VA), dan E-Wallet seperti Gopay, OVO, serta Dana melalui integrasi SValePay."
+    answer: "Kami mendukung berbagai metode pembayaran lokal Indonesia termasuk QRIS, Virtual Account (VA), dan E-Wallet melalui integrasi SValePay."
   },
   {
     question: "Apakah data saya aman dan terisolasi?",
-    answer: "Ya. Setiap deployment berjalan di lingkungan sandbox terenkripsi miliknya sendiri. Kami menggunakan isolasi tingkat hardware dan mitigasi DDoS berlapis untuk memastikan keamanan maksimum."
+    answer: "Ya. Setiap deployment berjalan di lingkungan sandbox terenkripsi miliknya sendiri. Kami menggunakan isolasi tingkat hardware dan mitigasi DDoS berlapis."
   }
 ];
 
@@ -403,7 +400,7 @@ export default function LandingPage() {
       </section>
 
       <section id="faq" className="py-20 bg-secondary/20">
-        <div className="max-w-3xl auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">FAQ</Badge>
             <h2 className="text-3xl md:text-5xl font-headline font-bold">Pertanyaan Umum</h2>
@@ -436,16 +433,16 @@ export default function LandingPage() {
               </p>
               <div className="flex items-center gap-4">
                 <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
-                  <Twitter className="size-4" />
+                  <Icon icon="ri:twitter-x-fill" className="size-4" />
                 </Link>
                 <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
-                  <Github className="size-4" />
+                  <Icon icon="ri:linkedin-fill" className="size-4" />
                 </Link>
                 <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
-                  <Instagram className="size-4" />
+                  <Icon icon="ri:instagram-line" className="size-4" />
                 </Link>
                 <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
-                  <MessageSquare className="size-4" />
+                  <Icon icon="ri:whatsapp-line" className="size-4" />
                 </Link>
               </div>
             </div>
