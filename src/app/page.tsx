@@ -58,20 +58,20 @@ const defaultGlobalAgents = [
 
 const faqs = [
   {
-    question: "How fast is the deployment process?",
-    answer: "Our automated provisioning system is engineered for speed. Most instances, including complex Node.js or Python environments, are live and accessible in under 60 seconds."
+    question: "Berapa lama proses deployment di STSCloud?",
+    answer: "Sistem provisi otomatis kami dirancang untuk kecepatan tinggi. Sebagian besar instans, termasuk lingkungan Node.js atau Python yang kompleks, aktif dan dapat diakses dalam waktu kurang dari 60 detik."
   },
   {
-    question: "Can I upgrade my server resources later?",
-    answer: "Absolutely. You can scale your CPU, RAM, and Disk resources instantly through your dashboard. The system handles the migration seamlessly without data loss."
+    question: "Apakah saya bisa upgrade resource server nanti?",
+    answer: "Tentu saja. Anda dapat meningkatkan CPU, RAM, dan kapasitas Disk secara instan melalui dashboard. Sistem akan menangani migrasi tanpa ada kehilangan data."
   },
   {
-    question: "What payment methods do you support?",
-    answer: "We support various local and international payment methods including QRIS, Virtual Accounts (VA), and E-Wallets (Gopay, OVO, Dana) via our SValePay integration."
+    question: "Metode pembayaran apa saja yang didukung?",
+    answer: "Kami mendukung berbagai metode pembayaran lokal Indonesia termasuk QRIS, Virtual Account (VA), dan E-Wallet seperti Gopay, OVO, serta Dana melalui integrasi SValePay."
   },
   {
-    question: "Is my data isolated and secure?",
-    answer: "Yes. Every deployment runs in its own encrypted sandbox environment. We utilize hardware-level isolation and multi-layer DDoS mitigation to ensure maximum security."
+    question: "Apakah data saya aman dan terisolasi?",
+    answer: "Ya. Setiap deployment berjalan di lingkungan sandbox terenkripsi miliknya sendiri. Kami menggunakan isolasi tingkat hardware dan mitigasi DDoS berlapis untuk memastikan keamanan maksimum."
   }
 ];
 
@@ -82,7 +82,6 @@ export default function LandingPage() {
   const [pricingTiers, setPricingTiers] = React.useState<any[]>(defaultPricingTiers);
   const [globalAgents, setGlobalAgents] = React.useState<any[]>(defaultGlobalAgents);
   
-  // Real-time status state
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   React.useEffect(() => {
@@ -119,14 +118,11 @@ export default function LandingPage() {
     };
   }, [db]);
 
-  // Enhanced Real-time Latency & Status Logic
   React.useEffect(() => {
     if (globalAgents.length === 0) return;
 
     const checkAgent = async (agent: any) => {
       const url = agent.url;
-      
-      // Mark as checking
       setAgentLiveInfo(prev => ({ 
         ...prev, 
         [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
@@ -141,13 +137,11 @@ export default function LandingPage() {
       }
 
       const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-      
       if (isLocal) {
-        // Artificial delay for local for premium feel
         await new Promise(r => setTimeout(r, 800));
         setAgentLiveInfo(prev => ({ 
           ...prev, 
-          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Local)", isChecking: false } 
+          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Lokal)", isChecking: false } 
         }));
         return;
       }
@@ -155,7 +149,6 @@ export default function LandingPage() {
       const start = performance.now();
       try {
         const targetUrl = url.startsWith("http") ? url : `https://${url}`;
-        // Use fetch with no-cors to check reachability
         await fetch(targetUrl, { 
           mode: 'no-cors', 
           cache: 'no-cache',
@@ -174,51 +167,43 @@ export default function LandingPage() {
       }
     };
 
-    const runAllChecks = () => {
-      globalAgents.forEach(agent => {
-        checkAgent(agent);
-      });
-    };
-
-    runAllChecks();
-    const interval = setInterval(runAllChecks, 15000); // Check every 15s for real-time feel
+    globalAgents.forEach(agent => checkAgent(agent));
+    const interval = setInterval(() => globalAgents.forEach(agent => checkAgent(agent)), 15000);
     return () => clearInterval(interval);
   }, [globalAgents]);
 
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
-      {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2 group cursor-pointer">
+          <Link href="/" className="flex items-center gap-2 group cursor-pointer">
             <div className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] rounded-lg overflow-hidden flex items-center justify-center transition-transform group-hover:scale-110">
-              <Image src="/img/icons.png" alt="STSCloud" width={36} height={36} className="object-cover" />
+              <Image src="/img/icons.png" alt="STSCloud Logo" width={36} height={36} className="object-cover" />
             </div>
             <span className="font-headline font-bold text-lg sm:text-xl tracking-tight">
               <span className="text-primary">Cloud</span>
             </span>
-          </div>
+          </Link>
           
           <div className="hidden lg:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
-            <Link href="#features" className="hover:text-primary transition-colors">Features</Link>
-            <Link href="#infrastructure" className="hover:text-primary transition-colors">Nodes</Link>
-            <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link>
+            <Link href="#features" className="hover:text-primary transition-colors">Fitur</Link>
+            <Link href="#infrastructure" className="hover:text-primary transition-colors">Infrastruktur</Link>
+            <Link href="#pricing" className="hover:text-primary transition-colors">Harga</Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/auth?type=login">
-              <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest px-4">Login</Button>
+              <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest px-4">Masuk</Button>
             </Link>
             <Link href="/auth?type=signup">
               <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold h-9 px-5 text-[10px] uppercase tracking-widest">
-                Deploy Now
+                Daftar Sekarang
               </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="relative min-h-screen lg:h-screen flex flex-col items-center justify-center pt-16 overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_70%)] pointer-events-none" />
         
@@ -232,24 +217,24 @@ export default function LandingPage() {
           <div className="max-w-2xl lg:text-left text-center space-y-6 animate-fade-in z-10">
             <div className="flex justify-center lg:justify-start">
               <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-[0.2em]">
-                <Cloud className="size-3 mr-2 animate-pulse" /> STSCloud
+                <Cloud className="size-3 mr-2 animate-pulse" /> Cloud Hosting Indonesia
               </Badge>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-bold tracking-tighter leading-[1.1] [animation-delay:200ms]">
-              The Next Generation <br className="hidden md:block" /> <span className="text-primary italic">Cloud Hosting</span> Platform.
+              Platform Cloud <br className="hidden md:block" /> <span className="text-primary italic">Generasi Baru</span> Indonesia.
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl lg:mx-0 mx-auto font-medium [animation-delay:400ms] px-4 lg:px-0">
-              STSCloud delivers high performance; deploy complex bots and web applications in under 60 seconds. Powered by local edge infrastructure.
+              STSCloud memberikan performa tinggi untuk deployment bot, web app, dan game server di bawah 60 detik. Didukung oleh infrastruktur edge lokal Jakarta.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-4 [animation-delay:600ms] px-6 lg:px-0">
               <Link href="/auth?type=signup" className="w-full sm:w-auto">
                 <Button size="lg" className="h-10 md:h-11 px-8 text-[10px] font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full group uppercase tracking-widest">
-                  Start Provisioning <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  Mulai Provisi <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="h-10 md:h-11 px-8 text-[10px] font-bold border-border/50 bg-secondary hover:bg-secondary/80 w-full backdrop-blur-sm uppercase tracking-widest">
-                  View Benchmarks
+                  Lihat Benchmark
                 </Button>
               </Link>
             </div>
@@ -267,33 +252,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
       <section id="features" className="py-20 sm:py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 px-1">
             <div className="space-y-4 max-w-xl">
-              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px] w-fit">Infrastructure</Badge>
-              <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Engineered for <br /> Peak Performance</h2>
+              <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px] w-fit">Teknologi Lokal</Badge>
+              <h2 className="text-3xl md:text-5xl font-headline font-bold leading-tight">Performa Puncak <br /> Untuk Developer</h2>
             </div>
             <p className="text-muted-foreground text-xs sm:text-sm max-w-sm font-medium leading-relaxed pb-1">
-              Our platform abstracts complex DevOps into a single, beautiful dashboard designed for humans. No more manual configuration.
+              Platform kami menyederhanakan DevOps kompleks menjadi satu dashboard elegan. Tidak ada lagi konfigurasi manual yang membosankan.
             </p>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <FeatureCard icon={Zap} title="Edge Infrastructure" description="Deploy on high-performance local nodes for ultra-low latency response times." color="text-primary" />
-            <FeatureCard icon={Activity} title="Real-time Telemetry" description="Full visibility into resource consumption. Monitor CPU, memory, and storage." color="text-accent" />
-            <FeatureCard icon={Shield} title="Encrypted Isolation" description="Secure sandboxed file systems and multi-layer DDoS mitigation for every deployment." color="text-orange-400" />
+            <FeatureCard icon={Zap} title="Infrastruktur Edge" description="Deploy di node lokal berperforma tinggi untuk waktu respon ultra-cepat di wilayah Indonesia." color="text-primary" />
+            <FeatureCard icon={Activity} title="Telemetri Real-time" description="Visibilitas penuh penggunaan resource. Monitor CPU, RAM, dan penyimpanan secara langsung." color="text-accent" />
+            <FeatureCard icon={Shield} title="Isolasi Terenkripsi" description="Sistem file sandbox yang aman dan mitigasi DDoS berlapis untuk setiap server." color="text-orange-400" />
           </div>
         </div>
       </section>
 
-      {/* Global Provisioning */}
       <section id="infrastructure" className="py-20 bg-background border-y border-border/50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-12">
           <div className="space-y-3">
-            <h2 className="text-3xl md:text-5xl font-headline font-bold">Global Provisioning</h2>
-            <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto font-medium">Nodes deployed across major internet hubs for 99.9% uptime and real-time connectivity tracking.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Node Infrastruktur Global</h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto font-medium">Node strategis di hub internet utama (Jakarta, Singapura, Malaysia) untuk jaminan uptime 99.9%.</p>
           </div>
           
           <div className="relative max-w-4xl mx-auto flex items-center justify-center">
@@ -335,7 +318,7 @@ export default function LandingPage() {
                       {isChecking ? (
                         <div className="flex items-center gap-2 opacity-50">
                            <Loader2 className="size-3 animate-spin" />
-                           <span>Calculating...</span>
+                           <span>Menghitung Latency...</span>
                         </div>
                       ) : (
                         <>
@@ -351,13 +334,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
       <section id="pricing" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-3 mb-16 px-4">
-            <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">Fair Pricing</Badge>
-            <h2 className="text-3xl md:text-5xl font-headline font-bold">Scale Your Potential</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-xs sm:text-sm font-medium">Choose the perfect tier for your application. No hidden costs.</p>
+            <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">Transparansi Biaya</Badge>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Skalakan Potensi Anda</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-xs sm:text-sm font-medium">Pilih paket terbaik untuk aplikasi Anda. Tidak ada biaya tersembunyi.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
@@ -367,7 +349,7 @@ export default function LandingPage() {
                 tier.popular && "border-primary/50 ring-1 ring-primary/20 scale-[1.03] z-10"
               )}>
                 {tier.popular && (
-                  <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-bl-xl shadow-lg">Recommended</div>
+                  <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-bl-xl shadow-lg">Rekomendasi</div>
                 )}
                 <CardHeader className="p-6 md:px-8 md:pt-8 md:pb-0 space-y-0 relative">
                   <div className="flex items-start justify-between mb-4 md:mb-6">
@@ -382,7 +364,7 @@ export default function LandingPage() {
                     </div>
                     <div className="absolute top-6 right-6 md:top-8 md:right-8 flex items-baseline gap-1 shrink-0">
                       <span className="text-lg md:text-xl font-headline font-bold text-primary">{tier.price}</span>
-                      <span className="text-muted-foreground text-[7px] uppercase font-bold tracking-widest">/mo</span>
+                      <span className="text-muted-foreground text-[7px] uppercase font-bold tracking-widest">/bln</span>
                     </div>
                   </div>
                 </CardHeader>
@@ -403,7 +385,7 @@ export default function LandingPage() {
                   </div>
                   <Link href="/auth?type=signup" className="block w-full pt-2">
                     <Button className={cn("w-full h-11 font-bold gap-2 text-[10px] uppercase tracking-widest transition-all duration-300", tier.popular ? "bg-primary hover:bg-primary/90 text-white" : "bg-secondary hover:bg-secondary/80 text-foreground border border-border/50")}>
-                      Select {tier.name} <ChevronRight className="size-3" />
+                      Pilih {tier.name} <ChevronRight className="size-3" />
                     </Button>
                   </Link>
                 </CardContent>
@@ -413,12 +395,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section id="faq" className="py-20 bg-secondary/20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">FAQ</Badge>
-            <h2 className="text-3xl md:text-5xl font-headline font-bold">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold">Pertanyaan Umum</h2>
           </div>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
@@ -433,30 +414,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Ready to Scale */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 -z-10" />
-        <div className="max-w-5xl mx-auto px-4 text-center space-y-8">
-          <h2 className="text-4xl md:text-6xl font-headline font-bold tracking-tighter">Ready to scale your vision?</h2>
-          <p className="text-muted-foreground text-sm md:text-lg max-w-2xl mx-auto font-medium leading-relaxed">Join thousands of developers deploying high-performance applications on STSCloud.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/auth?type=signup" className="w-full sm:w-auto"><Button size="lg" className="h-14 px-10 text-xs font-bold bg-primary hover:bg-primary/90 text-white gap-2 w-full uppercase tracking-widest">Deploy Your First Instance <ArrowRight className="size-5" /></Button></Link>
-            <Link href="/support" className="w-full sm:w-auto"><Button size="lg" variant="outline" className="h-14 px-10 text-xs font-bold border-border/50 bg-secondary hover:bg-secondary/80 w-full uppercase tracking-widest">Contact Sales</Button></Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="py-16 bg-background border-t border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
-                <Image src="/img/icons.png" alt="STSCloud" width={24} height={24} className="object-cover" />
+                <Image src="/img/icons.png" alt="STSCloud Hosting Logo" width={24} height={24} className="object-cover" />
               </div>
               <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
             </div>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} STSCloud. All rights reserved.</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} STSCloud. Infrastruktur Cloud Indonesia.</p>
           </div>
         </div>
       </footer>
