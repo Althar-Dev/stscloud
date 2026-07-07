@@ -69,7 +69,7 @@ import { signOut } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
-import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
+import { executeServerPower, getServerProcessStatus, checkAndSendExpirationNotice } from "@/app/actions/server-power";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 
 const nodeVersions = ["16", "18", "20", "22", "24", "26"];
@@ -138,6 +138,15 @@ export default function ServerPage() {
         setStartupCommand(prev => prev === data.startupCommand ? prev : (data.startupCommand || ""));
         setCommandRun(prev => prev === data.commandRun ? prev : (data.commandRun || ""));
         setEntryFile(prev => prev === data.entryFile ? prev : (data.entryFile || ""));
+
+        // Expiration Logic Trigger (Simulated for Prototype)
+        if (data.expiresAt && !data.expirationNoticeSent && user?.email) {
+          checkAndSendExpirationNotice(docSnap.id, user.email, data.name, data.expiresAt).then(res => {
+            if (res.success) {
+              updateDoc(doc(db, "servers", docSnap.id), { expirationNoticeSent: true });
+            }
+          });
+        }
       } else if (!isDeleting) {
         toast({ variant: "destructive", title: "Instance removed", description: "The server instance is no longer available." });
         router.push("/dashboard");
@@ -315,7 +324,8 @@ export default function ServerPage() {
         const nextExp = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
         
         await updateDoc(doc(db, "servers", id as string), {
-          expiresAt: nextExp.toISOString()
+          expiresAt: nextExp.toISOString(),
+          expirationNoticeSent: false // Reset for the next cycle
         });
 
         toast({ title: "Success", description: "Instance successfully extended for 30 days." });
@@ -347,7 +357,7 @@ export default function ServerPage() {
     router.push("/auth?type=login");
   };
 
-  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User") : "User";
+  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account") : "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
   
   const isNodeJS = server?.runtime === "nodejs";
@@ -564,7 +574,7 @@ export default function ServerPage() {
                                   <Calendar className="size-5 text-primary" />
                                   <div>
                                      <div className={cn("font-bold text-lg", isExpired ? "text-destructive" : "")}>
-                                        {expiresDate ? expiresDate.toLocaleDateString() : "Never"}
+                                        {expiresDate ? expiresDate.toLocaleString('id-ID') : "Never"}
                                      </div>
                                      <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                                         {isExpired ? "EXPIRED" : `${daysLeft} DAYS REMAINING`}
@@ -626,4 +636,3 @@ export default function ServerPage() {
     </div>
   );
 }
-

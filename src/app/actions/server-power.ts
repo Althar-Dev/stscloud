@@ -1,3 +1,4 @@
+
 "use server";
 
 import { promises as fs, createWriteStream } from 'fs';
@@ -5,7 +6,7 @@ import path from 'path';
 import { spawn, execSync, ChildProcess } from 'child_process';
 import crypto from 'crypto';
 import { getServerDiskUsage } from './server-files';
-import { sendResourceLimitNotification } from '@/lib/email/notifications';
+import { sendResourceLimitNotification, sendExpirationReminderNotification } from '@/lib/email/notifications';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
@@ -62,12 +63,28 @@ function parseDiskToMB(str: string = ""): number {
   return val;
 }
 
+export async function checkAndSendExpirationNotice(serverId: string, email: string, serverName: string, expiresAt: string) {
+  try {
+    const expiry = new Date(expiresAt).getTime();
+    const now = new Date().getTime();
+    const diff = expiry - now;
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+
+    // Trigger if less than 24 hours remaining
+    if (diff > 0 && diff <= oneDayInMs) {
+      await sendExpirationReminderNotification(email, serverName, expiresAt);
+      return { success: true };
+    }
+    return { success: false, reason: "Outside window" };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function sendServerInput(serverId: string, text: string) {
   const child = stdinMap.get(serverId);
   if (child && child.stdin && child.stdin.writable) {
     child.stdin.write(text + '\n');
-    const logPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
-    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
     return { success: true };
   }
   return { success: false, error: "Process not interactive or offline" };
