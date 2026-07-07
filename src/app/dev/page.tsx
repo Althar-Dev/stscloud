@@ -34,7 +34,9 @@ import {
   CheckCircle2,
   Server as ServerIcon,
   Monitor,
-  Package
+  Package,
+  Share2,
+  Link as LinkIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,6 +104,13 @@ const defaultTemplates = [
   { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", status: "active" },
 ];
 
+const defaultSocials = {
+  twitter: "#",
+  linkedin: "#",
+  instagram: "#",
+  whatsapp: "#"
+};
+
 export default function DevConsole() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
@@ -118,14 +127,17 @@ export default function DevConsole() {
   const [pricingData, setPricingData] = React.useState<any[]>([]);
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
+  const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
   
   const [isPricingDirty, setIsPricingDirty] = React.useState(false);
   const [isLandingDirty, setIsLandingDirty] = React.useState(false);
   const [isTemplatesDirty, setIsTemplatesDirty] = React.useState(false);
+  const [isSocialsDirty, setIsSocialsDirty] = React.useState(false);
   
   const [isUpdatingPricing, setIsUpdatingPricing] = React.useState(false);
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
   const [isUpdatingTemplates, setIsUpdatingTemplates] = React.useState(false);
+  const [isUpdatingSocials, setIsUpdatingSocials] = React.useState(false);
 
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
   const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
@@ -214,6 +226,16 @@ export default function DevConsole() {
       }
     });
 
+    const unsubSocials = onSnapshot(doc(db, "main", "socials"), (docSnap) => {
+      if (!isSocialsDirty) {
+        if (docSnap.exists()) {
+          setSocialsData(docSnap.data());
+        } else {
+          setSocialsData(defaultSocials);
+        }
+      }
+    });
+
     return () => {
       clearInterval(metricsInt);
       unsubUsers();
@@ -222,8 +244,9 @@ export default function DevConsole() {
       unsubPricing();
       unsubLandingAgents();
       unsubTemplates();
+      unsubSocials();
     };
-  }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty]);
+  }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty, isSocialsDirty]);
 
   React.useEffect(() => {
     if (landingAgents.length === 0) return;
@@ -375,6 +398,22 @@ export default function DevConsole() {
       .finally(() => setIsUpdatingTemplates(false));
   };
 
+  const handleUpdateSocial = (field: string, value: string) => {
+    setIsSocialsDirty(true);
+    setSocialsData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const saveSocialsToDB = async () => {
+    setIsUpdatingSocials(true);
+    setDoc(doc(db, "main", "socials"), { ...socialsData, updatedAt: serverTimestamp() })
+      .then(() => {
+        setIsSocialsDirty(false);
+        toast({ title: "Socials Saved", description: "Footer links updated successfully." });
+      })
+      .catch((err) => toast({ variant: "destructive", title: "Save Error", description: err.message }))
+      .finally(() => setIsUpdatingSocials(false));
+  };
+
   const handleAddAgent = async () => {
     if (!regionName || !agentUrl) return;
     setIsAddingAgent(true);
@@ -500,6 +539,7 @@ export default function DevConsole() {
             <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><CreditCard className="size-4" /> Billing</TabsTrigger>
             <TabsTrigger value="pricing" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Tag className="size-4" /> Pricing</TabsTrigger>
             <TabsTrigger value="templates" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Layout className="size-4" /> Templates</TabsTrigger>
+            <TabsTrigger value="socials" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Share2 className="size-4" /> Socials</TabsTrigger>
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
           </TabsList>
 
@@ -826,6 +866,72 @@ export default function DevConsole() {
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="socials" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
+                <div>
+                  <CardTitle className="font-headline">Social Media Links</CardTitle>
+                  <CardDescription>Configure platform presence on footer. {isSocialsDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription>
+                </div>
+                <Button className="bg-primary text-white gap-2 font-bold w-full sm:w-auto" onClick={saveSocialsToDB} disabled={isUpdatingSocials}>
+                  {isUpdatingSocials ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
+                </Button>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Twitter (X) URL</Label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="https://x.com/..." 
+                        className="bg-secondary/30 border-none pl-10 h-11"
+                        value={socialsData.twitter || ''}
+                        onChange={(e) => handleUpdateSocial('twitter', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">LinkedIn URL</Label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="https://linkedin.com/in/..." 
+                        className="bg-secondary/30 border-none pl-10 h-11"
+                        value={socialsData.linkedin || ''}
+                        onChange={(e) => handleUpdateSocial('linkedin', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Instagram URL</Label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="https://instagram.com/..." 
+                        className="bg-secondary/30 border-none pl-10 h-11"
+                        value={socialsData.instagram || ''}
+                        onChange={(e) => handleUpdateSocial('instagram', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">WhatsApp Link</Label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="https://wa.me/..." 
+                        className="bg-secondary/30 border-none pl-10 h-11"
+                        value={socialsData.whatsapp || ''}
+                        onChange={(e) => handleUpdateSocial('whatsapp', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

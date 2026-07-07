@@ -85,6 +85,7 @@ export default function LandingPage() {
   const [worldJson, setWorldJson] = React.useState<any>(null);
   const [pricingTiers, setPricingTiers] = React.useState<any[]>(defaultPricingTiers);
   const [globalAgents, setGlobalAgents] = React.useState<any[]>(defaultGlobalAgents);
+  const [socials, setSocials] = React.useState<any>({});
   
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
@@ -116,9 +117,16 @@ export default function LandingPage() {
       }
     });
 
+    const unsubSocials = onSnapshot(doc(db, "main", "socials"), (docSnap) => {
+      if (docSnap.exists()) {
+        setSocials(docSnap.data());
+      }
+    });
+
     return () => {
       unsubPricing();
       unsubAgents();
+      unsubSocials();
     };
   }, [db]);
 
@@ -432,16 +440,16 @@ export default function LandingPage() {
                 Penyedia infrastruktur cloud berperforma tinggi untuk game server, bot, dan aplikasi web dengan latensi terendah di Asia Tenggara.
               </p>
               <div className="flex items-center gap-4">
-                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                <Link href={socials.twitter || '#'} target="_blank" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
                   <Icon icon="ri:twitter-x-fill" className="size-4" />
                 </Link>
-                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                <Link href={socials.linkedin || '#'} target="_blank" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
                   <Icon icon="ri:linkedin-fill" className="size-4" />
                 </Link>
-                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                <Link href={socials.instagram || '#'} target="_blank" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
                   <Icon icon="ri:instagram-line" className="size-4" />
                 </Link>
-                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                <Link href={socials.whatsapp || '#'} target="_blank" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
                   <Icon icon="ri:whatsapp-line" className="size-4" />
                 </Link>
               </div>
