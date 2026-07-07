@@ -23,6 +23,8 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { useRouter } from "next/navigation";
+import { useFirestore } from "@/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const faqs = [
   {
@@ -45,7 +47,18 @@ const faqs = [
 
 export default function SupportPage() {
   const router = useRouter();
+  const db = useFirestore();
   const [submitted, setSubmitted] = React.useState(false);
+  const [socials, setSocials] = React.useState<any>({});
+
+  React.useEffect(() => {
+    const unsubSocials = onSnapshot(doc(db, "main", "socials"), (docSnap) => {
+      if (docSnap.exists()) {
+        setSocials(docSnap.data());
+      }
+    });
+    return () => unsubSocials();
+  }, [db]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +134,7 @@ export default function SupportPage() {
             </Card>
           </Link>
 
-          <Link href="https://wa.me/628123456789" target="_blank" className="block h-full group">
+          <Link href={socials.whatsapp || 'https://wa.me/628123456789'} target="_blank" className="block h-full group">
             <Card className="bg-card border-border/50 hover:bg-secondary/20 transition-all cursor-pointer h-full">
               <CardContent className="p-6 space-y-4">
                 <div className="size-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
