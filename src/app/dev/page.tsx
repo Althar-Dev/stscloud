@@ -33,7 +33,8 @@ import {
   Power,
   CheckCircle2,
   Server as ServerIcon,
-  Monitor
+  Monitor,
+  Package
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,31 @@ export default function DevConsole() {
   const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
+  // Stock Calculation Helper
+  const calculateStock = React.useCallback((tierDisk: string) => {
+    if (!vpsMetrics?.freeDiskBytes) return "--";
+    
+    // Safety Margin 5GB
+    const safetyMarginBytes = 5 * 1024 * 1024 * 1024;
+    const usableBytes = vpsMetrics.freeDiskBytes - safetyMarginBytes;
+    
+    if (usableBytes <= 0) return "0";
+    if (tierDisk.toUpperCase() === "UNLIMITED") return "∞";
+    
+    // Parse tier disk (e.g., "2GB" or "500MB")
+    let tierBytes = 0;
+    const val = parseFloat(tierDisk);
+    if (isNaN(val)) return "0";
+    
+    if (tierDisk.toUpperCase().includes("GB")) tierBytes = val * 1024 * 1024 * 1024;
+    else if (tierDisk.toUpperCase().includes("MB")) tierBytes = val * 1024 * 1024;
+    else tierBytes = val * 1024 * 1024 * 1024; // Default GB if no unit
+
+    if (tierBytes <= 0) return "∞";
+    
+    return Math.floor(usableBytes / tierBytes).toString();
+  }, [vpsMetrics]);
+
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -160,9 +186,13 @@ export default function DevConsole() {
     if (!profile || profile.dev !== true) return;
     
     // Fetch Host VPS Metrics
-    getSystemHardwareInfo().then(res => {
-      if (res.success) setVpsMetrics(res.data);
-    });
+    const refreshMetrics = () => {
+      getSystemHardwareInfo().then(res => {
+        if (res.success) setVpsMetrics(res.data);
+      });
+    };
+    refreshMetrics();
+    const metricsInt = setInterval(refreshMetrics, 30000);
 
     const unsubUsers = onSnapshot(query(collection(db, "users"), limit(100)), (snapshot) => {
       setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -210,6 +240,7 @@ export default function DevConsole() {
     });
 
     return () => {
+      clearInterval(metricsInt);
       unsubUsers();
       unsubAgents();
       unsubTransactions();
@@ -570,10 +601,10 @@ export default function DevConsole() {
                        <Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge>
                      </div>
                      <div className="space-y-1">
-                        <div className="text-2xl font-bold font-headline">
-                          {vpsMetrics ? vpsMetrics.totalDisk : "--"}
+                        <div className="text-2xl font-bold font-headline text-orange-400">
+                           {vpsMetrics ? (vpsMetrics.freeDiskBytes / (1024 * 1024 * 1024)).toFixed(1) : "--"} GB
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Host Root Capacity</div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Free Root Storage</div>
                      </div>
                   </CardContent>
                 </Card>
@@ -691,7 +722,10 @@ export default function DevConsole() {
               <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
                 <div>
                   <CardTitle className="font-headline">Product Tiers Management</CardTitle>
-                  <CardDescription>Configure resources and pricing. {isPricingDirty && <span className="text-primary font-bold">(Unsaved Changes)</span>}</CardDescription>
+                  <CardDescription>
+                    Configure resources and pricing. 
+                    {isPricingDirty && <span className="text-primary font-bold ml-2">(Unsaved Changes)</span>}
+                  </CardDescription>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}>
@@ -712,6 +746,7 @@ export default function DevConsole() {
                       <TableHead>RAM</TableHead>
                       <TableHead>CPU</TableHead>
                       <TableHead>Disk</TableHead>
+                      <TableHead>Est. Stock</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
@@ -725,6 +760,17 @@ export default function DevConsole() {
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
                         <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 px-2">
+                             <Package className="size-3.5 text-muted-foreground" />
+                             <span className={cn(
+                               "text-xs font-bold font-code",
+                               calculateStock(tier.disk) === "0" ? "text-destructive" : "text-primary"
+                             )}>
+                               {calculateStock(tier.disk)}
+                             </span>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>
                             {tier.popular ? 'Popular' : 'Standard'}
