@@ -66,13 +66,8 @@ export async function sendServerInput(serverId: string, text: string) {
   const child = stdinMap.get(serverId);
   if (child && child.stdin && child.stdin.writable) {
     child.stdin.write(text + '\n');
-    
-    // Log user input to the file so it appears in the console
     const logPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
     const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    // Use cyan color for user input prefix
-    await fs.appendFile(logPath, `\x1b[36m> ${text}\x1b[0m\n`);
-    
     return { success: true };
   }
   return { success: false, error: "Process not interactive or offline" };
@@ -192,8 +187,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
-      let initialLogs = `${ascii}\n[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n`;
-      initialLogs += `[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
+      let initialLogs = `${ascii}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
+      initialLogs += `[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n`;
       initialLogs += `[STS] [${timestamp()}] Checking available disk... `;
       
       const diskRes = await getServerDiskUsage(serverId);
