@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -39,7 +38,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastRawLogs = React.useRef<string>("");
   
-  // Track status awal untuk menentukan logika clear
+  // Track initial status for clear logic
   const initialStatusRef = React.useRef<string | null>(null);
   const hasClearedOnMount = React.useRef(false);
 
@@ -94,7 +93,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setIsInitializing(false);
   }, [serverId]);
 
-  // Logika Mount: Clear hanya jika status pertama kali dibuka adalah offline
+  // Mount Logic: Clear only if status first opened is offline
   React.useEffect(() => {
     if (externalStatus && initialStatusRef.current === null) {
       initialStatusRef.current = externalStatus;

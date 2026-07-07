@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -25,9 +24,7 @@ import {
   User,
   LogOut,
   Settings as SettingsIcon,
-  Users as UsersIcon,
   Trash2,
-  History,
   Save,
   Rocket,
   AlertTriangle,
@@ -91,7 +88,7 @@ export default function ServerPage() {
   
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Sesi Aktif tracker
+  // Active Session tracker
   const wasOnlineOnMount = React.useRef(false);
 
   React.useEffect(() => {
@@ -309,7 +306,9 @@ export default function ServerPage() {
               <DropdownMenuItem className="gap-2"><User className="size-4" /> Profile</DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><SettingsIcon className="size-4" /> Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}><LogOut className="size-4" /> Sign Out</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={handleSignOut}>
+                <LogOut className="size-4" /> Sign Out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -323,8 +322,6 @@ export default function ServerPage() {
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>
                 <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><FolderOpen className="size-4" /> Files</TabsTrigger>
                 {hasStartup && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
-                <TabsTrigger value="access" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><UsersIcon className="size-4" /> Access</TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><History className="size-4" /> Activity</TabsTrigger>
                 <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><SettingsIcon className="size-4" /> Settings</TabsTrigger>
               </TabsList>
             </div>
