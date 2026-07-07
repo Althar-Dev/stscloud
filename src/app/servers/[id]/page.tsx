@@ -497,10 +497,10 @@ export default function ServerPage() {
                                <h3 className="text-xl font-headline font-bold">Renewal Payment</h3>
                                <p className="text-xs text-muted-foreground">Scan QRIS to extend for 30 days.</p>
                             </div>
-                            <div className="p-6 rounded-2xl bg-white flex items-center justify-center relative overflow-hidden">
+                            <div className="p-0 rounded-2xl bg-white flex items-center justify-center relative overflow-hidden">
                                {renewalPaymentData?.qr_url ? (
-                                  <div className="space-y-4">
-                                     <img src={renewalPaymentData.qr_url} alt="QRIS" className={cn("w-full max-w-[250px] mx-auto", (renewalPaymentStatus === "success" || isCheckingRenewal) && "opacity-20")} />
+                                  <div className="w-full">
+                                     <img src={renewalPaymentData.qr_url} alt="QRIS" className={cn("w-full h-auto transition-opacity", (renewalPaymentStatus === "success" || isCheckingRenewal) && "opacity-20")} />
                                      {renewalPaymentStatus === "success" && (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-sm">
                                            <CheckCircle2 className="size-16 text-green-500 fill-white" />
@@ -508,7 +508,7 @@ export default function ServerPage() {
                                         </div>
                                      )}
                                   </div>
-                               ) : <Skeleton className="w-[200px] h-[200px]" />}
+                               ) : <Skeleton className="w-full aspect-square" />}
                             </div>
                             <div className="flex flex-col gap-3">
                                <Button onClick={handleCheckRenewalStatus} disabled={isCheckingRenewal || renewalPaymentStatus === 'success'} className="w-full h-12 gap-2 bg-primary">
