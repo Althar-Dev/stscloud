@@ -488,7 +488,7 @@ export default function LandingPage() {
               © 2026- Present | STSCloud Infrastructure • All rights reserved
             </p>
             <p className="text-[11px] text-muted-foreground font-bold tracking-widest">
-              Powered by <span className="text-foreground">StarVale</span>
+              Powered by <Link href="https://starvale.my.id" target="_blank" className="text-foreground hover:underline">StarVale</Link>
             </p>
             <p className="text-[11px] text-muted-foreground font-bold tracking-widest mt-2">
               Build with 💙 by <Link href="https://althar.dev" target="_blank" className="text-primary hover:underline">AltharDev</Link>
