@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getServerLogs, clearServerLogs } from "@/app/actions/server-files";
+import { sendServerInput } from "@/app/actions/server-power";
 import AnsiFilter from "ansi-to-html";
 
 const ansiConverter = new AnsiFilter({
@@ -35,6 +36,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
   const [inputValue, setInputValue] = React.useState("");
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [isSticky, setIsSticky] = React.useState(true);
+  const [isSending, setIsSending] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastRawLogs = React.useRef<string>("");
   
@@ -126,10 +128,22 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     setIsSticky(atBottom);
   };
 
-  const handleCommand = (e: React.FormEvent) => {
+  const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !serverId || isSending) return;
+    
+    const text = inputValue;
     setInputValue("");
+    setIsSending(true);
+    
+    try {
+      await sendServerInput(serverId, text);
+    } catch (err) {
+      console.error("Failed to send input:", err);
+    } finally {
+      setIsSending(false);
+      fetchLogs(); // Refresh immediately to show the user input line
+    }
   };
 
   return (
@@ -233,12 +247,18 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type command..." 
+            placeholder={externalStatus === 'online' ? "Type command or input..." : "Server is offline"} 
             className="h-9 md:h-10 bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7"
+            disabled={externalStatus !== 'online' || isSending}
           />
         </div>
-        <Button type="submit" size="sm" className="h-9 md:h-10 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-3 md:px-5">
-          <Send className="size-3.5 md:size-4 mr-2" />
+        <Button 
+          type="submit" 
+          size="sm" 
+          className="h-9 md:h-10 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-3 md:px-5"
+          disabled={externalStatus !== 'online' || isSending}
+        >
+          {isSending ? <Loader2 className="size-3.5 md:size-4 animate-spin" /> : <Send className="size-3.5 md:size-4 mr-2" />}
           <span className="hidden xs:inline">Execute</span>
         </Button>
       </form>

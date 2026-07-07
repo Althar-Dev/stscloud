@@ -2,16 +2,18 @@
 
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
-import { spawn, execSync } from 'child_process';
+import { spawn, execSync, ChildProcess } from 'child_process';
 import crypto from 'crypto';
 import { getServerDiskUsage } from './server-files';
 import { sendResourceLimitNotification } from '@/lib/email/notifications';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Features: Strict Resource Guard (Disk/CPU/RAM) and Email Alerts.
- * Fixed: "Unlimited" parsing logic to prevent false failures.
+ * Features: Strict Resource Guard (Disk/CPU/RAM), Interactive Stdin, and Email Alerts.
  */
+
+// Global map to store interactive handles
+const stdinMap = new Map<string, ChildProcess>();
 
 async function getFileHash(filePath: string): Promise<string> {
   try {
@@ -60,6 +62,22 @@ function parseDiskToMB(str: string = ""): number {
   return val;
 }
 
+export async function sendServerInput(serverId: string, text: string) {
+  const child = stdinMap.get(serverId);
+  if (child && child.stdin && child.stdin.writable) {
+    child.stdin.write(text + '\n');
+    
+    // Log user input to the file so it appears in the console
+    const logPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    // Use cyan color for user input prefix
+    await fs.appendFile(logPath, `\x1b[36m> ${text}\x1b[0m\n`);
+    
+    return { success: true };
+  }
+  return { success: false, error: "Process not interactive or offline" };
+}
+
 export async function getServerProcessStatus(serverId: string, config?: { ramLimit: string; cpuLimit: string; serverName: string; userEmail: string }) {
   const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
@@ -88,6 +106,7 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
           if (cpuUsage > cpuLimit + 0.5) {
              process.kill(-pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
+             stdinMap.delete(serverId);
              sendResourceLimitNotification(config.userEmail, config.serverName, 'CPU', `${cpuUsage}%`, config.cpuLimit);
              return { running: false, killed: 'CPU' };
           }
@@ -96,6 +115,7 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
           if (ramUsageKB > ramLimitKB) {
              process.kill(-pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
+             stdinMap.delete(serverId);
              const actualMB = (ramUsageKB / 1024).toFixed(1);
              sendResourceLimitNotification(config.userEmail, config.serverName, 'RAM', `${actualMB}MB`, config.ramLimit);
              return { running: false, killed: 'RAM' };
@@ -106,6 +126,7 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
       return { running: true, pid };
     } catch (e) {
       await fs.unlink(pidPath).catch(() => {});
+      stdinMap.delete(serverId);
       return { running: false };
     }
   } catch (e) {
@@ -148,6 +169,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       }
     } catch (e) {}
     await fs.unlink(pidPath).catch(() => {});
+    stdinMap.delete(serverId);
   };
 
   if (action === 'stop' || action === 'restart') {
@@ -282,7 +304,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           shell: true,
           cwd: filesDir,
           detached: true,
-          stdio: ['ignore', 'pipe', 'pipe'],
+          stdio: ['pipe', 'pipe', 'pipe'],
           env: { 
             ...process.env, 
             PYTHONUNBUFFERED: '1', 
@@ -294,21 +316,28 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         });
 
         if (child.pid) await fs.writeFile(pidPath, child.pid.toString());
+        
+        // Register for interactive input
+        stdinMap.set(serverId, child);
+
         child.stdout?.on('data', (d) => logStream.write(d));
         child.stderr?.on('data', (d) => logStream.write(d));
         child.on('close', (code) => {
           fs.appendFile(logPath, `\n[STS] [${timestamp()}] Process exited (code ${code})\n`).catch(() => {});
           fs.unlink(pidPath).catch(() => {});
+          stdinMap.delete(serverId);
         });
         child.unref();
       })().catch(err => {
         fs.appendFile(logPath, `\n[STS] [${timestamp()}] [SYSTEM ERROR] ${err.message}\n`).catch(() => {});
         fs.unlink(pidPath).catch(() => {});
+        stdinMap.delete(serverId);
       });
 
       return { success: true };
     } catch (error: any) {
       await fs.unlink(pidPath).catch(() => {});
+      stdinMap.delete(serverId);
       return { success: false, error: error.message };
     }
   }
