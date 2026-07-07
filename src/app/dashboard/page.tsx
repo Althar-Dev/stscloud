@@ -35,7 +35,8 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { doc, onSnapshot, collection, query, where, limit } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, where, limit, updateDoc } from "firebase/firestore";
+import { checkAndSendExpirationNotice } from "@/app/actions/server-power";
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -59,12 +60,25 @@ export default function Dashboard() {
     const serversQuery = query(
       collection(db, "servers"),
       where("ownerId", "==", user.uid),
-      limit(6)
+      limit(10)
     );
     
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setServers(list);
+
+      // Expiration Notice Scanner
+      if (user?.email) {
+        list.forEach(server => {
+          if (server.expiresAt && !server.expirationNoticeSent) {
+            checkAndSendExpirationNotice(server.id, user.email!, server.name, server.expiresAt).then(res => {
+              if (res.success) {
+                updateDoc(doc(db, "servers", server.id), { expirationNoticeSent: true });
+              }
+            });
+          }
+        });
+      }
     });
 
     return () => {

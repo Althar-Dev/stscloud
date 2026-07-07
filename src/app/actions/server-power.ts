@@ -70,8 +70,9 @@ export async function checkAndSendExpirationNotice(serverId: string, email: stri
     const diff = expiry - now;
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
-    // Trigger if less than 24 hours remaining
-    if (diff > 0 && diff <= oneDayInMs) {
+    // Trigger if 24 hours or less remaining (including slightly past expiration)
+    // This ensures they get the notice even if they miss the exact 24h mark.
+    if (diff <= oneDayInMs) {
       await sendExpirationReminderNotification(email, serverName, expiresAt);
       return { success: true };
     }
