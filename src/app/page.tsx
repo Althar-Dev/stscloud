@@ -502,9 +502,15 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
-              © 2026- Present | STSCloud Infrastructure • All rights reserved  Powered by StarVale
+          <div className="pt-8 border-t border-border/50 flex flex-col items-center justify-center text-center gap-2">
+            <p className="text-[11px] text-muted-foreground font-bold tracking-widest">
+              © 2026- Present | STSCloud Infrastructure • All rights reserved
+            </p>
+            <p className="text-[11px] text-muted-foreground font-bold tracking-widest">
+              Powered by <span className="text-foreground">StarVale</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground font-bold tracking-widest mt-2">
+              Build with 💙 by <span className="text-primary">AltharDev</span>
             </p>
           </div>
         </div>
