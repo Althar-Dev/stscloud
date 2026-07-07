@@ -9,7 +9,7 @@ import { sendResourceLimitNotification } from '@/lib/email/notifications';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Features: Resource Guard (Disk/CPU/RAM) and Email Alerts.
+ * Features: Strict Resource Guard (Disk/CPU/RAM) and Email Alerts.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -41,7 +41,16 @@ function getPythonBinary(): string {
   return 'python3'; 
 }
 
-function parseResourceValue(str: string = ""): number {
+function parseResourceToKB(str: string = ""): number {
+  const val = parseFloat(str);
+  if (isNaN(val)) return 0;
+  const upper = str.toUpperCase();
+  if (upper.includes("GB")) return val * 1024 * 1024;
+  if (upper.includes("MB")) return val * 1024;
+  return val; 
+}
+
+function parseDiskToMB(str: string = ""): number {
   const val = parseFloat(str);
   if (isNaN(val)) return 0;
   if (str.toUpperCase().includes("GB")) return val * 1024;
@@ -62,25 +71,33 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
     try {
       process.kill(pid, 0);
       
-      // Active Resource Monitoring Logic
+      // Strict Resource Monitoring
       if (config && config.userEmail) {
         try {
-          // Get CPU and RAM usage percentage from OS
-          const stats = execSync(`ps -p ${pid} -o %cpu,%mem --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
+          // ps -o rss returns Resident Set Size in KB
+          const stats = execSync(`ps -p ${pid} -o %cpu,rss --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
           const cpuUsage = parseFloat(stats[0]);
-          const memUsage = parseFloat(stats[1]);
+          const ramUsageKB = parseFloat(stats[1]);
           
           const cpuLimit = parseFloat(config.cpuLimit) || 100;
+          const ramLimitKB = parseResourceToKB(config.ramLimit) || (1.5 * 1024 * 1024);
           
-          // CPU Guard (with a small grace buffer)
-          if (cpuUsage > cpuLimit + 10) {
-             process.kill(pid, 'SIGKILL');
+          // CPU Guard (Strict check with 0.5% jitter tolerance)
+          if (cpuUsage > cpuLimit + 0.5) {
+             process.kill(-pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
              sendResourceLimitNotification(config.userEmail, config.serverName, 'CPU', `${cpuUsage}%`, config.cpuLimit);
              return { running: false, killed: 'CPU' };
           }
           
-          // RAM Guard could be implemented here similarly if we have a way to translate %mem to actual values vs limits
+          // RAM Guard
+          if (ramUsageKB > ramLimitKB) {
+             process.kill(-pid, 'SIGKILL');
+             await fs.unlink(pidPath).catch(() => {});
+             const actualMB = (ramUsageKB / 1024).toFixed(1);
+             sendResourceLimitNotification(config.userEmail, config.serverName, 'RAM', `${actualMB}MB`, config.ramLimit);
+             return { running: false, killed: 'RAM' };
+          }
         } catch (e) {}
       }
 
@@ -155,10 +172,9 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       initialLogs += `[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
       initialLogs += `[STS] [${timestamp()}] Checking available disk... `;
       
-      // Disk Guard
       const diskRes = await getServerDiskUsage(serverId);
       const currentMB = diskRes.sizeInMB || 0;
-      const limitMB = parseResourceValue(config.limits?.disk || "2GB");
+      const limitMB = parseDiskToMB(config.limits?.disk || "2GB");
 
       if (currentMB > limitMB) {
         initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] Disk usage (${currentMB.toFixed(1)}MB) exceeds limit (${limitMB}MB).\n`;
@@ -175,11 +191,8 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
       (async () => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
-        
         let pythonBinary = 'python3';
-        if (config.runtime === 'python') {
-          pythonBinary = getPythonBinary();
-        }
+        if (config.runtime === 'python') pythonBinary = getPythonBinary();
 
         if (config.runtime === 'python') {
           const reqPath = path.join(filesDir, 'requirements.txt');
@@ -198,19 +211,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
 
               const pipSuccess = await new Promise((resolve) => {
                 const pipCmd = `"${pythonBinary}" -m pip install --prefer-binary --disable-pip-version-check --no-input -r requirements.txt --target .python_packages`;
-                
                 const pip = spawn(pipCmd, {
                   shell: true,
                   cwd: filesDir,
                   env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '1' }
                 });
-
                 pip.stdout?.on('data', (d) => logStream.write(d));
                 pip.stderr?.on('data', (d) => logStream.write(d));
-                pip.on('error', (err) => {
-                  logStream.write(`[STS] [${timestamp()}] [ERROR] Pip launch error: ${err.message}\n`);
-                  resolve(false);
-                });
                 pip.on('close', async (code) => {
                   if (code === 0) {
                     await fs.writeFile(hashPath, currentHash);
@@ -228,7 +235,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             }
           }
         } else {
-          // Node Logic
           const pkgPath = path.join(filesDir, 'package.json');
           const modPath = path.join(filesDir, 'node_modules');
           let hasPkg = false, hasMod = false;
@@ -285,20 +291,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         });
 
         if (child.pid) await fs.writeFile(pidPath, child.pid.toString());
-
         child.stdout?.on('data', (d) => logStream.write(d));
         child.stderr?.on('data', (d) => logStream.write(d));
-
-        child.on('error', (err) => {
-          fs.appendFile(logPath, `[STS] [${timestamp()}] [ERROR] Startup failed: ${err.message}\n`).catch(() => {});
-          fs.unlink(pidPath).catch(() => {});
-        });
-
         child.on('close', (code) => {
           fs.appendFile(logPath, `\n[STS] [${timestamp()}] Process exited (code ${code})\n`).catch(() => {});
           fs.unlink(pidPath).catch(() => {});
         });
-
         child.unref();
       })().catch(err => {
         fs.appendFile(logPath, `\n[STS] [${timestamp()}] [SYSTEM ERROR] ${err.message}\n`).catch(() => {});

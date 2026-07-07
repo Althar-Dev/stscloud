@@ -58,7 +58,6 @@ function AuthContent() {
   const [verificationCode, setVerificationCode] = React.useState("");
   const [sentCode, setSentCode] = React.useState("");
 
-  // Redirect if user is already logged in
   React.useEffect(() => {
     if (!authLoading && user) {
       router.replace("/dashboard");
@@ -67,13 +66,11 @@ function AuthContent() {
 
   const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (isLogin) {
       handleLogin();
       return;
     }
 
-    // Signup Validation
     if (password !== confirmPassword) {
       toast({ variant: "destructive", title: "Validation Error", description: "Passwords do not match." });
       return;
@@ -141,9 +138,7 @@ function AuthContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_70%)] pointer-events-none" />
-      
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="flex flex-col items-center text-center space-y-4">
           <Link href="/" className="group transition-transform hover:scale-105 active:scale-95">
@@ -167,20 +162,13 @@ function AuthContent() {
 
         <Card className="border-border/50 bg-card shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-50" />
-          
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-headline font-bold">
                 {showVerification ? "Verification" : isLogin ? "Sign In" : "Register"}
               </CardTitle>
-              {!showVerification && (
-                <Badge variant="outline" className="text-[8px] uppercase font-bold tracking-[0.2em] border-primary/20 text-primary">
-                  {isLogin ? "Client Portal" : "New Instance"}
-                </Badge>
-              )}
             </div>
           </CardHeader>
-          
           <CardContent className="space-y-4">
             {showVerification ? (
               <form onSubmit={handleVerifyAndRegister} className="space-y-6">
@@ -240,11 +228,9 @@ function AuthContent() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Password</Label>
-                    </div>
+                    <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Password</Label>
                     <div className="relative group">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                       <Input 
@@ -276,16 +262,14 @@ function AuthContent() {
                     </div>
                   )}
                 </div>
-
                 {!isLogin && (
                   <div className="flex items-center space-x-2 pt-2">
                     <Checkbox id="terms" checked={agreed} onCheckedChange={(val) => setAgreed(!!val)} />
                     <label htmlFor="terms" className="text-[10px] text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      I agree to the <Link href="/legal" className="text-primary hover:underline font-bold">Legal Agreement</Link> and data privacy policy.
+                      I agree to the <Link href="/legal" className="text-primary hover:underline font-bold">Legal Agreement</Link>.
                     </label>
                   </div>
                 )}
-
                 <Button 
                   type="submit" 
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 mt-2 shadow-lg shadow-primary/20"
@@ -303,15 +287,12 @@ function AuthContent() {
               </form>
             )}
           </CardContent>
-          
           <CardFooter className="flex flex-col space-y-4 pb-8">
             <div className="text-center text-xs text-muted-foreground">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
               <Link 
                 href={isLogin ? "/auth?type=signup" : "/auth?type=login"}
-                onClick={() => {
-                  setShowVerification(false);
-                }}
+                onClick={() => setShowVerification(false)}
                 className="text-primary font-bold hover:underline"
               >
                 {isLogin ? "Create one" : "Sign in instead"}
@@ -319,18 +300,6 @@ function AuthContent() {
             </div>
           </CardFooter>
         </Card>
-
-        <div className="flex items-center justify-center gap-6 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-4 text-primary" />
-            <span className="text-[8px] font-bold uppercase tracking-widest">PCI-DSS Compliant</span>
-          </div>
-          <div className="w-px h-3 bg-border" />
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-primary" />
-            <span className="text-[8px] font-bold uppercase tracking-widest">256-bit AES</span>
-          </div>
-        </div>
       </div>
     </div>
   );
