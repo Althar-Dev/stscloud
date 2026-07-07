@@ -10,6 +10,7 @@ import { sendResourceLimitNotification } from '@/lib/email/notifications';
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
  * Features: Strict Resource Guard (Disk/CPU/RAM) and Email Alerts.
+ * Fixed: "Unlimited" parsing logic to prevent false failures.
  */
 
 async function getFileHash(filePath: string): Promise<string> {
@@ -42,6 +43,7 @@ function getPythonBinary(): string {
 }
 
 function parseResourceToKB(str: string = ""): number {
+  if (str.toUpperCase() === "UNLIMITED") return Number.MAX_SAFE_INTEGER;
   const val = parseFloat(str);
   if (isNaN(val)) return 0;
   const upper = str.toUpperCase();
@@ -51,6 +53,7 @@ function parseResourceToKB(str: string = ""): number {
 }
 
 function parseDiskToMB(str: string = ""): number {
+  if (str.toUpperCase() === "UNLIMITED") return Number.MAX_SAFE_INTEGER;
   const val = parseFloat(str);
   if (isNaN(val)) return 0;
   if (str.toUpperCase().includes("GB")) return val * 1024;
@@ -78,7 +81,7 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
           const cpuUsage = parseFloat(stats[0]);
           const ramUsageKB = parseFloat(stats[1]);
           
-          const cpuLimit = parseFloat(config.cpuLimit) || 100;
+          const cpuLimit = config.cpuLimit.toUpperCase() === "UNLIMITED" ? Number.MAX_SAFE_INTEGER : (parseFloat(config.cpuLimit) || 100);
           const ramLimitKB = parseResourceToKB(config.ramLimit) || (1.5 * 1024 * 1024);
           
           // CPU Guard (Strict check with 0.5% jitter tolerance)

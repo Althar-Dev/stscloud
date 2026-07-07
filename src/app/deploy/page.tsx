@@ -321,7 +321,7 @@ export default function DeployPage() {
             className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
             aria-label="Go back"
           ><ArrowLeft className="size-4" /></button>
-          <h1 className="font-headline font-semibold text-lg hidden sm:block">Instance Provisioning</h1>
+          <h1 className="font-headline font-semibold text-lg hidden sm:block">Deploy</h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">

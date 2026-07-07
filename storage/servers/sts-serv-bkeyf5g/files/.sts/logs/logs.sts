@@ -1,4 +1,8 @@
-[STS] [00:35:00] Welcome to STSCloud.
-[STS] [00:35:00] Node provisioned successfully.
-[STS] [00:35:00] Ready for deployment.
-[STS] [00:35:00] Use Start button to boot the application.
+[38;2;79;70;229m
+░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
+░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
+░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
+[STS] [00:44:15] Checking environment... [32mOk[0m
+[STS] [00:44:15] Runtime: Node.Js v22
+[STS] [00:44:15] Checking available disk... (0.0MB/Unlimited) [31mFailed[0m
+[STS] [00:44:15] [ERROR] Disk usage exceeds allocation limit.
