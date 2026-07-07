@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +62,7 @@ import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-ac
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { getSystemHardwareInfo } from "@/app/actions/system-info";
 import { useToast } from "@/hooks/use-toast";
+import { Loader } from "@/components/loader";
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
   bots: [
@@ -100,7 +100,7 @@ const LucideIconMap: Record<string, any> = {
 
 export default function DeployPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
@@ -127,6 +127,12 @@ export default function DeployPage() {
   const [isProvisioning, setIsProvisioning] = React.useState(false);
 
   const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/auth?type=login");
+    }
+  }, [user, loading, router]);
 
   // Stock availability helper (Manual)
   const isTierAvailable = React.useCallback((preset: any) => {
@@ -235,6 +241,10 @@ export default function DeployPage() {
       setSelectedVersion(runtimeVersions[selectedAppType]?.[0] || "");
     }
   }, [selectedAppType]);
+
+  if (loading || !user) {
+    return <Loader />;
+  }
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   const selectedRegionData = regions.find(r => r.id === selectedRegion);

@@ -1,9 +1,0 @@
-[38;2;79;70;229m
-░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
-░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
-░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
-[STS] [23:11:53] Runtime: Node.Js v24
-[STS] [23:11:53] Checking environment... [31mFailed[0m
-[STS] [23:11:53] [ERROR] No package.json found. Application isolation triggered.
-[STS] [23:11:53] [SECURITY] To prevent parent environment leak, execution is halted.
-[STS] [23:11:53] Please upload your project files before starting.

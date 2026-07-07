@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -84,6 +83,7 @@ import { getSystemHardwareInfo } from "@/app/actions/system-info";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Loader } from "@/components/loader";
 
 const defaultPricingTiers = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000, popular: false, stock: 10 },
@@ -153,7 +153,7 @@ export default function DevConsole() {
     setMounted(true);
     if (authLoading) return;
     if (!user) {
-      router.push("/auth?type=login");
+      router.replace("/auth?type=login");
       return;
     }
 
@@ -293,6 +293,10 @@ export default function DevConsole() {
     const interval = setInterval(() => landingAgents.forEach(checkAgent), 15000);
     return () => clearInterval(interval);
   }, [landingAgents]);
+
+  if (authLoading || !user || !profile || profile.dev !== true) {
+    return <Loader />;
+  }
 
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
     setIsPricingDirty(true);
@@ -451,8 +455,6 @@ export default function DevConsole() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
-
-  if (!profile || profile.dev !== true) return null;
 
   const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "Admin") : "Admin";
   const totalRevenue = transactions.reduce((acc, tx) => acc + (tx.status === 'success' ? tx.amount : 0), 0);

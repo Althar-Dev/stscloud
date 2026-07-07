@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,9 +37,10 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { Loader } from "@/components/loader";
 
 export default function ServersPage() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
@@ -48,6 +48,12 @@ export default function ServersPage() {
   const [servers, setServers] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/auth?type=login");
+    }
+  }, [user, loading, router]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -81,6 +87,10 @@ export default function ServersPage() {
     await signOut(auth);
     router.push("/auth?type=login");
   };
+
+  if (loading || !user) {
+    return <Loader />;
+  }
 
   const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account") : "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();

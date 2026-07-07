@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -71,6 +70,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus, checkAndSendExpirationNotice } from "@/app/actions/server-power";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
+import { Loader } from "@/components/loader";
 
 const nodeVersions = ["16", "18", "20", "22", "24", "26"];
 const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
@@ -78,7 +78,7 @@ const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
 export default function ServerPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
@@ -108,6 +108,12 @@ export default function ServerPage() {
   const [renewalLoading, setRenewalLoading] = React.useState(false);
 
   const wasOnlineOnMount = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/auth?type=login");
+    }
+  }, [user, loading, router]);
 
   // Billing Stats - Client-side safe calculations
   const expiresDate = mounted && server?.expiresAt ? new Date(server.expiresAt) : null;
@@ -208,6 +214,10 @@ export default function ServerPage() {
     const interval = setInterval(updateUsage, 15000);
     return () => clearInterval(interval);
   }, [id]);
+
+  if (loading || !user) {
+    return <Loader />;
+  }
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
