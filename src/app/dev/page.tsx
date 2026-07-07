@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -745,6 +744,8 @@ export default function DevConsole() {
                                className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
                                value={tier.stock || 0}
                                onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
+                               onKeyDown={(e) => (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.preventDefault()}
+                               onWheel={(e) => (e.target as HTMLInputElement).blur()}
                              />
                           </div>
                         </TableCell>
