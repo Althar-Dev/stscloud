@@ -301,7 +301,7 @@ export default function PricingPage() {
               Powered by <Link href="https://starvale.my.id" target="_blank" className="text-foreground hover:underline">StarVale</Link>
             </p>
             <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              Build with 💙 by <Link href="https://althar.dev" target="_blank" className="text-primary hover:underline">AltharDev</Link> (Alhadi Adriano)
+              Build with 💙 by <Link href="https://althar.dev" target="_blank" className="text-primary hover:underline">AltharDev</Link>
             </p>
           </div>
         </div>
