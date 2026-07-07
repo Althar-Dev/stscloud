@@ -461,7 +461,6 @@ export default function LandingPage() {
                 <li><Link href="#pricing" className="hover:text-primary transition-colors">Pricing & Plans</Link></li>
                 <li><Link href="#features" className="hover:text-primary transition-colors">Cloud Bot Hosting</Link></li>
                 <li><Link href="#features" className="hover:text-primary transition-colors">Web App Deployment</Link></li>
-                <li><Link href="#features" className="hover:text-primary transition-colors">Game Server Nodes</Link></li>
                 <li><Link href="/support" className="hover:text-primary transition-colors">Pusat Bantuan</Link></li>
               </ul>
             </div>
