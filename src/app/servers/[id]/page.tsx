@@ -29,11 +29,19 @@ import {
   Save,
   Rocket,
   AlertTriangle,
+  CreditCard,
+  Calendar,
+  Clock,
+  Zap,
+  RefreshCw,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CardContent } from "@/components/ui/card";
+import { CardContent, Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -62,6 +70,7 @@ import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
+import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 
 const nodeVersions = ["16", "18", "20", "22", "24", "26"];
 const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
@@ -78,6 +87,7 @@ export default function ServerPage() {
   const [server, setServer] = React.useState<any>(null);
   const [diskUsage, setDiskUsage] = React.useState<number>(0);
   const [activeTab, setActiveTab] = React.useState("console");
+  const [pricingTiers, setPricingTiers] = React.useState<any[]>([]);
 
   const [serverName, setServerName] = React.useState("");
   const [runtimeVersion, setRuntimeVersion] = React.useState("");
@@ -89,7 +99,13 @@ export default function ServerPage() {
   
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Active Session tracker
+  // Renewal State
+  const [isRenewing, setIsRenewing] = React.useState(false);
+  const [renewalPaymentData, setRenewalPaymentData] = React.useState<any>(null);
+  const [renewalPaymentStatus, setRenewalPaymentStatus] = React.useState<string>("pending");
+  const [isCheckingRenewal, setIsCheckingRenewal] = React.useState(false);
+  const [renewalLoading, setRenewalLoading] = React.useState(false);
+
   const wasOnlineOnMount = React.useRef(false);
 
   React.useEffect(() => {
@@ -121,13 +137,20 @@ export default function ServerPage() {
       }
     });
 
+    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers) setPricingTiers(data.tiers);
+      }
+    });
+
     return () => {
       unsubProfile();
       unsubServer();
+      unsubPricing();
     };
   }, [user, id, db, router, toast, isDeleting]);
 
-  // Unmount Logic: Clear ONLY if offline when leaving
   React.useEffect(() => {
     return () => {
       if (server?.status === "offline" && id) {
@@ -136,7 +159,6 @@ export default function ServerPage() {
     };
   }, [id, server?.status]);
 
-  // Real-time process monitor with Resource Guard config
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
@@ -160,7 +182,6 @@ export default function ServerPage() {
     return () => clearInterval(monitorInterval);
   }, [id, server, db, powerActionActive, user?.email]);
 
-  // Disk usage update
   React.useEffect(() => {
     if (!id) return;
     const updateUsage = async () => {
@@ -236,6 +257,60 @@ export default function ServerPage() {
     }
   };
 
+  const handleInitiateRenewal = async () => {
+    if (!server || !user?.email) return;
+    const tier = pricingTiers.find(p => p.name === server.plan);
+    if (!tier) {
+      toast({ variant: "destructive", title: "Pricing Error", description: "Current plan pricing not found." });
+      return;
+    }
+
+    setRenewalLoading(true);
+    const invoiceId = `STS-RENEW-${Date.now()}`;
+    const result = await createSvalePayment({
+      amount: tier.priceValue,
+      email: user.email,
+      external_id: invoiceId,
+      description: `Renewal for Server: ${server.name}`
+    });
+
+    if (result.success) {
+      setRenewalPaymentData(result.data);
+      setIsRenewing(true);
+    } else {
+      toast({ variant: "destructive", title: "Payment Error", description: result.error });
+    }
+    setRenewalLoading(false);
+  };
+
+  const handleCheckRenewalStatus = async () => {
+    if (!renewalPaymentData?.trx_id || !id) return;
+    setIsCheckingRenewal(true);
+    
+    const result = await checkPaymentStatus(renewalPaymentData.trx_id);
+    if (result.success) {
+      setRenewalPaymentStatus(result.status);
+      if (result.status === "success") {
+        toast({ title: "Payment Verified!", description: "Extending your subscription..." });
+        
+        // Calculate new expiration date
+        const currentExp = server.expiresAt ? new Date(server.expiresAt) : new Date();
+        const baseDate = currentExp > new Date() ? currentExp : new Date();
+        const nextExp = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        await updateDoc(doc(db, "servers", id as string), {
+          expiresAt: nextExp.toISOString()
+        });
+
+        toast({ title: "Success", description: "Instance successfully extended for 30 days." });
+        setIsRenewing(false);
+        setRenewalPaymentData(null);
+        setRenewalPaymentStatus("pending");
+      }
+    }
+    setIsCheckingRenewal(false);
+  };
+
   const handleDeleteServer = async () => {
     if (!id || !db) return;
     setIsDeleting(true);
@@ -264,6 +339,11 @@ export default function ServerPage() {
   const hasStartup = isNodeJS || isPython;
 
   const currentVersionsList = isPython ? pythonVersions : nodeVersions;
+
+  // Billing Stats
+  const expiresDate = server?.expiresAt ? new Date(server.expiresAt) : null;
+  const isExpired = expiresDate ? expiresDate < new Date() : false;
+  const daysLeft = expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   return (
     <div className="bg-background min-h-screen">
@@ -323,6 +403,7 @@ export default function ServerPage() {
                 <TabsTrigger value="console" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Terminal className="size-4" /> Console</TabsTrigger>
                 <TabsTrigger value="files" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><FolderOpen className="size-4" /> Files</TabsTrigger>
                 {hasStartup && <TabsTrigger value="startup" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><Rocket className="size-4" /> StartUp</TabsTrigger>}
+                <TabsTrigger value="billing" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><CreditCard className="size-4" /> Billing</TabsTrigger>
                 <TabsTrigger value="settings" className="rounded-lg gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white text-xs md:text-sm"><SettingsIcon className="size-4" /> Settings</TabsTrigger>
               </TabsList>
             </div>
@@ -392,6 +473,102 @@ export default function ServerPage() {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="billing" className="animate-in fade-in duration-500 space-y-8">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 bg-card border-border/50 overflow-hidden">
+                   <div className="p-6 bg-secondary/30 border-b border-border/50 flex items-center gap-3">
+                      <div className="size-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent"><CreditCard className="size-5" /></div>
+                      <div>
+                        <h2 className="text-xl font-headline font-bold">Subscription Info</h2>
+                        <p className="text-xs text-muted-foreground">Manage your instance billing and cycle.</p>
+                      </div>
+                   </div>
+                   <CardContent className="p-8 space-y-8">
+                      {isRenewing ? (
+                         <div className="max-w-md mx-auto space-y-6 text-center animate-in zoom-in-95">
+                            <div className="space-y-2">
+                               <h3 className="text-xl font-headline font-bold">Renewal Payment</h3>
+                               <p className="text-xs text-muted-foreground">Scan QRIS to extend for 30 days.</p>
+                            </div>
+                            <div className="p-6 rounded-2xl bg-white flex items-center justify-center relative overflow-hidden">
+                               {renewalPaymentData?.qr_url ? (
+                                  <div className="space-y-4">
+                                     <img src={renewalPaymentData.qr_url} alt="QRIS" className={cn("w-full max-w-[250px] mx-auto", (renewalPaymentStatus === "success" || isCheckingRenewal) && "opacity-20")} />
+                                     {renewalPaymentStatus === "success" && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/10 backdrop-blur-sm">
+                                           <CheckCircle2 className="size-16 text-green-500 fill-white" />
+                                           <p className="text-green-600 font-bold mt-2">PAID</p>
+                                        </div>
+                                     )}
+                                  </div>
+                               ) : <Skeleton className="w-[200px] h-[200px]" />}
+                            </div>
+                            <div className="flex flex-col gap-3">
+                               <Button onClick={handleCheckRenewalStatus} disabled={isCheckingRenewal || renewalPaymentStatus === 'success'} className="w-full h-12 gap-2 bg-primary">
+                                  {isCheckingRenewal ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Check Status
+                               </Button>
+                               <Button variant="ghost" onClick={() => setIsRenewing(false)} className="text-xs">Cancel & Back</Button>
+                            </div>
+                         </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <div className="space-y-1">
+                               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Current Plan</Label>
+                               <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/30 border border-border/50">
+                                  <Zap className="size-5 text-primary" />
+                                  <div>
+                                     <div className="font-bold text-lg">{server?.plan || "N/A"}</div>
+                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{server?.resources?.ram} RAM Instance</div>
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Expiration Date</Label>
+                               <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/30 border border-border/50">
+                                  <Calendar className="size-5 text-primary" />
+                                  <div>
+                                     <div className={cn("font-bold text-lg", isExpired ? "text-destructive" : "")}>
+                                        {expiresDate ? expiresDate.toLocaleDateString() : "Never"}
+                                     </div>
+                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                                        {isExpired ? "EXPIRED" : `${daysLeft} DAYS REMAINING`}
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex flex-col justify-between">
+                             <div className="space-y-2">
+                                <div className="text-xs font-bold text-primary uppercase tracking-[0.2em]">Extend Sub</div>
+                                <h3 className="text-xl font-headline font-bold">Renewal Cycle</h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                   Extend your instance for another 30 days. Payments are processed instantly via SValePay QRIS.
+                                </p>
+                             </div>
+                             <Button onClick={handleInitiateRenewal} disabled={renewalLoading} className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 mt-6">
+                                {renewalLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Renew Instance
+                             </Button>
+                          </div>
+                        </div>
+                      )}
+                   </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 p-6 flex flex-col gap-6">
+                   <div className="flex items-center gap-3">
+                      <Clock className="size-5 text-muted-foreground" />
+                      <h3 className="font-headline font-bold">Billing History</h3>
+                   </div>
+                   <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+                      <CreditCard className="size-12 mb-4" />
+                      <p className="text-xs font-medium">Internal transaction log is currently being migrated.</p>
+                   </div>
+                </Card>
+             </div>
+          </TabsContent>
 
           <TabsContent value="settings" className="animate-in fade-in duration-500 space-y-8">
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">

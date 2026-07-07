@@ -288,6 +288,8 @@ export default function DeployPage() {
     setIsProvisioning(true);
 
     const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
 
     try {
       const provision = await provisionServerFiles(serverId);
@@ -299,6 +301,7 @@ export default function DeployPage() {
         plan: selectedPresetData.name,
         status: "online",
         createdAt: serverTimestamp(),
+        expiresAt: expiresAt.toISOString(),
         runtime: selectedAppType,
         nodeVersion: selectedAppType === 'nodejs' ? selectedVersion : null,
         pythonVersion: selectedAppType === 'python' ? selectedVersion : null,

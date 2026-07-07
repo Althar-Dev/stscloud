@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +27,8 @@ import {
   Cpu,
   Database,
   HardDrive,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -179,72 +181,83 @@ export default function ServersPage() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredServers.length > 0 ? (
-            filteredServers.map((server) => (
-              <Link key={server.id} href={`/servers/${server.id}`}>
-                <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
-                  <div className="p-5 pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="size-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                          <ServerIcon className="size-5 text-primary" />
+            filteredServers.map((server) => {
+              const isExpired = server.expiresAt ? new Date(server.expiresAt) < new Date() : false;
+              
+              return (
+                <Link key={server.id} href={`/servers/${server.id}`}>
+                  <Card className="group border-border/50 bg-card hover:bg-secondary/20 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
+                    <div className="p-5 pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="size-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                            <ServerIcon className="size-5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-headline font-bold text-base truncate">{server.name}</h3>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
+                              {server.plan} Instance
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="font-headline font-bold text-base truncate">{server.name}</h3>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest truncate">
-                            {server.plan} Instance
-                          </p>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-[9px] uppercase font-bold tracking-widest h-5 px-2",
+                              server.status === "online" 
+                                ? "border-green-500/50 text-green-500 bg-green-500/5" 
+                                : "border-red-500/50 text-red-500 bg-red-500/5"
+                            )}
+                          >
+                            {server.status}
+                          </Badge>
+                          {isExpired && (
+                            <Badge variant="destructive" className="text-[8px] uppercase h-4 px-1.5">Expired</Badge>
+                          )}
                         </div>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[9px] uppercase font-bold tracking-widest h-5 px-2",
-                          server.status === "online" 
-                            ? "border-green-500/50 text-green-500 bg-green-500/5" 
-                            : "border-red-500/50 text-red-500 bg-red-500/5"
-                        )}
-                      >
-                        {server.status}
-                      </Badge>
                     </div>
-                  </div>
-                  <div className="px-5 py-3 border-y border-border/30 bg-secondary/10">
-                    <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                    <div className="px-5 py-3 border-y border-border/30 bg-secondary/10">
+                      <div className="flex items-center justify-between text-[9px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Cpu className="size-3 text-primary" />
+                          <div className="flex flex-col leading-none">
+                            <span className="text-[7px] md:text-[8px] opacity-70">TOTAL CPU</span>
+                            <span>{server.resources?.cpu || '0%'}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 border-l border-border/30 pl-2">
+                          <Database className="size-3 text-primary" />
+                          <div className="flex flex-col leading-none">
+                            <span className="text-[7px] md:text-[8px] opacity-70">TOTAL RAM</span>
+                            <span>{server.resources?.ram || '0GB'}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 border-l border-border/30 pl-2">
+                          <Clock className="size-3 text-primary" />
+                          <div className="flex flex-col leading-none">
+                            <span className="text-[7px] md:text-[8px] opacity-70">EXPIRES</span>
+                            <span className={cn(isExpired ? "text-destructive" : "")}>
+                              {server.expiresAt ? new Date(server.expiresAt).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Cpu className="size-3 text-primary" />
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[7px] md:text-[8px] opacity-70">TOTAL CPU</span>
-                          <span>{server.resources?.cpu || '0%'}</span>
-                        </div>
+                        <Activity className="size-3.5 text-primary" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Instance</span>
                       </div>
-                      <div className="flex items-center gap-2 border-l border-border/30 pl-2">
-                        <Database className="size-3 text-primary" />
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[7px] md:text-[8px] opacity-70">TOTAL RAM</span>
-                          <span>{server.resources?.ram || '0GB'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 border-l border-border/30 pl-2">
-                        <HardDrive className="size-3 text-primary" />
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[7px] md:text-[8px] opacity-70">TOTAL DISK</span>
-                          <span>{server.resources?.disk || '0GB'}</span>
-                        </div>
+                      <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
+                        <ChevronRight className="size-4" />
                       </div>
                     </div>
-                  </div>
-                  <div className="p-5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Activity className="size-3.5 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Instance</span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-1">
-                      <ChevronRight className="size-4" />
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))
+                  </Card>
+                </Link>
+              );
+            })
           ) : (
             <div className="col-span-full py-20 text-center space-y-4">
               <div className="size-16 rounded-full bg-secondary flex items-center justify-center mx-auto">

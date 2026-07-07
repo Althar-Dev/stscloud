@@ -24,6 +24,7 @@
         "plan": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "starting"] },
         "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "When the server subscription expires." },
         "runtime": { "type": "string" },
         "template": { "type": "string", "description": "The selected deployment template (e.g., website, bots)." },
         "nodeVersion": { "type": "string", "description": "Selected Node.js version for the server." },
