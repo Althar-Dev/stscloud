@@ -11,6 +11,7 @@ import { sendResourceLimitNotification, sendExpirationReminderNotification } fro
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
  * Features: Strict Resource Guard (Disk/CPU/RAM), Interactive Stdin, and Email Alerts.
+ * Security: Added Pre-flight validation to prevent parent environment leakage.
  */
 
 // Global map to store interactive handles
@@ -70,8 +71,6 @@ export async function checkAndSendExpirationNotice(serverId: string, email: stri
     const diff = expiry - now;
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
-    // Trigger if 24 hours or less remaining (including slightly past expiration)
-    // This ensures they get the notice even if they miss the exact 24h mark.
     if (diff <= oneDayInMs) {
       await sendExpirationReminderNotification(email, serverName, expiresAt);
       return { success: true };
@@ -105,7 +104,6 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
     try {
       process.kill(pid, 0);
       
-      // Strict Resource Monitoring
       if (config && config.userEmail) {
         try {
           const stats = execSync(`ps -p ${pid} -o %cpu,rss --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
@@ -115,7 +113,6 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
           const cpuLimit = config.cpuLimit.toUpperCase() === "UNLIMITED" ? Number.MAX_SAFE_INTEGER : (parseFloat(config.cpuLimit) || 100);
           const ramLimitKB = parseResourceToKB(config.ramLimit) || (1.5 * 1024 * 1024);
           
-          // CPU Guard (Strict check with 0.5% jitter tolerance)
           if (cpuUsage > cpuLimit + 0.5) {
              process.kill(-pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
@@ -124,7 +121,6 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
              return { running: false, killed: 'CPU' };
           }
           
-          // RAM Guard
           if (ramUsageKB > ramLimitKB) {
              process.kill(-pid, 'SIGKILL');
              await fs.unlink(pidPath).catch(() => {});
@@ -162,11 +158,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const stsDir = path.join(filesDir, '.sts');
   const logPath = path.join(stsDir, 'logs', 'logs.sts');
   const pidPath = path.join(stsDir, 'run.pid');
-  const hashPath = path.join(stsDir, 'req.hash');
   
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
   const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
+  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -206,8 +202,39 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       const versionLabel = config.runtime === 'python' ? config.version : `v${config.version}`;
 
       let initialLogs = `${ascii}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
-      initialLogs += `[STS] [${timestamp()}] Checking environment... ${green('Ok')}\n`;
-      initialLogs += `[STS] [${timestamp()}] Checking available disk... `;
+      initialLogs += `[STS] [${timestamp()}] Checking environment... `;
+
+      // --- CRITICAL SECURITY VALIDATION ---
+      const pkgPath = path.join(filesDir, 'package.json');
+      const entryFilePath = path.join(filesDir, config.entryFile);
+      const isNpm = config.startupCommand.trim().startsWith('npm') || config.startupCommand.trim().startsWith('yarn');
+      
+      let validationError = "";
+      if (isNpm) {
+        try {
+          await fs.access(pkgPath);
+        } catch {
+          validationError = "No package.json found. Application isolation triggered.";
+        }
+      } else if (config.entryFile) {
+        try {
+          await fs.access(entryFilePath);
+        } catch {
+          validationError = `Entry file '${config.entryFile}' not found.`;
+        }
+      }
+
+      if (validationError) {
+        initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] ${validationError}\n`;
+        initialLogs += `[STS] [${timestamp()}] [SECURITY] To prevent parent environment leak, execution is halted.\n`;
+        initialLogs += `[STS] [${timestamp()}] Please upload your project files before starting.\n`;
+        await fs.writeFile(logPath, initialLogs);
+        await fs.unlink(pidPath).catch(() => {});
+        return { success: false, error: validationError };
+      }
+      // -------------------------------------
+
+      initialLogs += `${green('Ok')}\n[STS] [${timestamp()}] Checking available disk... `;
       
       const diskRes = await getServerDiskUsage(serverId);
       const currentMB = diskRes.sizeInMB || 0;
@@ -239,6 +266,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           try { await fs.access(reqPath); hasReq = true; } catch {}
 
           if (hasReq) {
+            const hashPath = path.join(stsDir, 'req.hash');
             const currentHash = await getFileHash(reqPath);
             let oldHash = "";
             try { oldHash = await fs.readFile(hashPath, 'utf8'); } catch {}
@@ -273,13 +301,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             }
           }
         } else {
-          const pkgPath = path.join(filesDir, 'package.json');
           const modPath = path.join(filesDir, 'node_modules');
-          let hasPkg = false, hasMod = false;
-          try { await fs.access(pkgPath); hasPkg = true; } catch {}
+          let hasMod = false;
           try { await fs.access(modPath); hasMod = true; } catch {}
 
-          if (hasPkg && !hasMod) {
+          if (!hasMod) {
             logStream.write(`[STS] [${timestamp()}] Missing node_modules. Running npm install...\n`);
             await new Promise((resolve) => {
               const npmCmd = `npx -y -p node@${config.version} -- npm install --production`;
@@ -291,7 +317,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
               npm.stdout?.on('data', (d) => logStream.write(d));
               npm.stderr?.on('data', (d) => logStream.write(d));
               npm.on('close', (code) => {
-                logStream.write(`[STS] [${timestamp()}] Install finished (code ${code})`);
+                logStream.write(`[STS] [${timestamp()}] Install finished (code ${code})\n`);
                 resolve(true);
               });
             });
@@ -308,6 +334,10 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           else if (finalStartup === 'python3' || finalStartup === 'python') finalStartup = `${quotedBin} -u`;
           else finalStartup = finalStartup.replace(/^(python[3]?)/, `${quotedBin} -u`);
         } else {
+          // Use --prefix . to force npm to stay in current directory
+          if (isNpm) {
+             finalStartup = finalStartup.replace(/^(npm|yarn)/, `$1 --prefix .`);
+          }
           finalStartup = `npx -y -p node@${config.version} -- ${finalStartup}`;
         }
 
@@ -324,13 +354,12 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
             PYTHONPATH: process.env.PYTHONPATH 
               ? `${localPkgDir}${path.delimiter}${process.env.PYTHONPATH}`
               : localPkgDir,
-            FORCE_COLOR: '1'
+            FORCE_COLOR: '1',
+            NODE_ENV: 'production'
           }
         });
 
         if (child.pid) await fs.writeFile(pidPath, child.pid.toString());
-        
-        // Register for interactive input
         stdinMap.set(serverId, child);
 
         child.stdout?.on('data', (d) => logStream.write(d));
