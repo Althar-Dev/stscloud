@@ -47,7 +47,8 @@ import {
   Layout,
   AlertCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  ShoppingBag
 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import React from "react";
@@ -60,6 +61,7 @@ import { useRouter } from "next/navigation";
 import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
+import { getSystemHardwareInfo } from "@/app/actions/system-info";
 import { useToast } from "@/hooks/use-toast";
 
 const applicationTypes: Record<string, { id: string; name: string }[]> = {
@@ -107,6 +109,7 @@ export default function DeployPage() {
   const [resourcePresets, setResourcePresets] = React.useState<any[]>([]);
   const [templates, setTemplates] = React.useState<any[]>([]);
   const [regions, setRegions] = React.useState<any[]>([]);
+  const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
   
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
@@ -122,10 +125,41 @@ export default function DeployPage() {
   const [isChecking, setIsChecking] = React.useState(false);
   const [isProvisioning, setIsProvisioning] = React.useState(false);
 
-  // Real-time latency for regions
   const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
+  // Stock availability helper
+  const isTierAvailable = React.useCallback((tierDisk: string) => {
+    if (!vpsMetrics?.freeDiskBytes) return true;
+    
+    const safetyMarginBytes = 5 * 1024 * 1024 * 1024; // 5GB Safety
+    const usableBytes = vpsMetrics.freeDiskBytes - safetyMarginBytes;
+    
+    if (usableBytes <= 0) return false;
+    if (tierDisk.toUpperCase() === "UNLIMITED") return true;
+    
+    let tierBytes = 0;
+    const val = parseFloat(tierDisk);
+    if (isNaN(val)) return false;
+    
+    if (tierDisk.toUpperCase().includes("GB")) tierBytes = val * 1024 * 1024 * 1024;
+    else if (tierDisk.toUpperCase().includes("MB")) tierBytes = val * 1024 * 1024;
+    else tierBytes = val * 1024 * 1024 * 1024;
+
+    return usableBytes >= tierBytes;
+  }, [vpsMetrics]);
+
+  // Check if at least one tier is available for a region
+  const isAnyTierAvailable = React.useMemo(() => {
+    if (resourcePresets.length === 0) return true;
+    return resourcePresets.some(preset => isTierAvailable(preset.disk));
+  }, [resourcePresets, isTierAvailable]);
+
   React.useEffect(() => {
+    // Fetch Host VPS Metrics
+    getSystemHardwareInfo().then(res => {
+      if (res.success) setVpsMetrics(res.data);
+    });
+
     if (!user?.uid) return;
     const unsubProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
@@ -174,7 +208,6 @@ export default function DeployPage() {
     };
   }, [user, db, selectedPreset, selectedRegion]);
 
-  // Handle Latency Probing for Step 2
   React.useEffect(() => {
     if (step !== 2 || regions.length === 0) return;
 
@@ -209,7 +242,6 @@ export default function DeployPage() {
     regions.forEach(checkRegion);
   }, [step, regions]);
 
-  // Reset version when runtime changes
   React.useEffect(() => {
     if (selectedAppType) {
       setSelectedVersion(runtimeVersions[selectedAppType]?.[0] || "");
@@ -416,19 +448,25 @@ export default function DeployPage() {
                 const isChecking = live?.isChecking || !live;
                 const isActive = live?.status === "ACTIVE";
                 const isDown = !isChecking && live?.status === "DOWN";
+                const isSoldOut = !isAnyTierAvailable;
 
                 return (
                   <Card 
                     key={region.id}
                     className={cn(
                       "transition-all border-border/50 relative overflow-hidden group",
-                      isDown ? "opacity-50 grayscale cursor-not-allowed border-dashed bg-secondary/10" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
-                      selectedRegion === region.id && !isDown && "bg-primary/5 border-primary ring-1 ring-primary/50"
+                      (isDown || isSoldOut) ? "opacity-50 grayscale cursor-not-allowed border-dashed bg-secondary/10" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
+                      selectedRegion === region.id && !isDown && !isSoldOut && "bg-primary/5 border-primary ring-1 ring-primary/50"
                     )}
                     onClick={() => {
-                      if (!isDown) setSelectedRegion(region.id);
+                      if (!isDown && !isSoldOut) setSelectedRegion(region.id);
                     }}
                   >
+                    {isSoldOut && (
+                      <div className="absolute top-0 right-0 z-20">
+                         <Badge className="bg-destructive text-white rounded-none rounded-bl-lg text-[9px] uppercase font-bold px-3 py-1">Sold Out</Badge>
+                      </div>
+                    )}
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -437,14 +475,14 @@ export default function DeployPage() {
                           </div>
                           <span className="font-bold font-headline">{region.name}</span>
                         </div>
-                        {selectedRegion === region.id && !isDown && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
-                        {isDown && <WifiOff className="size-4 text-destructive" />}
+                        {selectedRegion === region.id && !isDown && !isSoldOut && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                        {(isDown || isSoldOut) && <AlertCircle className="size-4 text-destructive" />}
                       </div>
                       <div className="space-y-1">
                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
                          <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
                             {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />)}
-                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : `Latency: ${live.latency}`}
+                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : isSoldOut ? "NO CAPACITY" : `Latency: ${live.latency}`}
                          </div>
                       </div>
                     </CardContent>
@@ -454,7 +492,7 @@ export default function DeployPage() {
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
               <Button variant="ghost" onClick={() => setStep(1)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
-              <Button onClick={() => setStep(3)} disabled={!selectedRegion || regionLiveInfo[selectedRegion!]?.status === "DOWN"} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Configure Resources <ArrowRight className="size-4" /></Button>
+              <Button onClick={() => setStep(3)} disabled={!selectedRegion || regionLiveInfo[selectedRegion!]?.status === "DOWN" || !isAnyTierAvailable} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Configure Resources <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
@@ -466,36 +504,47 @@ export default function DeployPage() {
               <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name} at {selectedRegionData?.name}.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {resourcePresets.map((preset) => (
-                <Card 
-                  key={preset.id}
-                  className={cn(
-                    "cursor-pointer transition-all border-border/50 group relative overflow-hidden",
-                    selectedPreset === preset.id ? "bg-primary/5 border-primary ring-1 ring-primary/50" : "bg-card hover:border-primary/30 hover:bg-secondary/20"
-                  )}
-                  onClick={() => setSelectedPreset(preset.id)}
-                >
-                  <CardContent className="p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Image src="/img/icons.png" alt="STS" width={30} height={30} className="object-contain" />
-                        <span className="font-bold font-headline text-lg">{preset.name}</span>
+              {resourcePresets.map((preset) => {
+                const available = isTierAvailable(preset.disk);
+                return (
+                  <Card 
+                    key={preset.id}
+                    className={cn(
+                      "transition-all border-border/50 group relative overflow-hidden",
+                      !available ? "opacity-60 grayscale cursor-not-allowed border-dashed" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
+                      selectedPreset === preset.id && available ? "bg-primary/5 border-primary ring-1 ring-primary/50" : ""
+                    )}
+                    onClick={() => available && setSelectedPreset(preset.id)}
+                  >
+                    {!available && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/20 backdrop-blur-[1px]">
+                         <Badge className="bg-destructive/90 text-white font-bold gap-2 text-xs py-1.5 px-4 shadow-xl">
+                           <ShoppingBag className="size-3" /> SOLD OUT
+                         </Badge>
                       </div>
-                      {selectedPreset === preset.id && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
-                    </div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground"><Database className="size-3.5" /><span className="font-medium">{preset.ram} RAM</span></div>
-                      <div className="flex items-center gap-2 text-muted-foreground"><Cpu className="size-3.5" /><span className="font-medium">CPU {preset.cpu}</span></div>
-                      <div className="flex items-center gap-2 text-muted-foreground"><HardDrive className="size-3.5" /><span className="font-medium">Disk {preset.disk}</span></div>
-                    </div>
-                    <div className="pt-3 border-t border-border/50"><div className="flex items-center gap-2"><Tag className="size-3.5 text-primary" /><span className="font-bold text-sm text-primary">{preset.price}</span></div></div>
-                  </CardContent>
-                </Card>
-              ))}
+                    )}
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Image src="/img/icons.png" alt="STS" width={30} height={30} className="object-contain" />
+                          <span className="font-bold font-headline text-lg">{preset.name}</span>
+                        </div>
+                        {selectedPreset === preset.id && available && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center gap-2 text-muted-foreground"><Database className="size-3.5" /><span className="font-medium">{preset.ram} RAM</span></div>
+                        <div className="flex items-center gap-2 text-muted-foreground"><Cpu className="size-3.5" /><span className="font-medium">CPU {preset.cpu}</span></div>
+                        <div className="flex items-center gap-2 text-muted-foreground"><HardDrive className="size-3.5" /><span className="font-medium">Disk {preset.disk}</span></div>
+                      </div>
+                      <div className="pt-3 border-t border-border/50"><div className="flex items-center gap-2"><Tag className="size-3.5 text-primary" /><span className="font-bold text-sm text-primary">{preset.price}</span></div></div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
               <Button variant="ghost" onClick={() => setStep(2)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
-              <Button onClick={() => setStep(4)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Runtime <ArrowRight className="size-4" /></Button>
+              <Button onClick={() => setStep(4)} disabled={!selectedPreset || !isTierAvailable(selectedPresetData?.disk)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Runtime <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
