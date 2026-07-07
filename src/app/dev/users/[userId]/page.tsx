@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -65,14 +66,6 @@ import { decommissionServerFiles } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const defaultResourcePresets = [
-  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
-  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB" },
-  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB" },
-  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB" },
-  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB" },
-];
-
 const templates = [
   { id: "website", name: "Website", icon: Globe },
   { id: "bots", name: "Bots", icon: Bot },
@@ -91,7 +84,7 @@ const runtimesByTemplate: Record<string, { id: string; name: string }[]> = {
 };
 
 const runtimeVersions: Record<string, string[]> = {
-  nodejs: ["16", "18", "20", "22"],
+  nodejs: ["16", "18", "20", "22", "24", "26"],
   python: ["3.10", "3.11", "3.12", "3.13"],
   php: ["7.4", "8.1", "8.2", "8.3"],
 };
@@ -107,11 +100,11 @@ export default function UserDetailPage() {
   const [targetUser, setTargetUser] = React.useState<any>(null);
   const [userServers, setUserServers] = React.useState<any[]>([]);
   const [updating, setUpdating] = React.useState(false);
-  const [resourcePresets, setResourcePresets] = React.useState<any[]>(defaultResourcePresets);
+  const [resourcePresets, setResourcePresets] = React.useState<any[]>([]);
 
   // Provisioning State
   const [isProvisioning, setIsProvisioning] = React.useState(false);
-  const [provisionPlanId, setProvisionPlanId] = React.useState("p1");
+  const [provisionPlanId, setProvisionPlanId] = React.useState("");
   const [provisionTemplate, setProvisionTemplate] = React.useState("website");
   const [provisionRuntime, setProvisionRuntime] = React.useState("nodejs");
   const [provisionVersion, setProvisionVersion] = React.useState("20");
@@ -126,9 +119,9 @@ export default function UserDetailPage() {
       return;
     }
 
-    const unsub = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
+    const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
         setProfile(data);
         if (data.dev !== true) {
           router.replace("/dashboard");
@@ -145,9 +138,9 @@ export default function UserDetailPage() {
   React.useEffect(() => {
     if (!userId || !db) return;
 
-    const unsubUser = onSnapshot(doc(db, "users", userId as string), (doc) => {
-      if (doc.exists()) {
-        setTargetUser({ id: doc.id, ...doc.data() });
+    const unsubUser = onSnapshot(doc(db, "users", userId as string), (docSnap) => {
+      if (docSnap.exists()) {
+        setTargetUser({ id: docSnap.id, ...docSnap.data() });
       } else {
         toast({
           variant: "destructive",
@@ -172,7 +165,7 @@ export default function UserDetailPage() {
 
     const serversQuery = query(collection(db, "servers"), where("ownerId", "==", userId));
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
-      setUserServers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setUserServers(snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
     });
 
     return () => {

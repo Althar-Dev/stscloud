@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -74,7 +75,7 @@ const applicationTypes: Record<string, { id: string; name: string }[]> = {
 };
 
 const runtimeVersions: Record<string, string[]> = {
-  nodejs: ["16", "18", "20", "22"],
+  nodejs: ["16", "18", "20", "22", "24", "26"],
   python: ["3.10", "3.11", "3.12", "3.13"],
   php: ["7.4", "8.1", "8.2", "8.3"],
 };

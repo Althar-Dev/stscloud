@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -62,7 +63,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus } from "@/app/actions/server-power";
 
-const nodeVersions = ["16", "18", "20", "22"];
+const nodeVersions = ["16", "18", "20", "22", "24", "26"];
 const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
 
 export default function ServerPage() {
@@ -94,14 +95,14 @@ export default function ServerPage() {
   React.useEffect(() => {
     if (!user?.uid || !id) return;
 
-    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists()) setProfile(doc.data());
+    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists()) setProfile(docSnap.data());
     });
 
-    const unsubServer = onSnapshot(doc(db, "servers", id as string), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        setServer({ id: doc.id, ...data });
+    const unsubServer = onSnapshot(doc(db, "servers", id as string), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setServer({ id: docSnap.id, ...data });
         
         if (data.status === "online" && !wasOnlineOnMount.current) {
           wasOnlineOnMount.current = true;
