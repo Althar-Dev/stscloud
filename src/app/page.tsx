@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -242,7 +241,7 @@ export default function LandingPage() {
               </Link>
               <Link href="#pricing" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="h-10 md:h-11 px-8 text-[10px] font-bold border-border/50 bg-secondary hover:bg-secondary/80 w-full backdrop-blur-sm uppercase tracking-widest">
-                  Lihat Benchmark
+                  Lihat Harga
                 </Button>
               </Link>
             </div>
@@ -424,7 +423,7 @@ export default function LandingPage() {
 
       <footer className="pt-20 pb-10 bg-card border-t border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-16">
             <div className="space-y-6">
               <Link href="/" className="flex items-center gap-3">
                 <div className="w-[40px] h-[40px] rounded-xl overflow-hidden flex items-center justify-center bg-primary">
@@ -449,24 +448,6 @@ export default function LandingPage() {
                   <MessageSquare className="size-4" />
                 </Link>
               </div>
-            </div>
-
-            <div className="space-y-6">
-              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Infrastruktur</h4>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
-                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> JKT-01 (Jakarta, ID)
-                </li>
-                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
-                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> SIN-01 (Singapore, SG)
-                </li>
-                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
-                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> KUL-01 (Kuala Lumpur, MY)
-                </li>
-                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
-                  <Activity className="size-4 text-primary/40 group-hover:text-primary" /> Status Jaringan
-                </li>
-              </ul>
             </div>
 
             <div className="space-y-6">
