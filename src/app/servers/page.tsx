@@ -47,8 +47,10 @@ export default function ServersPage() {
   const [profile, setProfile] = React.useState<any>(null);
   const [servers, setServers] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     if (!user?.uid) return;
     
     // Profile Listener
@@ -80,7 +82,7 @@ export default function ServersPage() {
     router.push("/auth?type=login");
   };
 
-  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account") : "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
 
   const filteredServers = servers.filter(server => 
@@ -131,7 +133,7 @@ export default function ServersPage() {
                     {displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
-                    {user?.email}
+                    {mounted ? user?.email : ""}
                   </span>
                 </div>
               </Button>
@@ -182,7 +184,7 @@ export default function ServersPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredServers.length > 0 ? (
             filteredServers.map((server) => {
-              const isExpired = server.expiresAt ? new Date(server.expiresAt) < new Date() : false;
+              const isExpired = mounted && server.expiresAt ? new Date(server.expiresAt) < new Date() : false;
               
               return (
                 <Link key={server.id} href={`/servers/${server.id}`}>
@@ -239,7 +241,7 @@ export default function ServersPage() {
                           <div className="flex flex-col leading-none">
                             <span className="text-[7px] md:text-[8px] opacity-70">EXPIRES</span>
                             <span className={cn(isExpired ? "text-destructive" : "")}>
-                              {server.expiresAt ? new Date(server.expiresAt).toLocaleDateString() : 'N/A'}
+                              {mounted && server.expiresAt ? new Date(server.expiresAt).toLocaleDateString() : 'N/A'}
                             </span>
                           </div>
                         </div>

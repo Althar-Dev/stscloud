@@ -88,6 +88,7 @@ export default function ServerPage() {
   const [diskUsage, setDiskUsage] = React.useState<number>(0);
   const [activeTab, setActiveTab] = React.useState("console");
   const [pricingTiers, setPricingTiers] = React.useState<any[]>([]);
+  const [mounted, setMounted] = React.useState(false);
 
   const [serverName, setServerName] = React.useState("");
   const [runtimeVersion, setRuntimeVersion] = React.useState("");
@@ -109,6 +110,7 @@ export default function ServerPage() {
   const wasOnlineOnMount = React.useRef(false);
 
   React.useEffect(() => {
+    setMounted(true);
     if (!user?.uid || !id) return;
 
     const unsubProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
@@ -331,7 +333,7 @@ export default function ServerPage() {
     router.push("/auth?type=login");
   };
 
-  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User";
+  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User") : "User";
   const userInitial = displayName.charAt(0).toUpperCase();
   
   const isNodeJS = server?.runtime === "nodejs";
@@ -340,10 +342,10 @@ export default function ServerPage() {
 
   const currentVersionsList = isPython ? pythonVersions : nodeVersions;
 
-  // Billing Stats
-  const expiresDate = server?.expiresAt ? new Date(server.expiresAt) : null;
-  const isExpired = expiresDate ? expiresDate < new Date() : false;
-  const daysLeft = expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
+  // Billing Stats - Client-side safe calculations
+  const expiresDate = mounted && server?.expiresAt ? new Date(server.expiresAt) : null;
+  const isExpired = mounted && expiresDate ? expiresDate < new Date() : false;
+  const daysLeft = mounted && expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   return (
     <div className="bg-background min-h-screen">
@@ -374,10 +376,14 @@ export default function ServerPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
-                <Avatar className="size-8 md:size-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
+                <Avatar className="size-8 md:size-9">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">{displayName}</span>
-                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{user?.email}</span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{mounted ? user?.email : ""}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>

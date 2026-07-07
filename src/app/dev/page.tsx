@@ -120,6 +120,7 @@ export default function DevConsole() {
   const { toast } = useToast();
   
   const [profile, setProfile] = React.useState<any>(null);
+  const [mounted, setMounted] = React.useState(false);
   
   const [usersList, setUsersList] = React.useState<any[]>([]);
   const [agentsList, setAgentsList] = React.useState<any[]>([]);
@@ -149,6 +150,7 @@ export default function DevConsole() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     if (authLoading) return;
     if (!user) {
       router.push("/auth?type=login");
@@ -452,6 +454,7 @@ export default function DevConsole() {
 
   if (!profile || profile.dev !== true) return null;
 
+  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "Admin") : "Admin";
   const totalRevenue = transactions.reduce((acc, tx) => acc + (tx.status === 'success' ? tx.amount : 0), 0);
   const avgGlobalLoad = agentsList.length > 0 
     ? (agentsList.reduce((acc, a) => acc + (a.load || 0), 0) / agentsList.length).toFixed(1)
@@ -479,9 +482,9 @@ export default function DevConsole() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 md:pr-4 rounded-full border border-border/50 gap-3 group transition-all hover:bg-secondary/50">
-                <Avatar className="size-8"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{(profile.displayName || "A").charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                <Avatar className="size-8"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{displayName.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
-                  <span className="text-xs font-bold font-headline">{profile.displayName || "Admin"}</span>
+                  <span className="text-xs font-bold font-headline">{displayName}</span>
                   <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest leading-none mt-1">ADMIN ROLE</span>
                 </div>
               </Button>

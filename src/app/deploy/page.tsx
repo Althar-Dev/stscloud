@@ -110,6 +110,7 @@ export default function DeployPage() {
   const [templates, setTemplates] = React.useState<any[]>([]);
   const [regions, setRegions] = React.useState<any[]>([]);
   const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
+  const [mounted, setMounted] = React.useState(false);
   
   const [step, setStep] = React.useState(1);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
@@ -141,6 +142,7 @@ export default function DeployPage() {
   }, [resourcePresets, isTierAvailable]);
 
   React.useEffect(() => {
+    setMounted(true);
     // Fetch Host VPS Metrics (Keep for UI awareness)
     getSystemHardwareInfo().then(res => {
       if (res.success) setVpsMetrics(res.data);
@@ -323,7 +325,7 @@ export default function DeployPage() {
     }
   };
 
-  const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account";
+  const displayName = mounted ? (profile?.displayName || user?.displayName || user?.email?.split('@')[0] || "User Account") : "User Account";
   const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -354,7 +356,7 @@ export default function DeployPage() {
                 <Avatar className="size-8 md:size-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">{displayName}</span>
-                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{user?.email}</span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{mounted ? user?.email : ""}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
