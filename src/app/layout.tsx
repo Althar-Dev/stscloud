@@ -122,7 +122,7 @@ export default function RootLayout({
             "@type": "SiteNavigationElement",
             "position": 1,
             "name": "Cloud Pricing",
-            "url": "https://stscloud.id/#pricing"
+            "url": "https://stscloud.id/pricing"
           },
           {
             "@type": "SiteNavigationElement",
