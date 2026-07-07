@@ -19,10 +19,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://stscloud.id'),
   title: {
-    default: 'STSCloud | Next-Gen Cloud Hosting & Game Server Indonesia',
+    default: 'STSCloud | Next-Gen Cloud Hosting Indonesia',
     template: '%s | STSCloud'
   },
-  description: 'Platform cloud hosting performa tinggi oleh StarVale Technology Solution. Deploy bot, web, dan game server di Jakarta dengan infrastruktur ultra-low latency. Dikelola oleh Alhadi Adriano.',
+  description: 'Platform cloud hosting performa tinggi oleh StarVale Technology Solution. Deploy bot, dan web di STSCloud dengan infrastruktur ultra-low latency. Dikelola oleh Alhadi Adriano.',
   keywords: [
     'StarVale Technology Solution', 
     'Alhadi Adriano', 
@@ -78,7 +78,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // JSON-LD Structured Data for Sitelinks & Authority
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -111,7 +110,7 @@ export default function RootLayout({
         "name": "Alhadi Adriano",
         "alternateName": "AltharDev",
         "url": "https://althar.dev",
-        "jobTitle": "Founder & Chief Technology Officer",
+        "jobTitle": "Solo Founder & Solutions Architect",
         "worksFor": { "@id": "https://stscloud.id/#organization" }
       },
       {
