@@ -109,6 +109,11 @@ export default function ServerPage() {
 
   const wasOnlineOnMount = React.useRef(false);
 
+  // Billing Stats - Client-side safe calculations
+  const expiresDate = mounted && server?.expiresAt ? new Date(server.expiresAt) : null;
+  const isExpired = mounted && expiresDate ? expiresDate < new Date() : false;
+  const daysLeft = mounted && expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
+
   React.useEffect(() => {
     setMounted(true);
     if (!user?.uid || !id) return;
@@ -197,6 +202,15 @@ export default function ServerPage() {
 
   const handlePower = async (action: "start" | "stop" | "restart") => {
     if (!id || !db || !server) return;
+
+    if (isExpired && (action === "start" || action === "restart")) {
+      toast({ 
+        variant: "destructive", 
+        title: "Access Denied", 
+        description: "Instance has expired. Please renew your subscription to perform power actions." 
+      });
+      return;
+    }
     
     setPowerActionActive(true);
     
@@ -342,11 +356,6 @@ export default function ServerPage() {
 
   const currentVersionsList = isPython ? pythonVersions : nodeVersions;
 
-  // Billing Stats - Client-side safe calculations
-  const expiresDate = mounted && server?.expiresAt ? new Date(server.expiresAt) : null;
-  const isExpired = mounted && expiresDate ? expiresDate < new Date() : false;
-  const daysLeft = mounted && expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
-
   return (
     <div className="bg-background min-h-screen">
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-40">
@@ -402,6 +411,21 @@ export default function ServerPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
+        {isExpired && (
+          <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4">
+             <div className="flex items-center gap-3">
+                <AlertTriangle className="size-5 text-destructive" />
+                <div>
+                   <p className="font-bold text-sm text-destructive">Instance Expired</p>
+                   <p className="text-xs text-muted-foreground">Operational features are disabled. Please renew to resume service.</p>
+                </div>
+             </div>
+             <Button size="sm" className="bg-destructive text-white hover:bg-destructive/90 h-8 text-[10px] font-bold uppercase tracking-widest" onClick={() => setActiveTab('billing')}>
+                Go to Billing
+             </Button>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="console" className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="w-full md:w-auto overflow-x-auto pb-1 custom-scrollbar">
@@ -428,11 +452,15 @@ export default function ServerPage() {
           </div>
 
           <TabsContent value="console" className="space-y-8 animate-in fade-in duration-500">
-            <div className="w-full h-[500px] md:h-[600px] lg:h-[650px]"><TerminalConsole serverId={id as string} externalStatus={server?.status} onPowerAction={handlePower} /></div>
+            <div className="w-full h-[500px] md:h-[600px] lg:h-[650px]">
+              <TerminalConsole serverId={id as string} externalStatus={server?.status} onPowerAction={handlePower} isExpired={isExpired} />
+            </div>
             <PerformanceMetrics status={server?.status || "offline"} resources={server?.resources} actualDiskUsageMB={diskUsage} />
           </TabsContent>
 
-          <TabsContent value="files" className="animate-in fade-in duration-500"><FileExplorer serverId={id as string} /></TabsContent>
+          <TabsContent value="files" className="animate-in fade-in duration-500">
+            <FileExplorer serverId={id as string} isExpired={isExpired} />
+          </TabsContent>
 
           {hasStartup && (
             <TabsContent value="startup" className="animate-in fade-in duration-500 space-y-8">
@@ -448,11 +476,11 @@ export default function ServerPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">StartUp Command</Label>
-                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} placeholder={isPython ? 'python3 main.py' : 'npm start'} />
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} placeholder={isPython ? 'python3 main.py' : 'npm start'} disabled={isExpired} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">{isPython ? 'Python' : 'Node.js'} Version</Label>
-                      <Select value={runtimeVersion} onValueChange={setRuntimeVersion}>
+                      <Select value={runtimeVersion} onValueChange={setRuntimeVersion} disabled={isExpired}>
                         <SelectTrigger className="bg-secondary/50 border-none h-11">
                           <SelectValue placeholder="Select version" />
                         </SelectTrigger>
@@ -467,14 +495,14 @@ export default function ServerPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Binary Runner</Label>
-                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} placeholder={isPython ? 'python3' : 'node'} />
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={commandRun} onChange={(e) => setCommandRun(e.target.value)} placeholder={isPython ? 'python3' : 'node'} disabled={isExpired} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase text-muted-foreground">Entrypoint</Label>
-                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} placeholder={isPython ? 'main.py' : 'index.js'} />
+                      <Input className="bg-secondary/50 border-none font-code text-sm h-11" value={entryFile} onChange={(e) => setEntryFile(e.target.value)} placeholder={isPython ? 'main.py' : 'index.js'} disabled={isExpired} />
                     </div>
                   </div>
-                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2"><Save className="size-4" /> Update Startup Config</Button>
+                  <Button onClick={handleSaveSettings} disabled={isSavingSettings || isExpired} className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold gap-2"><Save className="size-4" /> Update Startup Config</Button>
                 </CardContent>
               </div>
             </TabsContent>
@@ -580,8 +608,8 @@ export default function ServerPage() {
              <div className="max-w-2xl bg-card border border-border/50 rounded-xl p-6 md:p-8">
                 <h2 className="text-xl font-headline font-bold mb-6">Server Identity</h2>
                 <div className="space-y-6">
-                  <div className="grid gap-2"><Label htmlFor="s-name" className="text-sm font-medium">Display Name</Label><Input id="s-name" className="bg-secondary/50 border-none rounded-lg h-11" value={serverName} onChange={(e) => setServerName(e.target.value)} /></div>
-                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-primary hover:bg-primary/90 text-white h-11 font-bold gap-2"><Save className="size-4" /> Save Settings</Button>
+                  <div className="grid gap-2"><Label htmlFor="s-name" className="text-sm font-medium">Display Name</Label><Input id="s-name" className="bg-secondary/50 border-none rounded-lg h-11" value={serverName} onChange={(e) => setServerName(e.target.value)} disabled={isExpired} /></div>
+                  <Button onClick={handleSaveSettings} disabled={isSavingSettings || isExpired} className="bg-primary hover:bg-primary/90 text-white h-11 font-bold gap-2"><Save className="size-4" /> Save Settings</Button>
                 </div>
              </div>
              <div className="max-w-2xl bg-card border border-destructive/20 rounded-xl p-6 md:p-8">
@@ -598,3 +626,4 @@ export default function ServerPage() {
     </div>
   );
 }
+

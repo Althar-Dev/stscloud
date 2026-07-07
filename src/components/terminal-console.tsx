@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from "react";
-import { Terminal as TerminalIcon, Send, Play, RotateCcw, Square, Loader2 } from "lucide-react";
+import { Terminal as TerminalIcon, Send, Play, RotateCcw, Square, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +30,10 @@ interface TerminalConsoleProps {
   serverId?: string;
   externalStatus?: "online" | "offline" | "starting";
   onPowerAction?: (action: "start" | "stop" | "restart") => void;
+  isExpired?: boolean;
 }
 
-export function TerminalConsole({ serverId, externalStatus, onPowerAction }: TerminalConsoleProps) {
+export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExpired }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
   const [isInitializing, setIsInitializing] = React.useState(true);
@@ -130,7 +132,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
 
   const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || !serverId || isSending) return;
+    if (!inputValue.trim() || !serverId || isSending || isExpired) return;
     
     const text = inputValue;
     setInputValue("");
@@ -176,10 +178,10 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
         </div>
 
         <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/50">
-          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-green-500/10 hover:text-green-500" onClick={() => onPowerAction?.("start")} disabled={externalStatus !== "offline"}>
+          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-green-500/10 hover:text-green-500" onClick={() => onPowerAction?.("start")} disabled={externalStatus !== "offline" || isExpired}>
             <Play className="size-3.5 md:size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-blue-500/10 hover:text-blue-500" onClick={() => onPowerAction?.("restart")} disabled={externalStatus === "offline"}>
+          <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-blue-500/10 hover:text-blue-500" onClick={() => onPowerAction?.("restart")} disabled={externalStatus === "offline" || isExpired}>
             <RotateCcw className="size-3.5 md:size-4" />
           </Button>
           <Button variant="ghost" size="icon" className="size-7 md:size-8 hover:bg-red-500/10 hover:text-red-500" onClick={() => onPowerAction?.("stop")} disabled={externalStatus === "offline"}>
@@ -197,6 +199,11 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           <div className="flex items-center gap-2 opacity-50">
             <Loader2 className="size-3 animate-spin text-primary" />
             <span className="text-xs">Connecting...</span>
+          </div>
+        ) : isExpired && logs.length === 0 ? (
+          <div className="text-destructive italic flex flex-col items-center justify-center h-full gap-2 opacity-60">
+            <AlertTriangle className="size-8 md:size-10" />
+            <p className="text-xs md:text-sm text-center font-bold">Subscription expired. Please renew to boot.</p>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-muted-foreground italic flex flex-col items-center justify-center h-full gap-2 opacity-30">
@@ -247,16 +254,16 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={externalStatus === 'online' ? "Type command or input..." : "Server is offline"} 
+            placeholder={isExpired ? "Operational functions disabled" : (externalStatus === 'online' ? "Type command or input..." : "Server is offline")} 
             className="h-9 md:h-10 bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7"
-            disabled={externalStatus !== 'online' || isSending}
+            disabled={externalStatus !== 'online' || isSending || isExpired}
           />
         </div>
         <Button 
           type="submit" 
           size="sm" 
           className="h-9 md:h-10 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-3 md:px-5"
-          disabled={externalStatus !== 'online' || isSending}
+          disabled={externalStatus !== 'online' || isSending || isExpired}
         >
           {isSending ? <Loader2 className="size-3.5 md:size-4 animate-spin" /> : <Send className="size-3.5 md:size-4 mr-2" />}
           <span className="hidden xs:inline">Execute</span>
@@ -265,3 +272,4 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction }: Ter
     </div>
   );
 }
+

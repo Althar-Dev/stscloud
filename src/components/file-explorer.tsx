@@ -23,7 +23,8 @@ import {
   FolderOpen,
   ArrowRightLeft,
   X,
-  Type
+  Type,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,9 +72,10 @@ import { cn } from "@/lib/utils";
 
 interface FileExplorerProps {
   serverId?: string;
+  isExpired?: boolean;
 }
 
-export function FileExplorer({ serverId }: FileExplorerProps) {
+export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -165,6 +167,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   }, [fetchFiles]);
 
   const toggleSelect = (name: string) => {
+    if (isExpired) return;
     const next = new Set(selectedItems);
     if (next.has(name)) next.delete(name);
     else next.add(name);
@@ -172,6 +175,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const toggleSelectAll = () => {
+    if (isExpired) return;
     if (selectedItems.size === files.length) {
       setSelectedItems(new Set());
     } else {
@@ -181,7 +185,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!serverId || !newItemName.trim()) return;
+    if (!serverId || !newItemName.trim() || isExpired) return;
 
     setIsCreating(true);
     try {
@@ -206,7 +210,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!serverId || !newRenameName.trim() || newRenameName === renamingItemName) {
+    if (!serverId || !newRenameName.trim() || newRenameName === renamingItemName || isExpired) {
       setIsRenameOpen(false);
       return;
     }
@@ -229,7 +233,10 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleUploadFiles = async (inputFiles: FileList | null) => {
-    if (!serverId || !inputFiles || inputFiles.length === 0) return;
+    if (!serverId || !inputFiles || inputFiles.length === 0 || isExpired) {
+      if (isExpired) toast({ variant: "destructive", title: "Action Blocked", description: "File modification is disabled during grace period." });
+      return;
+    }
     setLoading(true);
     try {
       for (let i = 0; i < inputFiles.length; i++) {
@@ -253,6 +260,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleBulkDelete = async (itemsToDelete?: string[]) => {
+    if (isExpired) return;
     const targets = itemsToDelete || Array.from(selectedItems);
     if (!serverId || targets.length === 0) return;
     
@@ -271,7 +279,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleBulkArchive = async () => {
-    if (!serverId || selectedItems.size === 0) return;
+    if (!serverId || selectedItems.size === 0 || isExpired) return;
     setIsArchiving(true);
     try {
       const result = await archiveServerPaths(serverId, Array.from(selectedItems), zipName, getSubPathString());
@@ -288,7 +296,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleBulkMove = async () => {
-    if (!serverId || selectedItems.size === 0) return;
+    if (!serverId || selectedItems.size === 0 || isExpired) return;
     setIsMoving(true);
     try {
       const result = await moveServerPaths(serverId, Array.from(selectedItems), getSubPathString(), targetPathInput);
@@ -306,7 +314,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleUnarchive = async (fileName: string) => {
-    if (!serverId) return;
+    if (!serverId || isExpired) return;
     setLoading(true);
     try {
       const result = await unarchiveServerFile(serverId, fileName, getSubPathString());
@@ -334,7 +342,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   };
 
   const handleSaveFile = async () => {
-    if (!serverId || !editingFileName) return;
+    if (!serverId || !editingFileName || isExpired) return;
     setIsSaving(true);
     const result = await updateFileContent(serverId, editingFileName, editingContent, getSubPathString());
     if (result.success) {
@@ -348,9 +356,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
   const navigateToRoot = () => setCurrentPath([]);
   const handleFolderClick = (folderName: string) => setCurrentPath([...currentPath, folderName]);
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); if(!isExpired) setIsDragging(true); };
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); handleUploadFiles(e.dataTransfer.files); };
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); if(!isExpired) handleUploadFiles(e.dataTransfer.files); };
 
   const filteredFiles = files
     .filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -362,14 +370,14 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
 
   return (
     <div className={cn("flex flex-col gap-4 relative transition-all duration-300", isDragging && "ring-4 ring-primary/20 bg-primary/5 rounded-2xl p-4")} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-      {isDragging && (
+      {isDragging && !isExpired && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl pointer-events-none">
           <Upload className="size-12 text-primary animate-bounce mb-4" />
           <p className="text-xl font-bold font-headline text-primary">Drop files to upload</p>
         </div>
       )}
 
-      {selectedItems.size > 0 && (
+      {selectedItems.size > 0 && !isExpired && (
         <div className="flex items-center justify-between bg-primary/10 border border-primary/30 p-2 rounded-lg animate-in slide-in-from-top-2">
           <div className="flex items-center gap-3 px-2">
             <X className="size-4 cursor-pointer text-primary" onClick={() => setSelectedItems(new Set())} />
@@ -400,6 +408,11 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {isExpired && (
+            <Badge variant="outline" className="h-9 border-destructive/30 text-destructive bg-destructive/5 gap-2 px-3">
+              <AlertCircle className="size-3.5" /> READ-ONLY MODE
+            </Badge>
+          )}
           <Button size="sm" variant="ghost" className="size-9 p-0" onClick={fetchFiles} disabled={loading}>
             <RefreshCw className={cn("size-4", loading && "animate-spin")} />
           </Button>
@@ -408,9 +421,9 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
             <Input type="search" placeholder="Search files..." className="h-9 pl-8 bg-secondary/30 border-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           
-          <div className="relative">
-            <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleUploadFiles(e.target.files)} />
-            <Button size="sm" variant="outline" className="h-9 gap-2 pointer-events-none">
+          <div className={cn("relative", isExpired && "opacity-50 cursor-not-allowed")}>
+            <input type="file" multiple className={cn("absolute inset-0 opacity-0 cursor-pointer", isExpired && "pointer-events-none")} onChange={(e) => handleUploadFiles(e.target.files)} disabled={isExpired} />
+            <Button size="sm" variant="outline" className="h-9 gap-2 pointer-events-none" disabled={isExpired}>
               <Upload className="size-4" />
               <span className="hidden xs:inline">Upload</span>
             </Button>
@@ -418,7 +431,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-9 gap-2 bg-primary hover:bg-primary/90 text-white font-bold">
+              <Button size="sm" className="h-9 gap-2 bg-primary hover:bg-primary/90 text-white font-bold" disabled={isExpired}>
                 <Plus className="size-4" />
                 <span>New</span>
               </Button>
@@ -455,7 +468,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
             <TableHeader className="bg-secondary/20">
               <TableRow>
                 <TableHead className="w-10">
-                  <Checkbox checked={files.length > 0 && selectedItems.size === files.length} onCheckedChange={toggleSelectAll} />
+                  <Checkbox checked={files.length > 0 && selectedItems.size === files.length} onCheckedChange={toggleSelectAll} disabled={isExpired} />
                 </TableHead>
                 <TableHead className="min-w-[160px] md:min-w-[200px]">Name</TableHead>
                 <TableHead className="hidden sm:table-cell">Size</TableHead>
@@ -472,7 +485,7 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                 filteredFiles.map((file) => (
                   <TableRow key={file.name} className={cn("group hover:bg-secondary/10", selectedItems.has(file.name) && "bg-primary/5")}>
                     <TableCell>
-                      <Checkbox checked={selectedItems.has(file.name)} onCheckedChange={() => toggleSelect(file.name)} />
+                      <Checkbox checked={selectedItems.has(file.name)} onCheckedChange={() => toggleSelect(file.name)} disabled={isExpired} />
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -486,29 +499,32 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8 md:opacity-0 md:group-hover:opacity-100"><MoreVertical className="size-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> Edit</DropdownMenuItem>}
+                          {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> {isExpired ? 'View' : 'Edit'}</DropdownMenuItem>}
                           {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
                           
-                          <DropdownMenuItem className="gap-2" onSelect={(e) => { 
-                            e.preventDefault(); 
-                            setRenamingItemName(file.name);
-                            setNewRenameName(file.name);
-                            setTimeout(() => setIsRenameOpen(true), 10);
-                          }}>
-                            <Type className="size-4" /> Rename
-                          </DropdownMenuItem>
-
-                          {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="gap-2 text-destructive focus:text-destructive" 
-                            onSelect={(e) => { 
-                              e.preventDefault(); 
-                              handleBulkDelete([file.name]); 
-                            }}
-                          >
-                            <Trash2 className="size-4" /> Delete
-                          </DropdownMenuItem>
+                          {!isExpired && (
+                            <>
+                              <DropdownMenuItem className="gap-2" onSelect={(e) => { 
+                                e.preventDefault(); 
+                                setRenamingItemName(file.name);
+                                setNewRenameName(file.name);
+                                setTimeout(() => setIsRenameOpen(true), 10);
+                              }}>
+                                <Type className="size-4" /> Rename
+                              </DropdownMenuItem>
+                              {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="gap-2 text-destructive focus:text-destructive" 
+                                onSelect={(e) => { 
+                                  e.preventDefault(); 
+                                  handleBulkDelete([file.name]); 
+                                }}
+                              >
+                                <Trash2 className="size-4" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -594,17 +610,18 @@ export function FileExplorer({ serverId }: FileExplorerProps) {
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] flex flex-col p-0 bg-card border-border/50 rounded-lg">
           <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
-            <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2"><FileText className="size-5 text-primary" />{editingFileName}</DialogTitle>
+            <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2"><FileText className="size-5 text-primary" />{editingFileName} {isExpired && <Badge className="ml-4 bg-destructive/10 text-destructive border-destructive/20">Read-Only</Badge>}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-0 bg-black/20">
-            <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300" placeholder="// Write your code here..." />
+            <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300" placeholder="// Write your code here..." readOnly={isExpired} />
           </div>
           <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close</Button>
-            <Button onClick={handleSaveFile} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2" disabled={isSaving}>{isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}Save</Button>
+            {!isExpired && <Button onClick={handleSaveFile} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 gap-2" disabled={isSaving}><Save className="size-4" />Save</Button>}
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
