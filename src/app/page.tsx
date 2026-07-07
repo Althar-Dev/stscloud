@@ -91,8 +91,11 @@ export default function LandingPage() {
   const [globalAgents, setGlobalAgents] = React.useState<any[]>(defaultGlobalAgents);
   
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
+  const [currentYear, setCurrentYear] = React.useState<number>(2025);
 
   React.useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+    
     const loadLottie = async (url: string, setter: (data: any) => void) => {
       try {
         const res = await fetch(url);
@@ -404,7 +407,7 @@ export default function LandingPage() {
       </section>
 
       <section id="faq" className="py-20 bg-secondary/20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">FAQ</Badge>
             <h2 className="text-3xl md:text-5xl font-headline font-bold">Pertanyaan Umum</h2>
@@ -504,14 +507,8 @@ export default function LandingPage() {
 
           <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
             <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
-              © {new Date().getFullYear()} STSCloud Infrastructure. Managed by Starvale SDK.
+              © {currentYear} STSCloud Infrastructure. Managed by Starvale SDK.
             </p>
-            <div className="flex items-center gap-6">
-              <Image src="https://placehold.co/40x25/transparent/white?text=VISA" alt="Visa" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-              <Image src="https://placehold.co/40x25/transparent/white?text=MC" alt="Mastercard" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-              <Image src="https://placehold.co/40x25/transparent/white?text=QRIS" alt="QRIS" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-              <Image src="https://placehold.co/40x25/transparent/white?text=GOPAY" alt="Gopay" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-            </div>
           </div>
         </div>
       </footer>
