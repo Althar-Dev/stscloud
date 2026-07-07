@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -462,7 +461,7 @@ export default function DeployPage() {
                       if (!isDown && !isSoldOut) setSelectedRegion(region.id);
                     }}
                   >
-                    {isSoldOut && (
+                    {isSoldOut && !isDown && (
                       <div className="absolute top-0 right-0 z-20">
                          <Badge className="bg-destructive text-white rounded-none rounded-bl-lg text-[9px] uppercase font-bold px-3 py-1">Sold Out</Badge>
                       </div>
@@ -476,7 +475,7 @@ export default function DeployPage() {
                           <span className="font-bold font-headline">{region.name}</span>
                         </div>
                         {selectedRegion === region.id && !isDown && !isSoldOut && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
-                        {(isDown || isSoldOut) && <AlertCircle className="size-4 text-destructive" />}
+                        {(isDown || (isSoldOut && !isDown)) && <AlertCircle className={cn("size-4", isDown ? "text-destructive" : "text-destructive opacity-50")} />}
                       </div>
                       <div className="space-y-1">
                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
