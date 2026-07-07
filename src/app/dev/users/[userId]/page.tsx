@@ -65,7 +65,7 @@ import { decommissionServerFiles } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const resourcePresets = [
+const defaultResourcePresets = [
   { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB" },
   { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB" },
   { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB" },
@@ -107,6 +107,7 @@ export default function UserDetailPage() {
   const [targetUser, setTargetUser] = React.useState<any>(null);
   const [userServers, setUserServers] = React.useState<any[]>([]);
   const [updating, setUpdating] = React.useState(false);
+  const [resourcePresets, setResourcePresets] = React.useState<any[]>(defaultResourcePresets);
 
   // Provisioning State
   const [isProvisioning, setIsProvisioning] = React.useState(false);
@@ -140,7 +141,7 @@ export default function UserDetailPage() {
     return () => unsub();
   }, [currentUser, authLoading, db, router]);
 
-  // Fetch Target User Data
+  // Fetch Target User Data & Global Pricing
   React.useEffect(() => {
     if (!userId || !db) return;
 
@@ -157,6 +158,18 @@ export default function UserDetailPage() {
       }
     });
 
+    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers && Array.isArray(data.tiers)) {
+          setResourcePresets(data.tiers);
+          if (data.tiers.length > 0 && !provisionPlanId) {
+            setProvisionPlanId(data.tiers[0].id);
+          }
+        }
+      }
+    });
+
     const serversQuery = query(collection(db, "servers"), where("ownerId", "==", userId));
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
       setUserServers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -164,9 +177,10 @@ export default function UserDetailPage() {
 
     return () => {
       unsubUser();
+      unsubPricing();
       unsubServers();
     };
-  }, [userId, db, router, toast]);
+  }, [userId, db, router, toast, provisionPlanId]);
 
   // Sync version when runtime changes
   React.useEffect(() => {
@@ -327,13 +341,14 @@ export default function UserDetailPage() {
                       <Plus className="size-4" /> Server
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[450px] w-[95vw] bg-card border-border/50 rounded-lg">
+                  <DialogContent className="w-[calc(100%-2rem)] max-w-[95vw] sm:max-w-[450px] bg-card border-border/50 rounded-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="font-headline font-bold text-xl">Admin: Deploy Server</DialogTitle>
-                      <DialogDescription>
+                      <DialogDescription className="break-all">
                         Directly provision a server instance for {targetUser.email}.
                       </DialogDescription>
                     </DialogHeader>
+                    
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
                         <Label htmlFor="server-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Server Name</Label>
@@ -345,37 +360,39 @@ export default function UserDetailPage() {
                           onChange={(e) => setProvisionServerName(e.target.value)}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-2">
                           <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Template</Label>
                           <Select value={provisionTemplate} onValueChange={(val) => {
                             setProvisionTemplate(val);
                           }}>
-                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                            <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
                               <SelectValue placeholder="Template" />
                             </SelectTrigger>
                             <SelectContent>
                               {templates.map(t => (
                                 <SelectItem key={t.id} value={t.id}>
                                   <div className="flex items-center gap-2 uppercase text-[10px] font-bold tracking-widest">
-                                    <t.icon className="size-3" /> {t.name}
+                                    <t.icon className="size-3 shrink-0" /> <span className="truncate">{t.name}</span>
                                   </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
+
                         <div className="grid gap-2">
                           <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Runtime</Label>
                           <Select value={provisionRuntime} onValueChange={setProvisionRuntime}>
-                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                            <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
                               <SelectValue placeholder="Runtime" />
                             </SelectTrigger>
                             <SelectContent>
                               {availableRuntimes.map(r => (
                                 <SelectItem key={r.id} value={r.id}>
                                   <div className="flex items-center gap-2 uppercase text-[10px] font-bold tracking-widest">
-                                    <Code2 className="size-3" /> {r.name}
+                                    <Code2 className="size-3 shrink-0" /> <span className="truncate">{r.name}</span>
                                   </div>
                                 </SelectItem>
                               ))}
@@ -390,7 +407,7 @@ export default function UserDetailPage() {
                             {provisionRuntime === 'python' ? 'Python' : provisionRuntime === 'nodejs' ? 'Node.js' : 'Runtime'} Version
                           </Label>
                           <Select value={provisionVersion} onValueChange={setProvisionVersion}>
-                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                            <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
                               <SelectValue placeholder="Select version" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
@@ -407,7 +424,7 @@ export default function UserDetailPage() {
                       <div className="grid gap-2">
                         <Label htmlFor="plan" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Resource Plan</Label>
                         <Select value={provisionPlanId} onValueChange={setProvisionPlanId}>
-                          <SelectTrigger className="bg-secondary/30 border-none h-11">
+                          <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
                             <SelectValue placeholder="Select plan..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -423,14 +440,22 @@ export default function UserDetailPage() {
                         </Select>
                       </div>
                     </div>
-                    <DialogFooter>
+
+                    <DialogFooter className="sm:mt-0">
                       <Button 
                         className="w-full bg-primary text-white font-bold h-11" 
                         onClick={handleAdminProvision}
                         disabled={isProvisioning}
                       >
-                        {isProvisioning ? <span className="flex items-center gap-2"><Plus className="size-4 animate-spin" /> Provisioning...</span> : <Zap className="size-4 mr-2" />}
-                        Finalize Provisioning
+                        {isProvisioning ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Plus className="size-4 animate-spin" /> Provisioning...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <Zap className="size-4" /> Finalize Provisioning
+                          </span>
+                        )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -459,9 +484,6 @@ export default function UserDetailPage() {
               <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto border border-border/50">
                 <TabsTrigger value="servers" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
                   <ServerIcon className="size-4" /> Agents
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary">
-                  <Activity className="size-4" /> Recent Activity
                 </TabsTrigger>
               </TabsList>
 
@@ -568,35 +590,6 @@ export default function UserDetailPage() {
                     </div>
                   )}
                 </div>
-              </TabsContent>
-
-              <TabsContent value="activity" className="pt-6 space-y-4">
-                 <Card className="border-border/50 bg-card">
-                   <CardContent className="p-0">
-                      <div className="divide-y divide-border/30">
-                         <div className="p-4 flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-3">
-                               <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><User className="size-4" /></div>
-                               <div>
-                                  <div className="font-bold">Account Created</div>
-                                  <div className="text-[10px] text-muted-foreground uppercase">System Registration</div>
-                               </div>
-                            </div>
-                            <div className="text-xs text-muted-foreground">{joinDate}</div>
-                         </div>
-                         <div className="p-4 flex items-center justify-between text-sm opacity-50">
-                            <div className="flex items-center gap-3">
-                               <div className="size-8 rounded-lg bg-secondary flex items-center justify-center"><Activity className="size-4" /></div>
-                               <div>
-                                  <div className="font-bold">Last Login</div>
-                                  <div className="text-[10px] text-muted-foreground uppercase">Authentication Session</div>
-                               </div>
-                            </div>
-                            <div className="text-xs text-muted-foreground">Recently</div>
-                         </div>
-                      </div>
-                   </CardContent>
-                 </Card>
               </TabsContent>
             </Tabs>
           </div>

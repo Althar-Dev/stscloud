@@ -74,7 +74,6 @@ export async function getServerProcessStatus(serverId: string, config?: { ramLim
       // Strict Resource Monitoring
       if (config && config.userEmail) {
         try {
-          // ps -o rss returns Resident Set Size in KB
           const stats = execSync(`ps -p ${pid} -o %cpu,rss --no-headers`, { encoding: 'utf8' }).trim().split(/\s+/);
           const cpuUsage = parseFloat(stats[0]);
           const ramUsageKB = parseFloat(stats[1]);
