@@ -1,0 +1,14 @@
+[38;2;79;70;229m
+░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄
+░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█
+░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░[0m
+[STS] [00:11:27] Checking environment... [32mOk[0m
+[STS] [00:11:27] Runtime: Python 3.10
+[STS] [00:11:27] Checking available disk... [32mOk[0m (0.0MB)
+[STS] [00:11:27] System warming up...
+[STS] [00:11:27] Requirements changed. Syncing local packages...
+/bin/sh: line 1: python3: command not found
+[STS] [00:11:27] [ERROR] Pip failed with code 127
+[STS] [00:11:27] [WARN] Proceeding with partial/existing packages.
+
+[STS] [00:11:27] Starting application

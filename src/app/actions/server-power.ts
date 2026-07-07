@@ -174,19 +174,20 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       
       const diskRes = await getServerDiskUsage(serverId);
       const currentMB = diskRes.sizeInMB || 0;
-      const limitMB = parseDiskToMB(config.limits?.disk || "2GB");
+      const limitLabel = config.limits?.disk || "2GB";
+      const limitMB = parseDiskToMB(limitLabel);
 
       if (currentMB > limitMB) {
-        initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] Disk usage (${currentMB.toFixed(1)}MB) exceeds limit (${limitMB}MB).\n`;
+        initialLogs += `(${currentMB.toFixed(1)}MB/${limitLabel}) ${red('Failed')}\n[STS] [${timestamp()}] [ERROR] Disk usage exceeds allocation limit.\n`;
         await fs.writeFile(logPath, initialLogs);
         await fs.unlink(pidPath).catch(() => {});
         if (config.userEmail && config.serverName) {
-           sendResourceLimitNotification(config.userEmail, config.serverName, 'Disk', `${currentMB.toFixed(1)}MB`, config.limits?.disk || "2GB");
+           sendResourceLimitNotification(config.userEmail, config.serverName, 'Disk', `${currentMB.toFixed(1)}MB`, limitLabel);
         }
         return { success: false, error: "Disk limit reached" };
       }
 
-      initialLogs += `${green('Ok')} (${currentMB.toFixed(1)}MB)\n[STS] [${timestamp()}] System warming up...\n`;
+      initialLogs += `(${currentMB.toFixed(1)}MB/${limitLabel}) ${green('Ok')}\n[STS] [${timestamp()}] System warming up...\n`;
       await fs.writeFile(logPath, initialLogs);
 
       (async () => {
