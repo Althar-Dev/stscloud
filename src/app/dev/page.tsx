@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -32,7 +31,9 @@ import {
   AlertTriangle,
   Bot,
   Power,
-  CheckCircle2
+  CheckCircle2,
+  Server as ServerIcon,
+  Monitor
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { getSystemHardwareInfo } from "@/app/actions/system-info";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -125,6 +127,7 @@ export default function DevConsole() {
   const [isUpdatingTemplates, setIsUpdatingTemplates] = React.useState(false);
 
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
+  const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
 
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
@@ -156,6 +159,11 @@ export default function DevConsole() {
   React.useEffect(() => {
     if (!profile || profile.dev !== true) return;
     
+    // Fetch Host VPS Metrics
+    getSystemHardwareInfo().then(res => {
+      if (res.success) setVpsMetrics(res.data);
+    });
+
     const unsubUsers = onSnapshot(query(collection(db, "users"), limit(100)), (snapshot) => {
       setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (err) => console.warn("Users list permission denied"));
@@ -488,12 +496,88 @@ export default function DevConsole() {
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
+          <TabsContent value="overview" className="space-y-12 animate-in fade-in duration-500">
+            {/* Logic Metrics */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <StatCard title="Total Revenue" value={`IDR ${(totalRevenue / 1000).toFixed(1)}K`} trend="Live" icon={CreditCard} color="text-green-400" />
               <StatCard title="Avg Agent Load" value={`${avgGlobalLoad}%`} trend={parseFloat(avgGlobalLoad) > 80 ? "Critical" : "Stable"} icon={Cpu} color="text-primary" />
               <StatCard title="Active Agents" value={agentsList.filter(a => a.status === 'online').length} trend="Online" icon={Activity} color="text-primary" />
               <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
+            </div>
+
+            {/* Hardware Metrics Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 px-1">
+                <div className="size-10 rounded-xl bg-secondary flex items-center justify-center text-primary shadow-inner">
+                  <Monitor className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-headline font-bold">VPS Physical Resources</h3>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Actual Host hardware overview</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-card border-border/50 relative overflow-hidden group">
+                  <CardContent className="p-6">
+                     <div className="flex items-center justify-between mb-4">
+                       <Cpu className="size-5 text-primary" />
+                       <Badge variant="outline" className="text-[8px] uppercase border-primary/20 text-primary">Processor</Badge>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="text-lg font-bold font-headline truncate max-w-full" title={vpsMetrics?.cpuModel || "Loading..."}>
+                          {vpsMetrics ? vpsMetrics.cpuModel : "---"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Model Identifier</div>
+                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 relative overflow-hidden group">
+                  <CardContent className="p-6">
+                     <div className="flex items-center justify-between mb-4">
+                       <Activity className="size-5 text-accent" />
+                       <Badge variant="outline" className="text-[8px] uppercase border-accent/20 text-accent">Concurrency</Badge>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="text-2xl font-bold font-headline">
+                          {vpsMetrics ? vpsMetrics.cpuCores : "--"} Cores
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Logical CPU</div>
+                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 relative overflow-hidden group">
+                  <CardContent className="p-6">
+                     <div className="flex items-center justify-between mb-4">
+                       <Database className="size-5 text-green-400" />
+                       <Badge variant="outline" className="text-[8px] uppercase border-green-400/20 text-green-400">Memory</Badge>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="text-2xl font-bold font-headline">
+                          {vpsMetrics ? vpsMetrics.totalRam : "-- GB"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Physical RAM</div>
+                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 relative overflow-hidden group">
+                  <CardContent className="p-6">
+                     <div className="flex items-center justify-between mb-4">
+                       <HardDrive className="size-5 text-orange-400" />
+                       <Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="text-2xl font-bold font-headline">
+                          {vpsMetrics ? vpsMetrics.totalDisk : "--"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Host Root Capacity</div>
+                     </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
