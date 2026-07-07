@@ -86,7 +86,8 @@
               "disk": { "type": "string" },
               "price": { "type": "string" },
               "priceValue": { "type": "number" },
-              "popular": { "type": "boolean" }
+              "popular": { "type": "boolean" },
+              "stock": { "type": "number", "description": "Manual available stock count." }
             }
           }
         }

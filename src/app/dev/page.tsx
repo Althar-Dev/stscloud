@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -83,12 +84,12 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const defaultPricingTiers = [
-  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000, popular: false },
-  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000, popular: false },
-  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000, popular: true },
-  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", priceValue: 30000, popular: false },
-  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", priceValue: 35000, popular: false },
-  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false },
+  { id: "p1", name: "Zero", ram: "1.5GB", cpu: "100%", disk: "2GB", price: "IDR 10.000", priceValue: 10000, popular: false, stock: 10 },
+  { id: "p2", name: "Core", ram: "3GB", cpu: "170%", disk: "5GB", price: "IDR 17.000", priceValue: 17000, popular: false, stock: 5 },
+  { id: "p3", name: "Plus", ram: "5GB", cpu: "250%", disk: "10GB", price: "IDR 27.000", priceValue: 27000, popular: true, stock: 8 },
+  { id: "p4", name: "Pro", ram: "7GB", cpu: "340%", disk: "15GB", price: "IDR 30.000", priceValue: 30000, popular: false, stock: 12 },
+  { id: "p5", name: "Elite", ram: "10GB", cpu: "Unlimited", disk: "25GB", price: "IDR 35.000", priceValue: 35000, popular: false, stock: 3 },
+  { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false, stock: 99 },
 ];
 
 const defaultGlobalAgents = [
@@ -134,31 +135,6 @@ export default function DevConsole() {
   const [regionName, setRegionName] = React.useState("");
   const [agentUrl, setAgentUrl] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-
-  // Stock Calculation Helper
-  const calculateStock = React.useCallback((tierDisk: string) => {
-    if (!vpsMetrics?.freeDiskBytes) return "--";
-    
-    // Safety Margin 5GB
-    const safetyMarginBytes = 5 * 1024 * 1024 * 1024;
-    const usableBytes = vpsMetrics.freeDiskBytes - safetyMarginBytes;
-    
-    if (usableBytes <= 0) return "0";
-    if (tierDisk.toUpperCase() === "UNLIMITED") return "∞";
-    
-    // Parse tier disk (e.g., "2GB" or "500MB")
-    let tierBytes = 0;
-    const val = parseFloat(tierDisk);
-    if (isNaN(val)) return "0";
-    
-    if (tierDisk.toUpperCase().includes("GB")) tierBytes = val * 1024 * 1024 * 1024;
-    else if (tierDisk.toUpperCase().includes("MB")) tierBytes = val * 1024 * 1024;
-    else tierBytes = val * 1024 * 1024 * 1024; // Default GB if no unit
-
-    if (tierBytes <= 0) return "∞";
-    
-    return Math.floor(usableBytes / tierBytes).toString();
-  }, [vpsMetrics]);
 
   React.useEffect(() => {
     if (authLoading) return;
@@ -308,7 +284,8 @@ export default function DevConsole() {
       disk: "1GB",
       price: "IDR 0",
       priceValue: 0,
-      popular: false
+      popular: false,
+      stock: 0
     };
     setPricingData(prev => [...prev, newTier]);
   };
@@ -746,7 +723,7 @@ export default function DevConsole() {
                       <TableHead>RAM</TableHead>
                       <TableHead>CPU</TableHead>
                       <TableHead>Disk</TableHead>
-                      <TableHead>Est. Stock</TableHead>
+                      <TableHead>Manual Stock</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
@@ -763,12 +740,12 @@ export default function DevConsole() {
                         <TableCell>
                           <div className="flex items-center gap-2 px-2">
                              <Package className="size-3.5 text-muted-foreground" />
-                             <span className={cn(
-                               "text-xs font-bold font-code",
-                               calculateStock(tier.disk) === "0" ? "text-destructive" : "text-primary"
-                             )}>
-                               {calculateStock(tier.disk)}
-                             </span>
+                             <Input 
+                               type="number"
+                               className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
+                               value={tier.stock || 0}
+                               onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
+                             />
                           </div>
                         </TableCell>
                         <TableCell>

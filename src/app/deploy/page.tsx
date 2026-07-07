@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -126,35 +127,21 @@ export default function DeployPage() {
 
   const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
-  // Stock availability helper
-  const isTierAvailable = React.useCallback((tierDisk: string) => {
-    if (!vpsMetrics?.freeDiskBytes) return true;
-    
-    const safetyMarginBytes = 5 * 1024 * 1024 * 1024; // 5GB Safety
-    const usableBytes = vpsMetrics.freeDiskBytes - safetyMarginBytes;
-    
-    if (usableBytes <= 0) return false;
-    if (tierDisk.toUpperCase() === "UNLIMITED") return true;
-    
-    let tierBytes = 0;
-    const val = parseFloat(tierDisk);
-    if (isNaN(val)) return false;
-    
-    if (tierDisk.toUpperCase().includes("GB")) tierBytes = val * 1024 * 1024 * 1024;
-    else if (tierDisk.toUpperCase().includes("MB")) tierBytes = val * 1024 * 1024;
-    else tierBytes = val * 1024 * 1024 * 1024;
-
-    return usableBytes >= tierBytes;
-  }, [vpsMetrics]);
+  // Stock availability helper (Manual)
+  const isTierAvailable = React.useCallback((preset: any) => {
+    // If stock property exists and is 0 or less, it's sold out
+    if (preset.stock !== undefined && preset.stock <= 0) return false;
+    return true;
+  }, []);
 
   // Check if at least one tier is available for a region
   const isAnyTierAvailable = React.useMemo(() => {
     if (resourcePresets.length === 0) return true;
-    return resourcePresets.some(preset => isTierAvailable(preset.disk));
+    return resourcePresets.some(preset => isTierAvailable(preset));
   }, [resourcePresets, isTierAvailable]);
 
   React.useEffect(() => {
-    // Fetch Host VPS Metrics
+    // Fetch Host VPS Metrics (Keep for UI awareness)
     getSystemHardwareInfo().then(res => {
       if (res.success) setVpsMetrics(res.data);
     });
@@ -504,7 +491,7 @@ export default function DeployPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => {
-                const available = isTierAvailable(preset.disk);
+                const available = isTierAvailable(preset);
                 return (
                   <Card 
                     key={preset.id}
@@ -543,7 +530,7 @@ export default function DeployPage() {
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
               <Button variant="ghost" onClick={() => setStep(2)} className="gap-2 w-full md:w-auto"><ChevronLeft className="size-4" /> Back</Button>
-              <Button onClick={() => setStep(4)} disabled={!selectedPreset || !isTierAvailable(selectedPresetData?.disk)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Runtime <ArrowRight className="size-4" /></Button>
+              <Button onClick={() => setStep(4)} disabled={!selectedPreset || !isTierAvailable(selectedPresetData)} className="bg-primary text-white px-8 h-12 gap-2 w-full md:w-auto font-bold">Select Runtime <ArrowRight className="size-4" /></Button>
             </div>
           </div>
         )}
