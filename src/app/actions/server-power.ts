@@ -11,7 +11,7 @@ import { sendResourceLimitNotification, sendExpirationReminderNotification } fro
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
  * Features: Strict Resource Guard (Disk/CPU/RAM), Interactive Stdin, and Email Alerts.
- * Security: Added Pre-flight validation to prevent parent environment leakage.
+ * Security: Refined Pre-flight validation to check for Entry Files first, then manifests.
  */
 
 // Global map to store interactive handles
@@ -71,6 +71,7 @@ export async function checkAndSendExpirationNotice(serverId: string, email: stri
     const diff = expiry - now;
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
+    // Send if within 24h window OR already expired but notice not yet sent
     if (diff <= oneDayInMs) {
       await sendExpirationReminderNotification(email, serverName, expiresAt);
       return { success: true };
@@ -162,7 +163,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
   const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 
   const killExisting = async () => {
     try {
@@ -204,19 +204,17 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       let initialLogs = `${ascii}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
       initialLogs += `[STS] [${timestamp()}] Checking environment... `;
 
-      // --- CRITICAL SECURITY VALIDATION ---
-      const pkgPath = path.join(filesDir, 'package.json');
+      // --- CRITICAL REFINED SECURITY VALIDATION ---
       const entryFilePath = path.join(filesDir, config.entryFile);
+      const pkgPath = path.join(filesDir, 'package.json');
+      const reqPath = path.join(filesDir, 'requirements.txt');
+      
       const isNpm = config.startupCommand.trim().startsWith('npm') || config.startupCommand.trim().startsWith('yarn');
       
       let validationError = "";
-      if (isNpm) {
-        try {
-          await fs.access(pkgPath);
-        } catch {
-          validationError = "No package.json found. Application isolation triggered.";
-        }
-      } else if (config.entryFile) {
+
+      // 1. First priority: Entry file MUST exist if explicitly defined
+      if (config.entryFile) {
         try {
           await fs.access(entryFilePath);
         } catch {
@@ -224,10 +222,21 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
       }
 
+      // 2. Second priority: Manifest check (especially to prevent npm traversal)
+      if (!validationError) {
+        if (isNpm) {
+          try {
+            await fs.access(pkgPath);
+          } catch {
+            validationError = "package.json missing. npm traversal protection triggered.";
+          }
+        }
+      }
+
       if (validationError) {
         initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] ${validationError}\n`;
         initialLogs += `[STS] [${timestamp()}] [SECURITY] To prevent parent environment leak, execution is halted.\n`;
-        initialLogs += `[STS] [${timestamp()}] Please upload your project files before starting.\n`;
+        initialLogs += `[STS] [${timestamp()}] Please upload your project files (index.js, main.py, etc.) before starting.\n`;
         await fs.writeFile(logPath, initialLogs);
         await fs.unlink(pidPath).catch(() => {});
         return { success: false, error: validationError };
@@ -260,12 +269,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         if (config.runtime === 'python') pythonBinary = getPythonBinary();
 
         if (config.runtime === 'python') {
-          const reqPath = path.join(filesDir, 'requirements.txt');
-          const localPkgDir = path.join(filesDir, '.python_packages');
           let hasReq = false;
           try { await fs.access(reqPath); hasReq = true; } catch {}
 
           if (hasReq) {
+            const localPkgDir = path.join(filesDir, '.python_packages');
             const hashPath = path.join(stsDir, 'req.hash');
             const currentHash = await getFileHash(reqPath);
             let oldHash = "";
@@ -305,7 +313,11 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           let hasMod = false;
           try { await fs.access(modPath); hasMod = true; } catch {}
 
-          if (!hasMod) {
+          // Only run npm install if package.json exists AND node_modules is missing
+          let hasPkg = false;
+          try { await fs.access(pkgPath); hasPkg = true; } catch {}
+
+          if (hasPkg && !hasMod) {
             logStream.write(`[STS] [${timestamp()}] Missing node_modules. Running npm install...\n`);
             await new Promise((resolve) => {
               const npmCmd = `npx -y -p node@${config.version} -- npm install --production`;
@@ -334,7 +346,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           else if (finalStartup === 'python3' || finalStartup === 'python') finalStartup = `${quotedBin} -u`;
           else finalStartup = finalStartup.replace(/^(python[3]?)/, `${quotedBin} -u`);
         } else {
-          // Use --prefix . to force npm to stay in current directory
           if (isNpm) {
              finalStartup = finalStartup.replace(/^(npm|yarn)/, `$1 --prefix .`);
           }
