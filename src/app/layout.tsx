@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     default: 'STSCloud | Next-Gen Cloud Hosting & Game Server Indonesia',
     template: '%s | STSCloud'
   },
-  description: 'Platform cloud hosting performa tinggi oleh StarVale Technology Solution. Deploy bot, web, dan game server di Jakarta, Singapura, dan Malaysia dengan infrastruktur ultra-low latency.',
+  description: 'Platform cloud hosting performa tinggi oleh StarVale Technology Solution. Deploy bot, web, dan game server di Jakarta dengan infrastruktur ultra-low latency. Dikelola oleh Alhadi Adriano.',
   keywords: [
     'StarVale Technology Solution', 
     'Alhadi Adriano', 
@@ -32,7 +32,8 @@ export const metadata: Metadata = {
     'VPS Jakarta', 
     'Hosting Bot Nodejs', 
     'Singapore Cloud Server', 
-    'STSCloud'
+    'STSCloud',
+    'Hosting Murah Indonesia'
   ],
   authors: [{ name: 'Alhadi Adriano', url: 'https://althar.dev' }],
   creator: 'AltharDev',
@@ -62,6 +63,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
@@ -70,23 +78,73 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // JSON-LD Structured Data for SEO
+  // JSON-LD Structured Data for Sitelinks & Authority
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "StarVale Technology Solution",
-    "alternateName": "StarVale",
-    "url": "https://stscloud.id",
-    "logo": "https://stscloud.id/img/icons.png",
-    "founder": {
-      "@type": "Person",
-      "name": "Alhadi Adriano",
-      "alternateName": "AltharDev",
-      "url": "https://althar.dev"
-    },
-    "sameAs": [
-      "https://starvale.my.id",
-      "https://althar.dev"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://stscloud.id/#organization",
+        "name": "StarVale Technology Solution",
+        "url": "https://stscloud.id",
+        "logo": "https://stscloud.id/img/icons.png",
+        "sameAs": [
+          "https://starvale.my.id",
+          "https://althar.dev"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://stscloud.id/#website",
+        "url": "https://stscloud.id",
+        "name": "STSCloud",
+        "publisher": { "@id": "https://stscloud.id/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://stscloud.id/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://althar.dev/#person",
+        "name": "Alhadi Adriano",
+        "alternateName": "AltharDev",
+        "url": "https://althar.dev",
+        "jobTitle": "Founder & Chief Technology Officer",
+        "worksFor": { "@id": "https://stscloud.id/#organization" }
+      },
+      {
+        "@type": "ItemList",
+        "name": "STSCloud Navigation",
+        "description": "Main sections of the STSCloud platform",
+        "itemListElement": [
+          {
+            "@type": "SiteNavigationElement",
+            "position": 1,
+            "name": "Cloud Pricing",
+            "url": "https://stscloud.id/#pricing"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 2,
+            "name": "Help Center",
+            "url": "https://stscloud.id/support"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 3,
+            "name": "Knowledge Base",
+            "url": "https://stscloud.id/support/knowledge-base"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 4,
+            "name": "Client Login",
+            "url": "https://stscloud.id/auth?type=login"
+          }
+        ]
+      }
     ]
   };
 
