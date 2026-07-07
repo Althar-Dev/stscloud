@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -30,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -624,4 +624,3 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     </div>
   );
 }
-

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 const docSections = [
   {
@@ -139,7 +140,6 @@ export default function KnowledgeBasePage() {
                   </Button>
                 </CardContent>
               </Card>
-            </div>
 
             <div className="space-y-8 bg-secondary/10 p-8 rounded-2xl border border-border/50">
               <h2 className="text-2xl font-headline font-bold flex items-center gap-3">
@@ -165,5 +165,3 @@ export default function KnowledgeBasePage() {
     </div>
   );
 }
-
-import { Badge } from "@/components/ui/badge";
