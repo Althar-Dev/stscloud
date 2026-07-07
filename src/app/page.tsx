@@ -25,7 +25,15 @@ import {
   HelpCircle,
   Wifi,
   WifiOff,
-  Loader2
+  Loader2,
+  Twitter,
+  Github,
+  Instagram,
+  MessageSquare,
+  ShieldCheck,
+  Lock,
+  Mail,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -414,16 +422,96 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="py-16 bg-background border-t border-border/50">
+      <footer className="pt-20 pb-10 bg-card border-t border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-[32px] h-[32px] rounded-lg overflow-hidden flex items-center justify-center">
-                <Image src="/img/icons.png" alt="STSCloud Hosting Logo" width={24} height={24} className="object-cover" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <div className="space-y-6">
+              <Link href="/" className="flex items-center gap-3">
+                <div className="w-[40px] h-[40px] rounded-xl overflow-hidden flex items-center justify-center bg-primary">
+                  <Image src="/img/icons.png" alt="STSCloud" width={40} height={40} className="object-cover" />
+                </div>
+                <span className="font-headline font-bold text-2xl tracking-tight">STS<span className="text-primary">Cloud</span></span>
+              </Link>
+              <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                Penyedia infrastruktur cloud berperforma tinggi untuk game server, bot, dan aplikasi web dengan latensi terendah di Asia Tenggara.
+              </p>
+              <div className="flex items-center gap-4">
+                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                  <Twitter className="size-4" />
+                </Link>
+                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                  <Github className="size-4" />
+                </Link>
+                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                  <Instagram className="size-4" />
+                </Link>
+                <Link href="#" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+                  <MessageSquare className="size-4" />
+                </Link>
               </div>
-              <span className="text-primary font-headline font-bold text-xl tracking-tight">Cloud</span>
             </div>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} STSCloud. Infrastruktur Cloud Indonesia.</p>
+
+            <div className="space-y-6">
+              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Infrastruktur</h4>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
+                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> JKT-01 (Jakarta, ID)
+                </li>
+                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
+                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> SIN-01 (Singapore, SG)
+                </li>
+                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
+                  <MapPin className="size-4 text-primary/40 group-hover:text-primary" /> KUL-01 (Kuala Lumpur, MY)
+                </li>
+                <li className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer group">
+                  <Activity className="size-4 text-primary/40 group-hover:text-primary" /> Status Jaringan
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-6">
+              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Layanan</h4>
+              <ul className="space-y-4 text-sm text-muted-foreground">
+                <li><Link href="#pricing" className="hover:text-primary transition-colors">Pricing & Plans</Link></li>
+                <li><Link href="#features" className="hover:text-primary transition-colors">Cloud Bot Hosting</Link></li>
+                <li><Link href="#features" className="hover:text-primary transition-colors">Web App Deployment</Link></li>
+                <li><Link href="#features" className="hover:text-primary transition-colors">Game Server Nodes</Link></li>
+                <li><Link href="/support" className="hover:text-primary transition-colors">Pusat Bantuan</Link></li>
+              </ul>
+            </div>
+
+            <div className="space-y-6">
+              <h4 className="font-headline font-bold text-sm uppercase tracking-widest text-primary">Legal & Security</h4>
+              <ul className="space-y-4 text-sm text-muted-foreground">
+                <li><Link href="/legal" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link href="/legal" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/legal" className="hover:text-primary transition-colors">Legal Agreement</Link></li>
+                <li className="flex items-center gap-3 pt-2">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/50">
+                      <ShieldCheck className="size-3 text-green-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-tight">PCI-DSS Compliant</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/50">
+                      <Lock className="size-3 text-primary" />
+                      <span className="text-[10px] font-bold uppercase tracking-tight">AES-256 Encrypted</span>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
+              © {new Date().getFullYear()} STSCloud Infrastructure. Managed by Starvale SDK.
+            </p>
+            <div className="flex items-center gap-6">
+              <Image src="https://placehold.co/40x25/transparent/white?text=VISA" alt="Visa" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+              <Image src="https://placehold.co/40x25/transparent/white?text=MC" alt="Mastercard" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+              <Image src="https://placehold.co/40x25/transparent/white?text=QRIS" alt="QRIS" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+              <Image src="https://placehold.co/40x25/transparent/white?text=GOPAY" alt="Gopay" width={40} height={25} className="opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+            </div>
           </div>
         </div>
       </footer>
