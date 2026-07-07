@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -316,7 +317,7 @@ export default function LandingPage() {
                         isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
                         isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                       )}>
-                        {isChecking ? "PROBING..." : live.status}
+                        {isChecking ? "PROBING..." : live?.status}
                       </Badge>
                     </div>
                     <h4 className="font-headline font-bold text-lg">{agent.name}</h4>
@@ -335,7 +336,7 @@ export default function LandingPage() {
                       ) : (
                         <>
                           {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-                          Latency: {live.latency}
+                          Latency: {live?.latency || "N/A"}
                         </>
                       )}
                     </div>
@@ -437,7 +438,7 @@ export default function LandingPage() {
                 <span className="font-headline font-bold text-2xl tracking-tight">STS<span className="text-primary">Cloud</span></span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                Penyedia infrastruktur cloud berperforma tinggi untuk game server, bot, dan aplikasi web dengan latensi terendah di Asia Tenggara.
+                Penyedia infrastruktur cloud berperforma tinggi oleh <strong>StarVale Technology Solution</strong> untuk game server, bot, dan aplikasi web dengan latensi terendah.
               </p>
               <div className="flex items-center gap-4">
                 <Link href={socials.twitter || '#'} target="_blank" className="size-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
@@ -488,14 +489,14 @@ export default function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-border/50 flex flex-col items-center justify-center text-center gap-2">
-            <p className="text-[11px] text-muted-foreground font-bold tracking-widest">
+            <p className="text-[11px] text-muted-foreground font-medium">
               © 2026- Present | STSCloud Infrastructure • All rights reserved
             </p>
-            <p className="text-[11px] text-muted-foreground font-bold tracking-widest">
+            <p className="text-[11px] text-muted-foreground font-medium">
               Powered by <Link href="https://starvale.my.id" target="_blank" className="text-foreground hover:underline">StarVale</Link>
             </p>
-            <p className="text-[11px] text-muted-foreground font-bold tracking-widest mt-2">
-              Build with 💙 by <Link href="https://althar.dev" target="_blank" className="text-primary hover:underline">AltharDev</Link>
+            <p className="text-[11px] text-muted-foreground font-medium mt-1">
+              Build with 💙 by <Link href="https://althar.dev" target="_blank" className="text-primary hover:underline">AltharDev</Link> (Alhadi Adriano)
             </p>
           </div>
         </div>

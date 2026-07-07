@@ -468,7 +468,7 @@ export default function DeployPage() {
                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
                          <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
                             {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />)}
-                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : isSoldOut ? "NO CAPACITY" : `Latency: ${live.latency}`}
+                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : isSoldOut ? "NO CAPACITY" : `Latency: ${live?.latency || "N/A"}`}
                          </div>
                       </div>
                     </CardContent>

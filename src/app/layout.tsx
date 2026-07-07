@@ -3,10 +3,11 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
+import Script from 'next/script';
 
 /**
- * @fileOverview Optimasi SEO Global.
- * Menambahkan metadata OpenGraph dan Twitter untuk meningkatkan visibilitas di mesin pencari dan media sosial.
+ * @fileOverview Deep SEO & GEO Optimization.
+ * Configured for StarVale Technology Solution by Alhadi Adriano (AltharDev).
  */
 
 export const viewport: Viewport = {
@@ -21,11 +22,21 @@ export const metadata: Metadata = {
     default: 'STSCloud | Next-Gen Cloud Hosting & Game Server Indonesia',
     template: '%s | STSCloud'
   },
-  description: 'Platform cloud hosting performa tinggi di Indonesia, Singapura, dan Malaysia. Deploy bot, web, dan game server dalam 60 detik dengan infrastruktur lokal ultra-low latency.',
-  keywords: ['Cloud Hosting Indonesia', 'Game Server Hosting', 'VPS Jakarta', 'Hosting Bot Nodejs', 'Python Hosting', 'Singapore Cloud Server', 'STSCloud'],
-  authors: [{ name: 'STSCloud Infrastructure' }],
-  creator: 'STSCloud',
-  publisher: 'STSCloud Infrastructure',
+  description: 'Platform cloud hosting performa tinggi oleh StarVale Technology Solution. Deploy bot, web, dan game server di Jakarta, Singapura, dan Malaysia dengan infrastruktur ultra-low latency.',
+  keywords: [
+    'StarVale Technology Solution', 
+    'Alhadi Adriano', 
+    'AltharDev', 
+    'Cloud Hosting Indonesia', 
+    'Game Server Hosting', 
+    'VPS Jakarta', 
+    'Hosting Bot Nodejs', 
+    'Singapore Cloud Server', 
+    'STSCloud'
+  ],
+  authors: [{ name: 'Alhadi Adriano', url: 'https://althar.dev' }],
+  creator: 'AltharDev',
+  publisher: 'StarVale Technology Solution',
   formatDetection: {
     email: false,
     address: false,
@@ -35,8 +46,8 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'STSCloud | Performa Cloud Tanpa Batas',
-    description: 'Deploy aplikasi dan game server Anda di infrastruktur lokal terbaik. Latency rendah, keamanan tinggi, dan harga transparan.',
+    title: 'STSCloud | Powered by StarVale Technology Solution',
+    description: 'High performance cloud nodes in South East Asia managed by Alhadi Adriano.',
     url: 'https://stscloud.id',
     siteName: 'STSCloud',
     locale: 'id_ID',
@@ -45,18 +56,12 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'STSCloud | Next-Gen Cloud Hosting',
-    description: 'High performance cloud nodes in South East Asia.',
+    description: 'Managed infrastructure by StarVale Technology Solution.',
+    creator: '@althardev',
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
 };
 
@@ -65,12 +70,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // JSON-LD Structured Data for SEO
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "StarVale Technology Solution",
+    "alternateName": "StarVale",
+    "url": "https://stscloud.id",
+    "logo": "https://stscloud.id/img/icons.png",
+    "founder": {
+      "@type": "Person",
+      "name": "Alhadi Adriano",
+      "alternateName": "AltharDev",
+      "url": "https://althar.dev"
+    },
+    "sameAs": [
+      "https://starvale.my.id",
+      "https://althar.dev"
+    ]
+  };
+
   return (
     <html lang="id" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <Script
+          id="json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className="font-body antialiased selection:bg-primary/30">
         <FirebaseClientProvider>

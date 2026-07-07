@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -559,8 +560,8 @@ export default function DevConsole() {
                   <Monitor className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-headline font-bold">VPS Physical Resources</h3>
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Actual Host hardware overview</p>
+                  <h3 className="text-xl font-headline font-bold">Physical Resources</h3>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Host Hardware Metrics</p>
                 </div>
               </div>
               
@@ -980,7 +981,7 @@ export default function DevConsole() {
                               {isChecking ? (
                                 <Loader2 className="size-3 animate-spin opacity-50" />
                               ) : (
-                                <span className={cn(isActive ? "text-primary" : "text-destructive")}>{live.latency}</span>
+                                <span className={cn(isActive ? "text-primary" : "text-destructive")}>{live?.latency || "N/A"}</span>
                               )}
                             </div>
                           </TableCell>
@@ -990,7 +991,7 @@ export default function DevConsole() {
                               isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
                               isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                             )}>
-                              {isChecking ? "PROBING" : live.status}
+                              {isChecking ? "PROBING" : live?.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
