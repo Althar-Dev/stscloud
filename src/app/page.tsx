@@ -475,10 +475,6 @@ export default function LandingPage() {
                 <li className="flex items-center gap-3 pt-2">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/50">
-                      <ShieldCheck className="size-3 text-green-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-tight">PCI-DSS Compliant</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/50">
                       <Lock className="size-3 text-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-tight">AES-256 Encrypted</span>
                     </div>

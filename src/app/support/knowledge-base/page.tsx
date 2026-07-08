@@ -157,6 +157,7 @@ export default function KnowledgeBasePage() {
             </div>
           </div>
         </div>
+        </div>
       </main>
 
       <footer className="py-12 border-t border-border/50 text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">

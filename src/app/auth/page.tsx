@@ -320,10 +320,6 @@ function AuthContent() {
         </Card>
 
         <div className="flex items-center justify-center gap-6 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-4 text-primary" />
-            <span className="text-[8px] font-bold uppercase tracking-widest">PCI-DSS Compliant</span>
-          </div>
           <div className="w-px h-3 bg-border" />
           <div className="flex items-center gap-2">
             <CheckCircle2 className="size-4 text-primary" />
