@@ -86,7 +86,7 @@ export default function RootLayout({
         "@id": "https://stscloud.id/#organization",
         "name": "StarVale Technology Solution",
         "url": "https://stscloud.id",
-        "logo": "https://stscloud.id/img/icons.png",
+        "logo": "https://stscloud.id/img/icon.jpg",
         "sameAs": [
           "https://starvale.my.id",
           "https://althar.dev"

@@ -228,15 +228,14 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           try {
             await fs.access(pkgPath);
           } catch {
-            validationError = "package.json missing. npm traversal protection triggered.";
+            validationError = "Index.js or package.json file is missing.";
           }
         }
       }
 
       if (validationError) {
         initialLogs += `${red('Failed')}\n[STS] [${timestamp()}] [ERROR] ${validationError}\n`;
-        initialLogs += `[STS] [${timestamp()}] [SECURITY] To prevent parent environment leak, execution is halted.\n`;
-        initialLogs += `[STS] [${timestamp()}] Please upload your project files (index.js, main.py, etc.) before starting.\n`;
+        initialLogs += `[STS] [${timestamp()}] Please upload your project files before starting.\n`;
         await fs.writeFile(logPath, initialLogs);
         await fs.unlink(pidPath).catch(() => {});
         return { success: false, error: validationError };
