@@ -3,75 +3,102 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * @fileOverview Traffic Controller STSCloud.
- * Mengelola perutean subdomain menggunakan Internal Rewriting untuk menjaga sesi.
+ * @fileOverview Traffic Controller STSCloud (Project Sebelah).
+ * Mengatur perutean otomatis antar subdomain tanpa pengecekan session di middleware.
+ * 
+ * PENTING AGAR TIDAK LOGIN ULANG:
+ * Pastikan saat proses Login, Cookie 'sts_session' diset dengan properti:
+ * { domain: '.stscloud.id', path: '/', secure: true }
  */
 
 export function middleware(request: NextRequest) {
-  const url = request.nextUrl;
+  const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
-  const session = request.cookies.get('sts_session');
 
-  // Bypass untuk lingkungan pengembangan lokal
+  // Menangani port jika di lingkungan local (e.g. localhost:3000)
+  const currentHost = hostname.split(':')[0];
+
   const isDevEnvironment = 
-    hostname.includes('localhost') || 
-    hostname.includes('cloudworkstations.dev') || 
-    hostname.includes('127.0.0.1');
+    currentHost.includes('localhost') || 
+    currentHost.includes('cloudworkstations.dev') || 
+    currentHost.includes('vercel.app') ||
+    currentHost.includes('127.0.0.1');
 
   if (isDevEnvironment) {
     return NextResponse.next();
   }
 
-  // Definisi Domain Utama dan Subdomain
+  // Definisi Domain
   const rootDomain = 'stscloud.id';
   const clientDomain = 'client.stscloud.id';
   const deployDomain = 'deploy.stscloud.id';
   const devDomain = 'dev.stscloud.id';
 
-  const isClientHost = hostname === clientDomain;
-  const isDeployHost = hostname === deployDomain;
-  const isDevHost = hostname === devDomain;
-
-  // 1. Logika Subdomain Client (Dashboard & Servers)
-  if (isClientHost) {
-    if (!session && url.pathname !== '/auth') {
-      return NextResponse.redirect(new URL('/auth?type=login', `https://${rootDomain}`));
+  // 1. Logika Subdomain Client
+  if (currentHost === clientDomain) {
+    // Jika akses /deploy, pindahkan ke subdomain deploy (Tanpa Prefix)
+    if (url.pathname.startsWith('/deploy')) {
+      const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
+      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
     }
-    // Map root subdomain ke /dashboard secara internal
+
+    // Jika akses /dashboard secara eksplisit, bersihkan prefix (redirect ke root client)
+    if (url.pathname === '/dashboard') {
+      return NextResponse.redirect(new URL(`/${url.search}`, `https://${clientDomain}`));
+    }
+
+    // Map root ke dashboard secara internal (Hapus prefix dari pandangan user)
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL('/dashboard', request.url));
     }
+    
     return NextResponse.next();
   }
 
   // 2. Logika Subdomain Deploy
-  if (isDeployHost) {
+  if (currentHost === deployDomain) {
+    // Jika akses rute client, pindahkan ke subdomain client
+    const clientRoutes = ['/dashboard', '/servers', '/settings'];
+    if (clientRoutes.some(route => url.pathname.startsWith(route))) {
+      let targetPath = url.pathname;
+      // Jika itu dashboard, arahkan ke root client domain
+      if (targetPath === '/dashboard') targetPath = '/';
+      return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
+    }
+
+    // Jika akses /deploy secara eksplisit di subdomain deploy, bersihkan prefix
+    if (url.pathname === '/deploy') {
+      return NextResponse.redirect(new URL(`/${url.search}`, `https://${deployDomain}`));
+    }
+
+    // Map root ke folder deploy secara internal
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL('/deploy', request.url));
     }
+    
     return NextResponse.next();
   }
 
-  // 3. Logika Subdomain Dev (Developer Console)
-  if (isDevHost) {
+  // 3. Logika Subdomain Dev
+  if (currentHost === devDomain) {
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL('/dev', request.url));
     }
     return NextResponse.next();
   }
 
-  // 4. Dashboard Enforcement (Redirect dari Domain Utama ke Subdomain)
-  const protectedRoutes = ['/dashboard', '/servers', '/settings'];
-  if (protectedRoutes.some(route => url.pathname.startsWith(protectedRoutes[0]))) {
-     return NextResponse.redirect(new URL('/', `https://${clientDomain}`));
+  // 4. Force Redirect rute dari root domain (stscloud.id) ke subdomain yang benar
+  if (url.pathname.startsWith('/dashboard')) {
+     return NextResponse.redirect(new URL(`/${url.search}`, `https://${clientDomain}`));
+  }
+
+  if (url.pathname.startsWith('/servers') || url.pathname.startsWith('/settings')) {
+     return NextResponse.redirect(new URL(`${url.pathname}${url.search}`, `https://${clientDomain}`));
   }
 
   if (url.pathname.startsWith('/deploy')) {
-    return NextResponse.redirect(new URL('/', `https://${deployDomain}`));
-  }
-
-  if (url.pathname.startsWith('/dev')) {
-    return NextResponse.redirect(new URL('/', `https://${devDomain}`));
+    const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
+    return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
   }
 
   return NextResponse.next();
@@ -79,6 +106,14 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|assets|img|lottie).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - assets (public assets)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|assets|img).*)',
   ],
 };
