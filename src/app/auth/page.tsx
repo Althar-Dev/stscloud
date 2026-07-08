@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -30,7 +31,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { sendVerificationCode } from "@/app/actions/auth-actions";
+import { sendVerificationCode, setSessionCookie } from "@/app/actions/auth-actions";
 import { cn } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
@@ -57,13 +58,6 @@ function AuthContent() {
   const [showVerification, setShowVerification] = React.useState(false);
   const [verificationCode, setVerificationCode] = React.useState("");
   const [sentCode, setSentCode] = React.useState("");
-
-  // Redirect if user is already logged in
-  React.useEffect(() => {
-    if (!authLoading && user) {
-      router.replace("/dashboard");
-    }
-  }, [user, authLoading, router]);
 
   const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,9 +94,14 @@ function AuthContent() {
   const handleLogin = async () => {
     setSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const res = await signInWithEmailAndPassword(auth, email, password);
+      // Sync session to shared domain cookie
+      await setSessionCookie(res.user.uid);
+      
       toast({ title: "Welcome back!", description: "Successfully signed in to your account." });
-      router.push("/dashboard");
+      
+      // Redirect to client subdomain
+      window.location.href = "https://client.stscloud.id/";
     } catch (error: any) {
       toast({ variant: "destructive", title: "Authentication failed", description: error.message });
     } finally {
@@ -130,8 +129,11 @@ function AuthContent() {
         dev: false
       });
 
+      // Sync session to shared domain cookie
+      await setSessionCookie(newUser.uid);
+
       toast({ title: "Account created!", description: "Welcome to STSCloud." });
-      router.push("/dashboard");
+      window.location.href = "https://client.stscloud.id/";
     } catch (error: any) {
       toast({ variant: "destructive", title: "Registration failed", description: error.message });
     } finally {
@@ -306,15 +308,15 @@ function AuthContent() {
           <CardFooter className="flex flex-col space-y-4 pb-8">
             <div className="text-center text-xs text-muted-foreground">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <Link 
-                href={isLogin ? "/auth?type=signup" : "/auth?type=login"}
+              <button 
                 onClick={() => {
                   setShowVerification(false);
+                  router.push(isLogin ? "/auth?type=signup" : "/auth?type=login");
                 }}
                 className="text-primary font-bold hover:underline"
               >
                 {isLogin ? "Create one" : "Sign in instead"}
-              </Link>
+              </button>
             </div>
           </CardFooter>
         </Card>
