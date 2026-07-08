@@ -65,7 +65,7 @@ import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/app/actions/server-files";
 import { executeServerPower, getServerProcessStatus, checkAndSendExpirationNotice } from "@/app/actions/server-power";
@@ -326,6 +326,19 @@ export default function ServerPage() {
     if (result.success) {
       setRenewalPaymentStatus(result.status);
       if (result.status === "success") {
+        // Record the transaction record for Analytics in Dev Console
+        const txId = `tx-renew-${Date.now()}`;
+        const tier = pricingTiers.find(p => p.name === server.plan);
+        setDoc(doc(db, "transactions", txId), {
+          userId: user?.uid,
+          userEmail: user?.email,
+          amount: tier?.priceValue || 0,
+          plan: server.plan,
+          status: "success",
+          createdAt: serverTimestamp(),
+          externalId: renewalPaymentData.external_id
+        }).catch(() => {});
+
         toast({ title: "Payment Verified!", description: "Extending your subscription..." });
         
         // Calculate new expiration date

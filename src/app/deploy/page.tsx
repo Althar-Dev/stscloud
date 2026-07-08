@@ -288,6 +288,18 @@ export default function DeployPage() {
     if (result.success) {
       setPaymentStatus(result.status);
       if (result.status === "success") {
+        // Record the transaction record for analytics in Dev Console
+        const txId = `tx-${Date.now()}`;
+        setDoc(doc(db, "transactions", txId), {
+          userId: user?.uid,
+          userEmail: user?.email,
+          amount: selectedPresetData?.priceValue || 0,
+          plan: selectedPresetData?.name || "Unknown",
+          status: "success",
+          createdAt: serverTimestamp(),
+          externalId: paymentData.external_id
+        }).catch(() => {});
+
         toast({ title: "Payment Success!", description: "Finalizing server deployment..." });
         handleFinalizeDeployment();
       }
