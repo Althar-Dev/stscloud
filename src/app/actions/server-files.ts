@@ -7,6 +7,7 @@ import AdmZip from 'adm-zip';
 
 /**
  * @fileOverview Server actions for managing server-specific files and logs.
+ * Optimized with Binary FormData support for high-speed uploads.
  */
 
 function getSafePath(serverId: string, subPath: string = '') {
@@ -60,13 +61,39 @@ export async function createServerFile(serverId: string, fileName: string, subPa
   }
 }
 
-export async function uploadServerFile(serverId: string, fileName: string, base64Content: string, subPath: string = '') {
+/**
+ * Optimized binary file upload action.
+ * Accepts FormData for efficient streaming and multiple files support.
+ */
+export async function uploadServerFiles(formData: FormData) {
   try {
-    const filePath = path.join(getSafePath(serverId, subPath), fileName);
-    const buffer = Buffer.from(base64Content, 'base64');
-    await fs.writeFile(filePath, buffer);
+    const serverId = formData.get('serverId') as string;
+    const subPath = (formData.get('subPath') as string) || '';
+    const files = formData.getAll('files') as unknown as File[];
+
+    if (!serverId || !files || files.length === 0) {
+      throw new Error("Invalid request: No files provided.");
+    }
+
+    const baseDir = getSafePath(serverId, subPath);
+    
+    // Ensure directory exists
+    try {
+      await fs.access(baseDir);
+    } catch {
+      await fs.mkdir(baseDir, { recursive: true });
+    }
+
+    for (const file of files) {
+      const targetPath = path.join(baseDir, file.name);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      await fs.writeFile(targetPath, buffer);
+    }
+
     return { success: true };
   } catch (error: any) {
+    console.error("Upload Action Error:", error);
     return { success: false, error: error.message };
   }
 }

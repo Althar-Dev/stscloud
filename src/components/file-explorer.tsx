@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -63,7 +64,7 @@ import {
   moveServerPaths,
   readFileContent,
   updateFileContent,
-  uploadServerFile,
+  uploadServerFiles,
   unarchiveServerFile,
   renameServerPath
 } from "@/app/actions/server-files";
@@ -237,19 +238,20 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       if (isExpired) toast({ variant: "destructive", title: "Action Blocked", description: "File modification is disabled during grace period." });
       return;
     }
+    
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('serverId', serverId);
+      formData.append('subPath', getSubPathString());
+      
       for (let i = 0; i < inputFiles.length; i++) {
-        const file = inputFiles[i];
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        const result = await uploadServerFile(serverId, file.name, base64, getSubPathString());
-        if (!result.success) throw new Error(result.error);
+        formData.append('files', inputFiles[i]);
       }
+      
+      const result = await uploadServerFiles(formData);
+      if (!result.success) throw new Error(result.error);
+      
       toast({ title: "Upload Success", description: `${inputFiles.length} file(s) have been uploaded.` });
       fetchFiles();
     } catch (error: any) {
