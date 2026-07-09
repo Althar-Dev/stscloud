@@ -64,7 +64,6 @@ import {
   moveServerPaths,
   readFileContent,
   updateFileContent,
-  uploadServerFiles,
   unarchiveServerFile,
   renameServerPath
 } from "@/app/actions/server-files";
@@ -242,6 +241,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     setLoading(true);
     try {
       const formData = new FormData();
+      // Crucial: Append metadata FIRST for streaming busboy processing
       formData.append('serverId', serverId);
       formData.append('subPath', getSubPathString());
       
@@ -249,10 +249,16 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         formData.append('files', inputFiles[i]);
       }
       
-      const result = await uploadServerFiles(formData);
+      // Using Dedicated API Route for faster Streaming Upload
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
       if (!result.success) throw new Error(result.error);
       
-      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) have been uploaded.` });
+      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) have been uploaded via streaming.` });
       fetchFiles();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: error.message });
@@ -626,3 +632,4 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     </div>
   );
 }
+
