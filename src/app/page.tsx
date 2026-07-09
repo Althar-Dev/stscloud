@@ -409,7 +409,7 @@ export default function LandingPage() {
       </section>
 
       <section id="faq" className="py-20 bg-secondary/20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="border-primary/20 text-primary uppercase font-bold tracking-widest px-2 py-0.5 text-[9px]">FAQ</Badge>
             <h2 className="text-3xl md:text-5xl font-headline font-bold">Pertanyaan Umum</h2>
