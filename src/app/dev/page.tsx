@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Terminal, 
   Cpu, 
@@ -77,7 +78,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter as useNextRouter } from "next/navigation";
 import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getSystemHardwareInfo } from "@/app/actions/system-info";
@@ -113,13 +114,16 @@ const defaultSocials = {
   whatsapp: "#"
 };
 
-export default function DevConsole() {
+function DevConsoleContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
   
+  const currentView = searchParams.get("view") || "overview";
+
   const [profile, setProfile] = React.useState<any>(null);
   const [mounted, setMounted] = React.useState(false);
   
@@ -151,6 +155,12 @@ export default function DevConsole() {
   const [agentIp, setAgentIp] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", value);
+    router.replace(`/dev?${params.toString()}`, { scroll: false });
+  };
+
   React.useEffect(() => {
     setMounted(true);
     if (authLoading) return;
@@ -177,7 +187,6 @@ export default function DevConsole() {
   React.useEffect(() => {
     if (!profile || profile.dev !== true) return;
     
-    // Fetch Host VPS Metrics
     const refreshMetrics = () => {
       getSystemHardwareInfo().then(res => {
         if (res.success) setVpsMetrics(res.data);
@@ -549,7 +558,7 @@ export default function DevConsole() {
           </Dialog>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-8">
+        <Tabs value={currentView} onValueChange={handleTabChange} className="space-y-8">
           <TabsList className="bg-secondary/30 p-1 rounded-xl h-auto w-full sm:w-fit overflow-x-auto justify-start flex border border-border/50">
             <TabsTrigger value="overview" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Activity className="size-4" /> Overview</TabsTrigger>
             <TabsTrigger value="users" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Users className="size-4" /> Users</TabsTrigger>
@@ -1115,5 +1124,13 @@ function AgentCard({ id, location, domain, ip, load, status, onDelete }: any) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function DevConsole() {
+  return (
+    <React.Suspense fallback={<Loader />}>
+      <DevConsoleContent />
+    </React.Suspense>
   );
 }
