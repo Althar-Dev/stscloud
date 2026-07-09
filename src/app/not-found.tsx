@@ -20,7 +20,7 @@ export default function NotFound() {
         <div className="space-y-4">
           <div className="flex justify-center mb-6">
             <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center bg-secondary/50 border border-border/50">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center">
                 <Image src="/img/icons.png" alt="STSCloud" width={64} height={64} className="object-cover" />
               </div>
             </Link>

@@ -72,7 +72,7 @@ export default function ErrorPage({
             <Image src="/img/icons.png" alt="STSCloud" width={32} height={32} />
           </Link>
           <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-muted-foreground/60">
-            StarVale Technology Solution &bull; Alhadi Adriano
+            STSCloud &bull; All rights reserved.
           </p>
         </div>
       </div>
