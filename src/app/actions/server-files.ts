@@ -4,11 +4,34 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
+import { initializeFirebase } from '@/firebase/index';
+import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * @fileOverview Server actions for managing server-specific files and logs.
- * Updated: Storage moved outside project root (../storage).
+ * Supports Local Storage and Remote Agent I/O via Secure API.
  */
+
+// Helper to fetch Agent details from Firestore
+async function getRemoteAgent(agentId: string) {
+  const { db } = initializeFirebase();
+  const agentDoc = await getDoc(doc(db, "infrastructure_agents", agentId));
+  if (!agentDoc.exists()) return null;
+  return agentDoc.data();
+}
+
+// Helper to check if a server is remote
+async function getServerLocation(serverId: string) {
+  const { db } = initializeFirebase();
+  const serverDoc = await getDoc(doc(db, "servers", serverId));
+  if (!serverDoc.exists()) return { isRemote: false };
+  const data = serverDoc.data();
+  if (data.agentId) {
+    const agent = await getRemoteAgent(data.agentId);
+    return { isRemote: !!agent, agent };
+  }
+  return { isRemote: false };
+}
 
 function getSafePath(serverId: string, subPath: string = '') {
   const baseDir = path.resolve(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
@@ -23,7 +46,32 @@ function getLogPath(serverId: string) {
   return path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
 }
 
+/**
+ * REMOTE BRIDGE: Call Remote Agent API
+ */
+async function callAgentAPI(agent: any, endpoint: string, payload: any) {
+  try {
+    const url = `https://${agent.domain}/api/files/${endpoint}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${agent.secretKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch (e: any) {
+    return { success: false, error: `Agent Unreachable: ${e.message}` };
+  }
+}
+
 export async function getServerFiles(serverId: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) {
+    return await callAgentAPI(loc.agent, 'list', { serverId, subPath });
+  }
+
   try {
     const targetPath = getSafePath(serverId, subPath);
     try {
@@ -52,6 +100,9 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
 }
 
 export async function createServerFile(serverId: string, fileName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'create', { serverId, fileName, subPath, type: 'file' });
+
   try {
     const filePath = path.join(getSafePath(serverId, subPath), fileName);
     await fs.writeFile(filePath, '');
@@ -61,56 +112,10 @@ export async function createServerFile(serverId: string, fileName: string, subPa
   }
 }
 
-/**
- * Optimized binary file upload action.
- * Accepts FormData for efficient streaming and multiple files support.
- */
-export async function uploadServerFiles(formData: FormData) {
-  try {
-    const serverId = formData.get('serverId') as string;
-    const subPath = (formData.get('subPath') as string) || '';
-    const files = formData.getAll('files') as unknown as File[];
-
-    if (!serverId || !files || files.length === 0) {
-      throw new Error("Invalid request: No files provided.");
-    }
-
-    const baseDir = getSafePath(serverId, subPath);
-    
-    // Ensure directory exists
-    try {
-      await fs.access(baseDir);
-    } catch {
-      await fs.mkdir(baseDir, { recursive: true });
-    }
-
-    for (const file of files) {
-      const targetPath = path.join(baseDir, file.name);
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      await fs.writeFile(targetPath, buffer);
-    }
-
-    return { success: true };
-  } catch (error: any) {
-    console.error("Upload Action Error:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-export async function unarchiveServerFile(serverId: string, fileName: string, subPath: string = '') {
-  try {
-    const currentDirPath = getSafePath(serverId, subPath);
-    const filePath = path.join(currentDirPath, fileName);
-    const zip = new AdmZip(filePath);
-    zip.extractAllTo(currentDirPath, true);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
 export async function createServerFolder(serverId: string, folderName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'create', { serverId, fileName: folderName, subPath, type: 'folder' });
+
   try {
     const folderPath = path.join(getSafePath(serverId, subPath), folderName);
     await fs.mkdir(folderPath, { recursive: true });
@@ -121,6 +126,9 @@ export async function createServerFolder(serverId: string, folderName: string, s
 }
 
 export async function deleteServerPaths(serverId: string, names: string[], subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'delete', { serverId, names, subPath });
+
   try {
     for (const name of names) {
       const targetPath = path.join(getSafePath(serverId, subPath), name);
@@ -133,6 +141,9 @@ export async function deleteServerPaths(serverId: string, names: string[], subPa
 }
 
 export async function renameServerPath(serverId: string, oldName: string, newName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'rename', { serverId, oldName, newName, subPath });
+
   try {
     const currentDirPath = getSafePath(serverId, subPath);
     const oldPath = path.join(currentDirPath, oldName);
@@ -145,6 +156,9 @@ export async function renameServerPath(serverId: string, oldName: string, newNam
 }
 
 export async function archiveServerPaths(serverId: string, names: string[], zipName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'archive', { serverId, names, zipName, subPath });
+
   try {
     const currentPath = getSafePath(serverId, subPath);
     const zip = new AdmZip();
@@ -165,7 +179,25 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
   }
 }
 
+export async function unarchiveServerFile(serverId: string, fileName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'unarchive', { serverId, fileName, subPath });
+
+  try {
+    const currentDirPath = getSafePath(serverId, subPath);
+    const filePath = path.join(currentDirPath, fileName);
+    const zip = new AdmZip(filePath);
+    zip.extractAllTo(currentDirPath, true);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'move', { serverId, names, currentSubPath, targetSubPath });
+
   try {
     const sourceDir = getSafePath(serverId, currentSubPath);
     const targetDir = getSafePath(serverId, path.join(currentSubPath, targetSubPath));
@@ -186,6 +218,9 @@ export async function moveServerPaths(serverId: string, names: string[], current
 }
 
 export async function readFileContent(serverId: string, fileName: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'read', { serverId, fileName, subPath });
+
   try {
     const filePath = path.join(getSafePath(serverId, subPath), fileName);
     const content = await fs.readFile(filePath, 'utf8');
@@ -196,6 +231,9 @@ export async function readFileContent(serverId: string, fileName: string, subPat
 }
 
 export async function updateFileContent(serverId: string, fileName: string, content: string, subPath: string = '') {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'write', { serverId, fileName, content, subPath });
+
   try {
     const filePath = path.join(getSafePath(serverId, subPath), fileName);
     await fs.writeFile(filePath, content, 'utf8');
@@ -206,6 +244,9 @@ export async function updateFileContent(serverId: string, fileName: string, cont
 }
 
 export async function getServerLogs(serverId: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'logs', { serverId });
+
   try {
     const logPath = getLogPath(serverId);
     try {
@@ -225,6 +266,9 @@ export async function getServerLogs(serverId: string) {
 }
 
 export async function clearServerLogs(serverId: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'clear-logs', { serverId });
+
   try {
     const logPath = getLogPath(serverId);
     await fs.mkdir(path.dirname(logPath), { recursive: true });
@@ -236,6 +280,9 @@ export async function clearServerLogs(serverId: string) {
 }
 
 export async function getServerDiskUsage(serverId: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'disk-usage', { serverId });
+
   try {
     const serverPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
     try {
@@ -270,6 +317,9 @@ export async function getServerDiskUsage(serverId: string) {
 }
 
 export async function decommissionServerFiles(serverId: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'decommission', { serverId });
+
   try {
     const serverDir = path.join(process.cwd(), '..', 'storage', 'servers', serverId);
     try {

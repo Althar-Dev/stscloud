@@ -21,6 +21,7 @@
       "properties": {
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
+        "agentId": { "type": "string", "description": "ID of the remote agent hosting the files." },
         "plan": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "starting"] },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -51,11 +52,12 @@
         "regionName": { "type": "string" },
         "domain": { "type": "string", "description": "The domain pointing to the agent." },
         "ip": { "type": "string", "description": "The public IP address of the agent." },
+        "secretKey": { "type": "string", "description": "Shared secret for Panel-Agent communication." },
         "status": { "type": "string", "enum": ["online", "warning", "offline"] },
         "load": { "type": "number", "description": "Current percentage load on the agent cluster." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["regionName", "domain", "ip"]
+      "required": ["regionName", "domain", "ip", "secretKey"]
     },
     "Transaction": {
       "title": "Transaction",

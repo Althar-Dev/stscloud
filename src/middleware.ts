@@ -3,15 +3,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * @fileOverview Traffic Controller STSCloud (Project Sebelah).
- * Mengatur isolasi rute antar subdomain untuk mencegah kebocoran akses (e.g. /dev di subdomain client).
+ * @fileOverview Traffic Controller STSCloud (SValePay Architecture).
+ * Internal Rewriting for Subdomains with Sub-path support.
  */
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
-
-  // Menangani port jika di lingkungan local
   const currentHost = hostname.split(':')[0];
 
   const isDevEnvironment = 
@@ -24,113 +22,69 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Definisi Domain & Subdomain
-  const rootDomain = 'stscloud.id';
+  // Domain Config
   const clientDomain = 'client.stscloud.id';
   const deployDomain = 'deploy.stscloud.id';
   const devDomain = 'dev.stscloud.id';
 
-  // Daftar rute eksklusif Client
+  // Routes for explicit routing
   const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth'];
 
-  // 1. Logika Subdomain Client (Pusat Kendali & Auth)
+  // 1. Client Subdomain (Panel & Dashboard)
   if (currentHost === clientDomain) {
-    // Larang akses ke /deploy (Pindahkan ke subdomain deploy)
     if (url.pathname.startsWith('/deploy')) {
-      const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
+      return NextResponse.redirect(new URL(url.pathname.replace('/deploy', '') || '/', `https://${deployDomain}`));
     }
-
-    // Larang akses ke /dev (Pindahkan ke subdomain dev)
     if (url.pathname.startsWith('/dev')) {
-      const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
-    }
-
-    // Jika akses /dashboard secara eksplisit, bersihkan prefix (redirect ke root client)
-    if (url.pathname === '/dashboard') {
-      return NextResponse.redirect(new URL(`/${url.search}`, `https://${clientDomain}`));
-    }
-
-    // Map root ke dashboard secara internal (Hide /dashboard dari URL)
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL(url.pathname.replace('/dev', '') || '/', `https://${devDomain}`));
     }
     
-    return NextResponse.next();
+    // Internal Map root to /dashboard
+    const internalPath = url.pathname === '/' ? '/dashboard' : url.pathname;
+    return NextResponse.rewrite(new URL(internalPath, request.url));
   }
 
-  // 2. Logika Subdomain Deploy (Server Management)
+  // 2. Deploy Subdomain (Server Setup)
   if (currentHost === deployDomain) {
-    // Larang akses ke rute Client (Redirect ke client.stscloud.id)
-    if (clientRoutes.some(route => url.pathname.startsWith(route))) {
-      let targetPath = url.pathname;
-      if (targetPath === '/dashboard') targetPath = '/';
-      return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
+    if (clientRoutes.some(r => url.pathname.startsWith(r))) {
+      return NextResponse.redirect(new URL(url.pathname === '/dashboard' ? '/' : url.pathname, `https://${clientDomain}`));
     }
-
-    // Larang akses ke /dev (Redirect ke dev.stscloud.id)
     if (url.pathname.startsWith('/dev')) {
-      const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
-    }
-
-    // Jika akses /deploy secara eksplisit di subdomain deploy, bersihkan prefix
-    if (url.pathname === '/deploy') {
-      return NextResponse.redirect(new URL(`/${url.search}`, `https://${deployDomain}`));
-    }
-
-    // Map root ke folder deploy secara internal
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/deploy', request.url));
+      return NextResponse.redirect(new URL(url.pathname.replace('/dev', '') || '/', `https://${devDomain}`));
     }
     
-    return NextResponse.next();
+    // Internal Map root to /deploy
+    const internalPath = url.pathname === '/' ? '/deploy' : url.pathname;
+    return NextResponse.rewrite(new URL(internalPath, request.url));
   }
 
-  // 3. Logika Subdomain Dev (Developer Sandbox)
+  // 3. Dev Subdomain (Console & Infrastructure Docs)
   if (currentHost === devDomain) {
-    // Larang akses ke rute Client atau Deploy
-    if (clientRoutes.some(route => url.pathname.startsWith(route)) || url.pathname.startsWith('/deploy')) {
+    if (clientRoutes.some(r => url.pathname.startsWith(r)) || url.pathname.startsWith('/deploy')) {
       return NextResponse.redirect(new URL('/', `https://${clientDomain}`));
     }
-
-    // Map root ke folder dev secara internal
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/dev', request.url));
-    }
-    return NextResponse.next();
+    
+    // Internal Map root or subpaths to /dev folder
+    // /docs -> /dev/docs
+    const internalPath = `/dev${url.pathname === '/' ? '' : url.pathname}`;
+    return NextResponse.rewrite(new URL(internalPath, request.url));
   }
 
-  // 4. Force Redirect rute dari root domain (stscloud.id) ke subdomain yang tepat
-  
-  // Rute Dev
+  // 4. Fallback from root (stscloud.id) to proper subdomain
   if (url.pathname.startsWith('/dev')) {
-    const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-    return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
+    return NextResponse.redirect(new URL(url.pathname.replace('/dev', '') || '/', `https://${devDomain}`));
   }
-
-  // Rute Client / Auth
-  if (url.pathname.startsWith('/auth') || url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/servers') || url.pathname.startsWith('/settings')) {
-    let targetPath = url.pathname;
-    if (targetPath === '/dashboard') targetPath = '/';
-    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
+  if (clientRoutes.some(r => url.pathname.startsWith(r))) {
+    const target = url.pathname === '/dashboard' ? '/' : url.pathname;
+    return NextResponse.redirect(new URL(target, `https://${clientDomain}`));
   }
-
-  // Rute Deploy
   if (url.pathname.startsWith('/deploy')) {
-    const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
-    return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
+    return NextResponse.redirect(new URL(url.pathname.replace('/deploy', '') || '/', `https://${deployDomain}`));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for internal Next.js and assets
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|assets|img).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|assets|img).*)'],
 };

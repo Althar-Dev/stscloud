@@ -38,7 +38,9 @@ import {
   Monitor,
   Package,
   Share2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  FileText,
+  Key
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -153,6 +155,7 @@ function DevConsoleContent() {
   const [regionName, setRegionName] = React.useState("");
   const [agentDomain, setAgentDomain] = React.useState("");
   const [agentIp, setAgentIp] = React.useState("");
+  const [agentSecret, setAgentSecret] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const handleTabChange = (value: string) => {
@@ -433,8 +436,8 @@ function DevConsoleContent() {
   };
 
   const handleAddAgent = async () => {
-    if (!regionName || !agentDomain || !agentIp) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please fill all agent fields." });
+    if (!regionName || !agentDomain || !agentIp || !agentSecret) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please fill all fields including Secret Key." });
       return;
     }
     setIsAddingAgent(true);
@@ -443,6 +446,7 @@ function DevConsoleContent() {
       regionName, 
       domain: agentDomain, 
       ip: agentIp,
+      secretKey: agentSecret,
       status: "online", 
       createdAt: serverTimestamp(), 
       load: Math.floor(Math.random() * 20) + 5 
@@ -453,6 +457,7 @@ function DevConsoleContent() {
         setRegionName("");
         setAgentDomain("");
         setAgentIp("");
+        setAgentSecret("");
       })
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsAddingAgent(false));
@@ -494,6 +499,11 @@ function DevConsoleContent() {
           </button>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/dev/docs">
+             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hidden md:flex hover:text-primary">
+                <FileText className="size-4" /> Docs & Setup
+             </Button>
+          </Link>
           <Badge variant="outline" className="hidden lg:flex border-primary/30 text-primary bg-primary/5 gap-2 px-3 py-1">
             <ShieldAlert className="size-3" /> System: Stable
           </Badge>
@@ -524,38 +534,55 @@ function DevConsoleContent() {
             <h2 className="text-2xl md:text-4xl font-headline font-bold">Infrastructure Control</h2>
             <p className="text-sm text-muted-foreground">Monitor global agent clusters and optimize internal configurations.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-white gap-2 font-bold">
-                <Plus className="size-4" /> Register Agent
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg">
-              <DialogHeader>
-                <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
-                <DialogDescription>Add a new edge node to the infrastructure cluster.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Region Name</Label>
-                  <Input placeholder="e.g., Jakarta Region" className="bg-secondary/30 border-none h-11" value={regionName} onChange={(e) => setRegionName(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Domain</Label>
-                  <Input placeholder="e.g., node-jkt.stscloud.id" className="bg-secondary/30 border-none h-11" value={agentDomain} onChange={(e) => setAgentDomain(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">IP Address</Label>
-                  <Input placeholder="e.g., 103.11.x.x" className="bg-secondary/30 border-none h-11" value={agentIp} onChange={(e) => setAgentIp(e.target.value)} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button className="w-full bg-primary text-white font-bold h-11" onClick={handleAddAgent} disabled={isAddingAgent}>
-                  {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}Register Agent
+          <div className="flex items-center gap-3">
+            <Link href="/dev/docs" className="md:hidden">
+               <Button variant="outline" size="sm" className="gap-2"><FileText className="size-4" /> Docs</Button>
+            </Link>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary text-white gap-2 font-bold">
+                  <Plus className="size-4" /> Register Agent
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg">
+                <DialogHeader>
+                  <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
+                  <DialogDescription>Add a new edge storage node to the infrastructure cluster.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Region Name</Label>
+                    <Input placeholder="e.g., Jakarta Region" className="bg-secondary/30 border-none h-11" value={regionName} onChange={(e) => setRegionName(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Domain (HTTPS)</Label>
+                    <Input placeholder="e.g., node-jkt.stscloud.id" className="bg-secondary/30 border-none h-11" value={agentDomain} onChange={(e) => setAgentDomain(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">IP Address</Label>
+                    <Input placeholder="e.g., 103.11.x.x" className="bg-secondary/30 border-none h-11" value={agentIp} onChange={(e) => setAgentIp(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Secret Key</Label>
+                    <div className="relative">
+                       <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                       <Input 
+                        placeholder="Shared secret token..." 
+                        className="bg-secondary/30 border-none h-11 pl-10" 
+                        value={agentSecret} 
+                        onChange={(e) => setAgentSecret(e.target.value)} 
+                       />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button className="w-full bg-primary text-white font-bold h-11" onClick={handleAddAgent} disabled={isAddingAgent}>
+                    {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}Register Agent
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <Tabs value={currentView} onValueChange={handleTabChange} className="space-y-8">
