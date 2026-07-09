@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -148,13 +147,13 @@ export default function AgentDocsPage() {
                <div className="space-y-4">
                   <div className="size-8 rounded-full bg-secondary flex items-center justify-center font-bold text-primary">1</div>
                   <p className="text-sm font-medium leading-relaxed">
-                    Setelah skrip selesai, ia akan memberikan **Secret Key**. Simpan kunci ini baik-baik.
+                    Setelah skrip selesai, ia akan memberikan <strong>Secret Key</strong>. Simpan kunci ini baik-baik.
                   </p>
                </div>
                <div className="space-y-4">
                   <div className="size-8 rounded-full bg-secondary flex items-center justify-center font-bold text-primary">2</div>
                   <p className="text-sm font-medium leading-relaxed">
-                    Kembali ke **Dev Console > Agents**, klik **Register Agent** dan masukkan Domain serta Secret Key yang didapat.
+                    Kembali ke **Dev Console &gt; Agents**, klik **Register Agent** dan masukkan Domain serta Secret Key yang didapat.
                   </p>
                </div>
             </div>
