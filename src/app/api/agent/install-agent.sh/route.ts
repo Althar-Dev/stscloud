@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Includes Node.js setup, Nginx Reverse Proxy, and automated SSL.
+ * Updated: Robust dependency checks, Node/PM2 detection, and smart fallback logic.
  */
 
 export async function GET() {
@@ -40,37 +40,54 @@ if [ -z "\$AGENT_DOMAIN" ]; then
     exit 1
 fi
 
-# Update and Install Dependencies
-echo -e "\${GREEN}[1/5] Memasang dependensi sistem...\${NC}"
-apt-get update -y && apt-get upgrade -y
+# Update and Install System Dependencies
+echo -e "\${GREEN}[1/5] Memperbarui paket sistem...\${NC}"
+apt-get update -y
 apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essential
 
-# Install Node.js 20
-if ! command -v node &> /dev/null; then
-    echo -e "\${GREEN}[2/5] Memasang Node.js v20...\${NC}"
+# Install/Check Node.js
+if command -v node &> /dev/null; then
+    NODE_VER=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
+    echo -e "\${BLUE}Node.js sudah terpasang (v\${NODE_VER}).\${NC}"
+    if [ "\$NODE_VER" -lt 18 ]; then
+        echo -e "\${YELLOW}Versi Node.js terlalu lama. Mencoba memperbarui ke v20...\${NC}"
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y nodejs
+    fi
+else
+    echo -e "\${GREEN}Memasang Node.js v20...\${NC}"
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     apt-get install -y nodejs
 fi
 
-# Install PM2
+# Install/Check PM2
 if ! command -v pm2 &> /dev/null; then
+    echo -e "\${GREEN}Memasang PM2 Process Manager...\${NC}"
     npm install -g pm2
+else
+    echo -e "\${BLUE}PM2 sudah terpasang.\${NC}"
 fi
 
 # Setup Directory
-echo -e "\${GREEN}[3/5] Menyiapkan struktur direktori...\${NC}"
+echo -e "\${GREEN}[2/5] Menyiapkan struktur direktori...\${NC}"
 mkdir -p /opt/stscloud/agent
 mkdir -p /opt/stscloud/storage/servers
 cd /opt/stscloud/agent
 
-# Generate Secret Key
-SECRET_KEY=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
-echo "SECRET_KEY=\$SECRET_KEY" > .env
-echo "PORT=9005" >> .env
-echo "STORAGE_PATH=/opt/stscloud/storage/servers" >> .env
+# Generate Secret Key if not exists
+if [ ! -f .env ]; then
+    SECRET_KEY=$(head /raw/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
+    echo "SECRET_KEY=\$SECRET_KEY" > .env
+    echo "PORT=9005" >> .env
+    echo "STORAGE_PATH=/opt/stscloud/storage/servers" >> .env
+    echo -e "\${GREEN}Secret Key baru dibuat.\${NC}"
+else
+    SECRET_KEY=$(grep SECRET_KEY .env | cut -d '=' -f 2)
+    echo -e "\${BLUE}Menggunakan Secret Key yang sudah ada.\${NC}"
+fi
 
 # Setup Nginx Configuration
-echo -e "\${GREEN}[4/5] Mengonfigurasi Nginx Reverse Proxy...\${NC}"
+echo -e "\${GREEN}[3/5] Mengonfigurasi Nginx Reverse Proxy...\${NC}"
 cat > /etc/nginx/sites-available/stscloud-agent <<EOF
 server {
     listen 80;
@@ -90,21 +107,30 @@ EOF
 
 ln -sf /etc/nginx/sites-available/stscloud-agent /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
-nginx -t && systemctl restart nginx
+if nginx -t; then
+    systemctl restart nginx
+else
+    echo -e "\${RED}Konfigurasi Nginx bermasalah, silakan periksa manual.\${NC}"
+fi
 
 # Setup SSL with Certbot
-echo -e "\${GREEN}[5/5] Mengaktifkan SSL Otomatis (Let's Encrypt)...\${NC}"
-certbot --nginx -d \$AGENT_DOMAIN --non-interactive --agree-tos -m admin@\$AGENT_DOMAIN || echo -e "\${YELLOW}Gagal mendapatkan SSL otomatis. Pastikan domain sudah diarahkan ke IP VPS ini.\${NC}"
+echo -e "\${GREEN}[4/5] Mengaktifkan SSL Otomatis (Let's Encrypt)...\${NC}"
+if certbot --nginx -d \$AGENT_DOMAIN --non-interactive --agree-tos -m admin@\$AGENT_DOMAIN; then
+    echo -e "\${GREEN}SSL Berhasil dikonfigurasi.\${NC}"
+else
+    echo -e "\${YELLOW}Gagal mendapatkan SSL otomatis. Pastikan domain sudah diarahkan ke IP VPS ini.\${NC}"
+    echo -e "\${YELLOW}Agent akan tetap berjalan via HTTP (Port 80) untuk sementara.\${NC}"
+fi
 
 # Finalizing
-echo -e "\${BLUE}=======================================================\${NC}"
-echo -e "\${GREEN}INSTALLATION COMPLETE!\${NC}"
+echo -e "\${GREEN}[5/5] Instalasi Selesai!\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "Domain: \${BLUE}\$AGENT_DOMAIN\${NC}"
 echo -e "Secret Key: \${YELLOW}\$SECRET_KEY\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "Gunakan Secret Key di atas saat mendaftarkan agent di Dev Console."
-echo -e "Agent Worker akan berjalan secara otomatis di port 9005."
+echo -e "Agent akan otomatis berjalan di port 9005."
+echo -e "Pastikan port 80, 443, dan 9005 terbuka di firewall (ufw/iptables)."
 echo -e "\${BLUE}=======================================================\${NC}"
 `;
 
