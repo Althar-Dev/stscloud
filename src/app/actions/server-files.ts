@@ -7,11 +7,11 @@ import AdmZip from 'adm-zip';
 
 /**
  * @fileOverview Server actions for managing server-specific files and logs.
- * Optimized with Binary FormData support for high-speed uploads.
+ * Updated: Storage moved outside project root (../storage).
  */
 
 function getSafePath(serverId: string, subPath: string = '') {
-  const baseDir = path.resolve(process.cwd(), 'storage', 'servers', serverId, 'files');
+  const baseDir = path.resolve(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
   const finalPath = path.resolve(baseDir, subPath);
   if (!finalPath.startsWith(baseDir)) {
     return baseDir;
@@ -20,7 +20,7 @@ function getSafePath(serverId: string, subPath: string = '') {
 }
 
 function getLogPath(serverId: string) {
-  return path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
+  return path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
 }
 
 export async function getServerFiles(serverId: string, subPath: string = '') {
@@ -237,7 +237,7 @@ export async function clearServerLogs(serverId: string) {
 
 export async function getServerDiskUsage(serverId: string) {
   try {
-    const serverPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files');
+    const serverPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
     try {
       await fs.access(serverPath);
     } catch {
@@ -271,7 +271,7 @@ export async function getServerDiskUsage(serverId: string) {
 
 export async function decommissionServerFiles(serverId: string) {
   try {
-    const serverDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+    const serverDir = path.join(process.cwd(), '..', 'storage', 'servers', serverId);
     try {
       await fs.access(serverDir);
       await fs.rm(serverDir, { recursive: true, force: true });

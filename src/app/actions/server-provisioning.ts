@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -5,12 +6,12 @@ import path from 'path';
 
 /**
  * @fileOverview Server provisioning logic for creating local directory structures.
- * Uses the consistent [STS] [timestamp] format.
+ * Updated: Storage moved outside project root (../storage).
  */
 
 export async function provisionServerFiles(serverId: string) {
   try {
-    const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+    const baseDir = path.join(process.cwd(), '..', 'storage', 'servers', serverId);
     const filesDir = path.join(baseDir, 'files');
     const logsDir = path.join(filesDir, '.sts', 'logs');
 

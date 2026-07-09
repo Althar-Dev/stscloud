@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
@@ -6,13 +7,13 @@ import Busboy from 'busboy';
 
 /**
  * @fileOverview High-performance streaming upload API using Busboy.
- * This bypasses Next.js Server Action buffering for faster binary transfers.
+ * Updated: Storage moved outside project root (../storage).
  */
 
 export const runtime = 'nodejs';
 
 function getSafePath(serverId: string, subPath: string = '') {
-  const baseDir = path.resolve(process.cwd(), 'storage', 'servers', serverId, 'files');
+  const baseDir = path.resolve(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
   const finalPath = path.resolve(baseDir, subPath);
   if (!finalPath.startsWith(baseDir)) {
     return baseDir;
@@ -64,7 +65,6 @@ export async function POST(req: NextRequest) {
 
         // Ensure directory exists synchronously for speed in the stream event
         try {
-          // Using a simple check then write approach
           const writeStream = createWriteStream(targetPath);
           
           fileStream.pipe(writeStream);

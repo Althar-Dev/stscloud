@@ -10,8 +10,7 @@ import { sendResourceLimitNotification, sendExpirationReminderNotification } fro
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Features: Strict Resource Guard (Disk/CPU/RAM), Interactive Stdin, and Email Alerts.
- * Security: Refined Pre-flight validation to check for Entry Files first, then manifests.
+ * Updated: Storage moved outside project root (../storage).
  */
 
 // Global map to store interactive handles
@@ -92,7 +91,7 @@ export async function sendServerInput(serverId: string, text: string) {
 }
 
 export async function getServerProcessStatus(serverId: string, config?: { ramLimit: string; cpuLimit: string; serverName: string; userEmail: string }) {
-  const pidPath = path.join(process.cwd(), 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
+  const pidPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
     const pidStr = await fs.readFile(pidPath, 'utf8');
     const content = pidStr.trim();
@@ -154,7 +153,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   serverName?: string;
   userEmail?: string;
 }) {
-  const baseDir = path.join(process.cwd(), 'storage', 'servers', serverId);
+  const baseDir = path.join(process.cwd(), '..', 'storage', 'servers', serverId);
   const filesDir = path.join(baseDir, 'files');
   const stsDir = path.join(filesDir, '.sts');
   const logPath = path.join(stsDir, 'logs', 'logs.sts');
@@ -204,16 +203,13 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
       let initialLogs = `${ascii}\n[STS] [${timestamp()}] Runtime: ${runtimeName} ${versionLabel}\n`;
       initialLogs += `[STS] [${timestamp()}] Checking environment... `;
 
-      // --- CRITICAL REFINED SECURITY VALIDATION ---
       const entryFilePath = path.join(filesDir, config.entryFile);
       const pkgPath = path.join(filesDir, 'package.json');
-      const reqPath = path.join(filesDir, 'requirements.txt');
       
       const isNpm = config.startupCommand.trim().startsWith('npm') || config.startupCommand.trim().startsWith('yarn');
       
       let validationError = "";
 
-      // 1. First priority: Entry file MUST exist if explicitly defined
       if (config.entryFile) {
         try {
           await fs.access(entryFilePath);
@@ -222,7 +218,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         }
       }
 
-      // 2. Second priority: Manifest check (especially to prevent npm traversal)
       if (!validationError) {
         if (isNpm) {
           try {
@@ -240,7 +235,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         await fs.unlink(pidPath).catch(() => {});
         return { success: false, error: validationError };
       }
-      // -------------------------------------
 
       initialLogs += `${green('Ok')}\n[STS] [${timestamp()}] Checking available disk... `;
       
@@ -268,6 +262,7 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
         if (config.runtime === 'python') pythonBinary = getPythonBinary();
 
         if (config.runtime === 'python') {
+          const reqPath = path.join(filesDir, 'requirements.txt');
           let hasReq = false;
           try { await fs.access(reqPath); hasReq = true; } catch {}
 
@@ -312,7 +307,6 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
           let hasMod = false;
           try { await fs.access(modPath); hasMod = true; } catch {}
 
-          // Only run npm install if package.json exists AND node_modules is missing
           let hasPkg = false;
           try { await fs.access(pkgPath); hasPkg = true; } catch {}
 
