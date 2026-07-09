@@ -49,12 +49,13 @@
       "type": "object",
       "properties": {
         "regionName": { "type": "string" },
-        "agentUrl": { "type": "string" },
+        "domain": { "type": "string", "description": "The domain pointing to the agent." },
+        "ip": { "type": "string", "description": "The public IP address of the agent." },
         "status": { "type": "string", "enum": ["online", "warning", "offline"] },
         "load": { "type": "number", "description": "Current percentage load on the agent cluster." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["regionName", "agentUrl"]
+      "required": ["regionName", "domain", "ip"]
     },
     "Transaction": {
       "title": "Transaction",

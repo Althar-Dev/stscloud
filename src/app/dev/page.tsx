@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -146,7 +147,8 @@ export default function DevConsole() {
 
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
-  const [agentUrl, setAgentUrl] = React.useState("");
+  const [agentDomain, setAgentDomain] = React.useState("");
+  const [agentIp, setAgentIp] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -255,7 +257,7 @@ export default function DevConsole() {
     if (landingAgents.length === 0) return;
 
     const checkAgent = async (agent: any) => {
-      const url = agent.url;
+      const url = agent.url || agent.domain;
       if (!url) return;
 
       setAgentLiveInfo(prev => ({ 
@@ -422,12 +424,16 @@ export default function DevConsole() {
   };
 
   const handleAddAgent = async () => {
-    if (!regionName || !agentUrl) return;
+    if (!regionName || !agentDomain || !agentIp) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please fill all agent fields." });
+      return;
+    }
     setIsAddingAgent(true);
     const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
     setDoc(doc(db, "infrastructure_agents", agentId), { 
       regionName, 
-      agentUrl, 
+      domain: agentDomain, 
+      ip: agentIp,
       status: "online", 
       createdAt: serverTimestamp(), 
       load: Math.floor(Math.random() * 20) + 5 
@@ -436,7 +442,8 @@ export default function DevConsole() {
         toast({ title: "Agent Registered", description: `Node active at ${regionName}.` });
         setIsDialogOpen(false);
         setRegionName("");
-        setAgentUrl("");
+        setAgentDomain("");
+        setAgentIp("");
       })
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsAddingAgent(false));
@@ -511,27 +518,31 @@ export default function DevConsole() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-white gap-2 font-bold">
-                <Plus className="size-4" /> Register Node
+                <Plus className="size-4" /> Register Agent
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg">
               <DialogHeader>
                 <DialogTitle className="font-headline font-bold text-xl">Register New Agent</DialogTitle>
-                <DialogDescription>Add a new node to the cluster.</DialogDescription>
+                <DialogDescription>Add a new edge node to the infrastructure cluster.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label className="text-xs font-bold uppercase text-muted-foreground">Region Name</Label>
-                  <Input placeholder="Jakarta Region" className="bg-secondary/30 border-none h-11" value={regionName} onChange={(e) => setRegionName(e.target.value)} />
+                  <Input placeholder="e.g., Jakarta Region" className="bg-secondary/30 border-none h-11" value={regionName} onChange={(e) => setRegionName(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Agent URL</Label>
-                  <Input placeholder="node.stscloud.id" className="bg-secondary/30 border-none h-11" value={agentUrl} onChange={(e) => setAgentUrl(e.target.value)} />
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Domain</Label>
+                  <Input placeholder="e.g., node-jkt.stscloud.id" className="bg-secondary/30 border-none h-11" value={agentDomain} onChange={(e) => setAgentDomain(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">IP Address</Label>
+                  <Input placeholder="e.g., 103.11.x.x" className="bg-secondary/30 border-none h-11" value={agentIp} onChange={(e) => setAgentIp(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
                 <Button className="w-full bg-primary text-white font-bold h-11" onClick={handleAddAgent} disabled={isAddingAgent}>
-                  {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}Add Agent
+                  {isAddingAgent ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}Register Agent
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -964,7 +975,7 @@ export default function DevConsole() {
                     <TableRow>
                       <TableHead>Region</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Url</TableHead>
+                      <TableHead>Url/Domain</TableHead>
                       <TableHead>Latency (Live)</TableHead>
                       <TableHead>Status (Live)</TableHead>
                       <TableHead className="w-12"></TableHead>
@@ -980,7 +991,7 @@ export default function DevConsole() {
                         <TableRow key={agent.id} className="hover:bg-secondary/10">
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
-                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'url', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || agent.domain || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'domain', e.target.value)} /></TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-2">
                               {isChecking ? (
@@ -1013,14 +1024,15 @@ export default function DevConsole() {
             </Card>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-headline font-bold">Live Cluster Nodes</h3>
+              <h3 className="text-xl font-headline font-bold">Live Cluster Agents</h3>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {agentsList.map((agent) => (
                   <AgentCard 
                     key={agent.id} 
                     id={agent.id} 
                     location={agent.regionName} 
-                    dc={agent.agentUrl} 
+                    domain={agent.domain} 
+                    ip={agent.ip}
                     load={agent.load || 0} 
                     status={agent.status} 
                     onDelete={() => handleDeleteInfraAgent(agent.id)} 
@@ -1054,7 +1066,7 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
   );
 }
 
-function AgentCard({ id, location, dc, load, status, onDelete }: any) {
+function AgentCard({ id, location, domain, ip, load, status, onDelete }: any) {
   return (
     <Card className="bg-card border-border/50 group relative hover:border-primary/50 transition-colors overflow-hidden">
       <div className="absolute top-2 right-2 z-20">
@@ -1071,7 +1083,7 @@ function AgentCard({ id, location, dc, load, status, onDelete }: any) {
               </div>
               <AlertDialogTitle className="font-headline font-bold">Decommission Agent?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently remove the infrastructure node <strong>{location}</strong> from the live cluster. This action cannot be undone.
+                This will permanently remove the infrastructure agent <strong>{location}</strong> from the live cluster. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1088,7 +1100,8 @@ function AgentCard({ id, location, dc, load, status, onDelete }: any) {
           </div>
           <div className="min-w-0">
             <div className="font-bold font-headline text-xs md:text-base truncate">{location}</div>
-            <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold truncate">{dc}</div>
+            <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold truncate">{domain}</div>
+            <div className="text-[7px] md:text-[8px] text-primary/70 font-code font-bold truncate">{ip}</div>
           </div>
         </div>
         <div className="space-y-1.5">
