@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
+import { MaintenanceGuard } from '@/components/maintenance-guard';
 import Script from 'next/script';
 
 /**
@@ -161,9 +162,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased selection:bg-primary/30">
         <FirebaseClientProvider>
-          <div className="flex min-h-screen w-full flex-col">
-            {children}
-          </div>
+          <MaintenanceGuard>
+            <div className="flex min-h-screen w-full flex-col">
+              {children}
+            </div>
+          </MaintenanceGuard>
           <Toaster />
         </FirebaseClientProvider>
       </body>

@@ -40,13 +40,15 @@ import {
   Share2,
   Link as LinkIcon,
   FileText,
-  Key
+  Key,
+  Wrench
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -137,6 +139,7 @@ function DevConsoleContent() {
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
+  const [systemSettings, setSystemSettings] = React.useState<any>({ maintenance: false });
   
   const [isPricingDirty, setIsPricingDirty] = React.useState(false);
   const [isLandingDirty, setIsLandingDirty] = React.useState(false);
@@ -147,6 +150,7 @@ function DevConsoleContent() {
   const [isUpdatingLanding, setIsUpdatingLanding] = React.useState(false);
   const [isUpdatingTemplates, setIsUpdatingTemplates] = React.useState(false);
   const [isUpdatingSocials, setIsUpdatingSocials] = React.useState(false);
+  const [isUpdatingSystem, setIsUpdatingSystem] = React.useState(false);
 
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
   const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
@@ -253,6 +257,12 @@ function DevConsoleContent() {
       }
     });
 
+    const unsubSystem = onSnapshot(doc(db, "main", "settings"), (docSnap) => {
+      if (docSnap.exists()) {
+        setSystemSettings(docSnap.data());
+      }
+    });
+
     return () => {
       clearInterval(metricsInt);
       unsubUsers();
@@ -262,6 +272,7 @@ function DevConsoleContent() {
       unsubLandingAgents();
       unsubTemplates();
       unsubSocials();
+      unsubSystem();
     };
   }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty, isSocialsDirty]);
 
@@ -311,6 +322,18 @@ function DevConsoleContent() {
   if (authLoading || !user || !profile || profile.dev !== true) {
     return <Loader />;
   }
+
+  const handleToggleMaintenance = async (val: boolean) => {
+    setIsUpdatingSystem(true);
+    try {
+      await setDoc(doc(db, "main", "settings"), { maintenance: val, updatedAt: serverTimestamp() }, { merge: true });
+      toast({ title: val ? "Maintenance Active" : "Maintenance Disabled", description: val ? "Platform locked for users." : "Platform is now public." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsUpdatingSystem(false);
+    }
+  };
 
   const handleUpdateTier = (tierId: string, field: string, value: any) => {
     setIsPricingDirty(true);
@@ -594,6 +617,7 @@ function DevConsoleContent() {
             <TabsTrigger value="templates" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Layout className="size-4" /> Templates</TabsTrigger>
             <TabsTrigger value="socials" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Share2 className="size-4" /> Socials</TabsTrigger>
             <TabsTrigger value="agents" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Globe className="size-4" /> Agents</TabsTrigger>
+            <TabsTrigger value="system" className="rounded-lg gap-2 py-2 px-6 data-[state=active]:bg-primary"><Settings className="size-4" /> System</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-12 animate-in fade-in duration-500">
@@ -679,6 +703,58 @@ function DevConsoleContent() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="system" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+               <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Wrench className="size-5 text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Global Control</span>
+                  </div>
+                  <CardTitle className="font-headline">System Settings</CardTitle>
+                  <CardDescription>Manage application-wide states and maintenance controls.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-8 p-8">
+                  <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50">
+                    <div className="space-y-1">
+                      <div className="font-bold flex items-center gap-2">
+                        Maintenance Mode
+                        {isUpdatingSystem && <Loader2 className="size-3 animate-spin text-primary" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Redirect all non-developer users to a maintenance page.</p>
+                    </div>
+                    <Switch 
+                      checked={systemSettings.maintenance || false} 
+                      onCheckedChange={handleToggleMaintenance}
+                      disabled={isUpdatingSystem}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
+                        <div className="flex items-center gap-3">
+                           <ShieldAlert className="size-5 text-primary" />
+                           <h4 className="font-bold">Access Policy</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          When maintenance is enabled, ordinary users will be blocked from accessing the Dashboard and Server Deployment. 
+                          Account creation and logins will also be restricted to prevent data inconsistencies.
+                        </p>
+                     </div>
+                     <div className="p-6 rounded-2xl bg-accent/5 border border-accent/20 space-y-4">
+                        <div className="flex items-center gap-3">
+                           <Monitor className="size-5 text-accent" />
+                           <h4 className="font-bold">Dev Bypass</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Users with the <strong>DEVELOPER</strong> role will see a notice at the top of the site but can continue to use all features normally. 
+                          This allows you to test fixes in a live environment.
+                        </p>
+                     </div>
+                  </div>
+               </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6 animate-in fade-in duration-500">

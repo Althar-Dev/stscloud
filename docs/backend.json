@@ -97,6 +97,16 @@
           }
         }
       }
+    },
+    "GlobalSettings": {
+      "title": "Global Settings",
+      "description": "Application-wide configuration flags.",
+      "type": "object",
+      "properties": {
+        "maintenance": { "type": "boolean" },
+        "announcement": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -120,7 +130,7 @@
       "description": "Billing records for the platform."
     },
     "/main/{documentId}": {
-      "schema": "ProductPricing",
+      "schema": "GlobalSettings",
       "description": "Core configuration documents for the application."
     }
   }
