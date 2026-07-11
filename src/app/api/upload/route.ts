@@ -4,13 +4,33 @@ import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
 import Busboy from 'busboy';
+import { initializeFirebase } from '@/firebase/index';
+import { doc, getDoc } from 'firebase/firestore';
 
 /**
- * @fileOverview High-performance streaming upload API using Busboy.
- * Updated: Storage moved outside project root (../storage).
+ * @fileOverview High-performance streaming upload API with Remote Agent Proxying.
+ * Optimized for low memory footprint and high throughput.
  */
 
 export const runtime = 'nodejs';
+
+async function getServerLocation(serverId: string) {
+  const { db } = initializeFirebase();
+  try {
+    const serverDoc = await getDoc(doc(db, "servers", serverId));
+    if (!serverDoc.exists()) return { isRemote: false };
+    const data = serverDoc.data();
+    if (data.agentId) {
+      const agentDoc = await getDoc(doc(db, "infrastructure_agents", data.agentId));
+      if (agentDoc.exists()) {
+        return { isRemote: true, agent: agentDoc.data() };
+      }
+    }
+    return { isRemote: false };
+  } catch (e) {
+    return { isRemote: false };
+  }
+}
 
 function getSafePath(serverId: string, subPath: string = '') {
   const baseDir = path.resolve(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
@@ -28,10 +48,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid content type" }, { status: 400 });
     }
 
-    const busboy = Busboy({ headers: { 'content-type': contentType } });
+    // 1. Pre-auth & Location Check (Peek at serverId from headers or early field)
+    // Note: We need the serverId to know WHERE to send the stream.
+    // For extreme optimization, the UI should send serverId in a header.
+    const serverId = req.headers.get('x-sts-server-id');
+    const subPath = req.headers.get('x-sts-sub-path') || '';
+
+    if (!serverId) {
+      return NextResponse.json({ success: false, error: "Server ID header missing" }, { status: 400 });
+    }
+
+    const loc = await getServerLocation(serverId);
+
+    // 2. REMOTE PROXY MODE (Streaming Passthrough)
+    if (loc.isRemote && loc.agent) {
+      const agent = loc.agent;
+      const url = `https://${agent.domain}/api/files/upload-raw?serverId=${serverId}&subPath=${encodeURIComponent(subPath)}`;
+      
+      // Pipe the entire request body directly to the remote agent
+      // This is the fastest way: Browser -> Panel (Pipe) -> Agent
+      const agentResponse = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': contentType,
+          'Authorization': `Bearer ${agent.secretKey}`
+        },
+        body: req.body as any,
+        // @ts-ignore - duplex is required for streaming bodies in some fetch implementations
+        duplex: 'half'
+      });
+
+      const result = await agentResponse.json();
+      return NextResponse.json(result);
+    }
+
+    // 3. LOCAL STORAGE MODE (Fast Disk I/O)
+    const busboy = Busboy({ 
+      headers: { 'content-type': contentType },
+      limits: { fileSize: 5 * 1024 * 1024 * 1024 } // 5GB
+    });
     
-    let serverId = '';
-    let subPath = '';
     const uploadedFiles: string[] = [];
 
     const uploadPromise = new Promise((resolve, reject) => {
@@ -44,28 +100,16 @@ export async function POST(req: NextRequest) {
         }
       };
 
-      busboy.on('field', (name, val) => {
-        if (name === 'serverId') serverId = val;
-        if (name === 'subPath') subPath = val;
-      });
-
       busboy.on('file', (name, fileStream, info) => {
         const { filename } = info;
-        
-        // Critical: Metadata (serverId) must be sent BEFORE files in the FormData
-        if (!serverId) {
-          fileStream.resume(); // Discard stream
-          return;
-        }
-
         const targetDir = getSafePath(serverId, subPath);
         const targetPath = path.join(targetDir, filename);
 
         activeWrites++;
 
-        // Ensure directory exists synchronously for speed in the stream event
-        try {
-          const writeStream = createWriteStream(targetPath);
+        // Ensure directory exists asynchronously (non-blocking)
+        fs.mkdir(targetDir, { recursive: true }).then(() => {
+          const writeStream = createWriteStream(targetPath, { highWaterMark: 1024 * 1024 }); // 1MB chunk buffer
           
           fileStream.pipe(writeStream);
 
@@ -79,11 +123,11 @@ export async function POST(req: NextRequest) {
             activeWrites--;
             attemptFinish();
           });
-        } catch (e) {
+        }).catch(err => {
           fileStream.resume();
           activeWrites--;
           attemptFinish();
-        }
+        });
       });
 
       busboy.on('finish', () => {
@@ -100,7 +144,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Empty request body" }, { status: 400 });
     }
 
-    // Convert Web ReadableStream to Node.js Readable
     const nodeStream = Readable.fromWeb(req.body as any);
     nodeStream.pipe(busboy);
 

@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '5GB', // Drastically increased for large file management
     }
   }
 };

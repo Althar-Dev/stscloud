@@ -132,7 +132,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     return ARCHIVE_EXTENSIONS.some(ext => lowerName.endsWith(ext));
   }, []);
 
-  // Performance: Optimize body cleanup
   React.useEffect(() => {
     const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen || isRenameOpen;
     if (!isAnyModalOpen) {
@@ -218,10 +217,20 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('serverId', serverId);
-      formData.append('subPath', getSubPathString());
-      for (let i = 0; i < inputFiles.length; i++) { formData.append('files', inputFiles[i]); }
-      const response = await fetch('/api/upload', { method: 'POST', body: formData });
+      // Using headers to pass serverId and subPath to allow direct streaming in the API route
+      for (let i = 0; i < inputFiles.length; i++) { 
+        formData.append('files', inputFiles[i]); 
+      }
+      
+      const response = await fetch('/api/upload', { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          'x-sts-server-id': serverId,
+          'x-sts-sub-path': getSubPathString()
+        }
+      });
+      
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
       toast({ title: "Upload Success", description: `${inputFiles.length} file(s) uploaded.` });
@@ -628,7 +637,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
               className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 outline-none resize-none custom-scrollbar text-slate-300" 
               placeholder="// Write your code here..." 
               readOnly={isExpired}
-              spellCheck={false} // Performance: Disable spellcheck for code editing
+              spellCheck={false}
             />
           </div>
           <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end gap-3">
