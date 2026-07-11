@@ -82,6 +82,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter as useNextRouter } from "next/navigation";
@@ -520,6 +521,11 @@ function DevConsoleContent() {
     ? (agentsList.reduce((acc, a) => acc + (a.load || 0), 0) / agentsList.length).toFixed(1)
     : "0.0";
 
+  // Parsing metrics for progress bars
+  const parseGB = (str: string) => parseFloat(str) || 0;
+  const ramUsage = vpsMetrics ? (parseGB(vpsMetrics.usedRam) / parseGB(vpsMetrics.totalRam)) * 100 : 0;
+  const diskUsage = vpsMetrics ? (parseGB(vpsMetrics.usedDisk) / parseGB(vpsMetrics.totalDisk)) * 100 : 0;
+
   return (
     <div className="bg-background min-h-screen">
       <header className="flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b border-border/50 sticky top-0 bg-[#0c0c0f]/80 backdrop-blur-md z-40">
@@ -692,11 +698,15 @@ function DevConsoleContent() {
                        <Database className="size-5 text-green-400" />
                        <Badge variant="outline" className="text-[8px] uppercase border-green-400/20 text-green-400">Memory</Badge>
                      </div>
-                     <div className="space-y-1">
-                        <div className="text-2xl font-bold font-headline">
-                          {vpsMetrics ? vpsMetrics.totalRam : "-- GB"}
+                     <div className="space-y-3">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold font-headline">{vpsMetrics ? vpsMetrics.usedRam : "-- GB"}</span>
+                          <span className="text-xs text-muted-foreground">/ {vpsMetrics ? vpsMetrics.totalRam : "-- GB"}</span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Physical RAM</div>
+                        <div className="space-y-1.5">
+                           <Progress value={ramUsage} className="h-1 bg-secondary" />
+                           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Usage: {ramUsage.toFixed(1)}%</div>
+                        </div>
                      </div>
                   </CardContent>
                 </Card>
@@ -707,11 +717,15 @@ function DevConsoleContent() {
                        <HardDrive className="size-5 text-orange-400" />
                        <Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge>
                      </div>
-                     <div className="space-y-1">
-                        <div className="text-2xl font-bold font-headline text-orange-400">
-                           {vpsMetrics ? (vpsMetrics.freeDiskBytes / (1024 * 1024 * 1024)).toFixed(1) : "--"} GB
+                     <div className="space-y-3">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? vpsMetrics.usedDisk : "-- GB"}</span>
+                          <span className="text-xs text-muted-foreground">/ {vpsMetrics ? vpsMetrics.totalDisk : "-- GB"}</span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Free Root Storage</div>
+                        <div className="space-y-1.5">
+                           <Progress value={diskUsage} className="h-1 bg-secondary" />
+                           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Occupied: {diskUsage.toFixed(1)}%</div>
+                        </div>
                      </div>
                   </CardContent>
                 </Card>
