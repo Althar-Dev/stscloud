@@ -1,9 +1,9 @@
-
 'use server';
 
 import { promises as fs } from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
+import tar from 'tar';
 import { initializeFirebase } from '@/firebase/index';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -215,8 +215,19 @@ export async function unarchiveServerFile(serverId: string, fileName: string, su
   try {
     const currentDirPath = getSafePath(serverId, subPath);
     const filePath = path.join(currentDirPath, fileName);
-    const zip = new AdmZip(filePath);
-    zip.extractAllTo(currentDirPath, true);
+    const lowerName = fileName.toLowerCase();
+
+    if (lowerName.endsWith('.zip')) {
+      const zip = new AdmZip(filePath);
+      zip.extractAllTo(currentDirPath, true);
+    } else if (lowerName.endsWith('.tar.gz') || lowerName.endsWith('.tgz') || lowerName.endsWith('.tar')) {
+      await tar.x({
+        file: filePath,
+        cwd: currentDirPath,
+      });
+    } else {
+      return { success: false, error: "Unsupported archive format" };
+    }
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

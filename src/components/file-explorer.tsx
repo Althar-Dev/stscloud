@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -83,6 +82,9 @@ const EDITABLE_EXTENSIONS = [
   'sql', 'ini', 'bat', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h'
 ];
 
+// List of archive extensions that can be unarchived
+const ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.tar.gz', '.tgz'];
+
 export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -124,6 +126,11 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     if (parts.length <= 1) return true; // Assume files without extension are text (like Procfile/Makefile)
     const ext = parts.pop()?.toLowerCase();
     return ext && EDITABLE_EXTENSIONS.includes(ext);
+  }, []);
+
+  const isArchive = React.useCallback((name: string) => {
+    const lowerName = name.toLowerCase();
+    return ARCHIVE_EXTENSIONS.some(ext => lowerName.endsWith(ext));
   }, []);
 
   React.useEffect(() => {
@@ -535,7 +542,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
                               >
                                 <Archive className="size-4" /> Archive
                               </DropdownMenuItem>
-                              {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
+                              {isArchive(file.name) && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 className="gap-2 text-destructive focus:text-destructive" 
