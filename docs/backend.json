@@ -104,6 +104,7 @@
       "type": "object",
       "properties": {
         "maintenance": { "type": "boolean" },
+        "estimatedTime": { "type": "string", "description": "The estimated time for maintenance to be displayed to users." },
         "announcement": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }

@@ -7,12 +7,29 @@ import Link from "next/link";
 import { Wrench, Clock, ShieldAlert, Headset, ArrowRight, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore } from "@/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 /**
  * @fileOverview Public maintenance page for STSCloud.
  */
 
 export default function MaintenancePage() {
+  const db = useFirestore();
+  const [estimatedTime, setEstimatedTime] = React.useState("30 Minutes");
+
+  React.useEffect(() => {
+    const unsub = onSnapshot(doc(db, "main", "settings"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.estimatedTime) {
+          setEstimatedTime(data.estimatedTime);
+        }
+      }
+    });
+    return () => unsub();
+  }, [db]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Decorative Blur */}
@@ -46,7 +63,7 @@ export default function MaintenancePage() {
            <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 text-left space-y-2">
               <Clock className="size-5 text-primary" />
               <div className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Estimated Time</div>
-              <p className="text-sm font-bold">~ 30 Minutes</p>
+              <p className="text-sm font-bold">~ {estimatedTime}</p>
            </div>
            <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 text-left space-y-2">
               <ShieldAlert className="size-5 text-accent" />

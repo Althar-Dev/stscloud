@@ -41,7 +41,8 @@ import {
   Link as LinkIcon,
   FileText,
   Key,
-  Wrench
+  Wrench,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -139,7 +140,7 @@ function DevConsoleContent() {
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
-  const [systemSettings, setSystemSettings] = React.useState<any>({ maintenance: false });
+  const [systemSettings, setSystemSettings] = React.useState<any>({ maintenance: false, estimatedTime: "30 Minutes" });
   
   const [isPricingDirty, setIsPricingDirty] = React.useState(false);
   const [isLandingDirty, setIsLandingDirty] = React.useState(false);
@@ -328,6 +329,18 @@ function DevConsoleContent() {
     try {
       await setDoc(doc(db, "main", "settings"), { maintenance: val, updatedAt: serverTimestamp() }, { merge: true });
       toast({ title: val ? "Maintenance Active" : "Maintenance Disabled", description: val ? "Platform locked for users." : "Platform is now public." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsUpdatingSystem(false);
+    }
+  };
+
+  const handleUpdateSystemValue = async (field: string, value: any) => {
+    setIsUpdatingSystem(true);
+    try {
+      await setDoc(doc(db, "main", "settings"), { [field]: value, updatedAt: serverTimestamp() }, { merge: true });
+      toast({ title: "Settings Updated", description: `Field ${field} has been updated successfully.` });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
@@ -716,19 +729,49 @@ function DevConsoleContent() {
                   <CardDescription>Manage application-wide states and maintenance controls.</CardDescription>
                </CardHeader>
                <CardContent className="space-y-8 p-8">
-                  <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50">
-                    <div className="space-y-1">
-                      <div className="font-bold flex items-center gap-2">
-                        Maintenance Mode
-                        {isUpdatingSystem && <Loader2 className="size-3 animate-spin text-primary" />}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50">
+                      <div className="space-y-1">
+                        <div className="font-bold flex items-center gap-2">
+                          Maintenance Mode
+                          {isUpdatingSystem && <Loader2 className="size-3 animate-spin text-primary" />}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Redirect all non-developer users to a maintenance page.</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">Redirect all non-developer users to a maintenance page.</p>
+                      <Switch 
+                        checked={systemSettings.maintenance || false} 
+                        onCheckedChange={handleToggleMaintenance}
+                        disabled={isUpdatingSystem}
+                      />
                     </div>
-                    <Switch 
-                      checked={systemSettings.maintenance || false} 
-                      onCheckedChange={handleToggleMaintenance}
-                      disabled={isUpdatingSystem}
-                    />
+
+                    <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50 space-y-4">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2 font-bold">
+                            <Clock className="size-4 text-primary" />
+                            Estimated Time
+                         </div>
+                         <Button 
+                           size="sm" 
+                           variant="ghost" 
+                           className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 text-primary"
+                           onClick={() => handleUpdateSystemValue('estimatedTime', systemSettings.estimatedTime)}
+                           disabled={isUpdatingSystem}
+                         >
+                           {isUpdatingSystem ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
+                           Save
+                         </Button>
+                      </div>
+                      <Input 
+                        placeholder="e.g., 30 Minutes" 
+                        className="bg-background/50 border-border/50 h-10 text-sm font-medium"
+                        value={systemSettings.estimatedTime || ""}
+                        onChange={(e) => setSystemSettings(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                      />
+                      <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+                        This text will be displayed on the public maintenance page to inform users how long the system will be offline.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
