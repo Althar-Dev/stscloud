@@ -1134,7 +1134,7 @@ function DevConsoleContent() {
                       <TableHead>Url/Domain</TableHead>
                       <TableHead>Latency (Live)</TableHead>
                       <TableHead>Status (Live)</TableHead>
-                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="w-20 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1166,10 +1166,17 @@ function DevConsoleContent() {
                               {isChecking ? "PROBING" : live?.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}>
-                              <Trash2 className="size-4" />
-                            </Button>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                               <Link href={`/dev/agent/${agent.id}`}>
+                                  <Button variant="ghost" size="icon" className="size-8 text-primary hover:bg-primary/10">
+                                     <ChevronRight className="size-4" />
+                                  </Button>
+                               </Link>
+                               <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}>
+                                 <Trash2 className="size-4" />
+                               </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -1181,20 +1188,28 @@ function DevConsoleContent() {
 
             <div className="space-y-6">
               <h3 className="text-xl font-headline font-bold">Live Cluster Agents</h3>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-                {agentsList.map((agent) => (
-                  <AgentCard 
-                    key={agent.id} 
-                    id={agent.id} 
-                    location={agent.regionName} 
-                    domain={agent.domain} 
-                    ip={agent.ip}
-                    load={agent.load || 0} 
-                    status={agent.status} 
-                    onDelete={() => handleDeleteInfraAgent(agent.id)} 
-                  />
-                ))}
-              </div>
+              {agentsList.length > 0 ? (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                  {agentsList.map((agent) => (
+                    <AgentCard 
+                      key={agent.id} 
+                      id={agent.id} 
+                      location={agent.regionName} 
+                      domain={agent.domain} 
+                      ip={agent.ip}
+                      load={agent.load || 0} 
+                      status={agent.status} 
+                      onDelete={() => handleDeleteInfraAgent(agent.id)} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="bg-secondary/10 border-dashed border-2 border-border/50 py-12 flex flex-col items-center justify-center text-center">
+                   <Globe className="size-10 text-muted-foreground mb-3 opacity-20" />
+                   <p className="text-sm text-muted-foreground font-medium">No registered cluster agents found.</p>
+                   <p className="text-[10px] text-muted-foreground uppercase mt-1">Use the "Register Agent" button to add a node.</p>
+                </Card>
+              )}
             </div>
           </TabsContent>
         </Tabs>
@@ -1271,8 +1286,8 @@ function AgentCard({ id, location, domain, ip, load, status, onDelete }: any) {
         </div>
         <div className="pt-2">
            <Link href={`/dev/agent/${id}`}>
-              <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest gap-2">
-                 <ExternalLink className="size-3" /> View Details
+              <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest gap-2 group/btn">
+                 <ExternalLink className="size-3 transition-transform group-hover/btn:translate-x-0.5" /> View Details
               </Button>
            </Link>
         </div>
