@@ -76,6 +76,13 @@ interface FileExplorerProps {
   isExpired?: boolean;
 }
 
+// List of extensions that are safe to open in the text editor
+const EDITABLE_EXTENSIONS = [
+  'js', 'jsx', 'ts', 'tsx', 'py', 'php', 'json', 'yaml', 'yml', 'xml', 
+  'html', 'css', 'scss', 'md', 'txt', 'env', 'conf', 'config', 'sh', 'sts',
+  'sql', 'ini', 'bat', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h'
+];
+
 export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
   const [files, setFiles] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -83,43 +90,42 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
   const [currentPath, setCurrentPath] = React.useState<string[]>([]);
   const { toast } = useToast();
 
-  // Selection state
   const [selectedItems, setSelectedItems] = React.useState<Set<string>>(new Set());
 
-  // Create Modal State
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [createType, setCreateType] = React.useState<"file" | "folder">("file");
   const [newItemName, setNewItemName] = React.useState("");
   const [isCreating, setIsCreating] = React.useState(false);
 
-  // Editor Modal State
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
   const [editingFileName, setEditingFileName] = React.useState("");
   const [editingContent, setEditingContent] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Bulk Archive Modal
   const [isArchiveOpen, setIsArchiveOpen] = React.useState(false);
   const [zipName, setZipName] = React.useState("archive.zip");
   const [isArchiving, setIsArchiving] = React.useState(false);
 
-  // Bulk Move Modal
   const [isMoveOpen, setIsMoveOpen] = React.useState(false);
   const [targetPathInput, setTargetPathInput] = React.useState("");
   const [isMoving, setIsMoving] = React.useState(false);
 
-  // Rename Modal State
   const [isRenameOpen, setIsRenameOpen] = React.useState(false);
   const [renamingItemName, setRenamingItemName] = React.useState("");
   const [newRenameName, setNewRenameName] = React.useState("");
   const [isRenaming, setIsRenaming] = React.useState(false);
 
-  // Drag and Drop State
   const [isDragging, setIsDragging] = React.useState(false);
 
   const getSubPathString = React.useCallback(() => currentPath.join('/'), [currentPath]);
 
-  // CRITICAL FIX: Aggressive cleanup for Radix UI body-lock bug
+  const isEditable = React.useCallback((name: string) => {
+    const parts = name.split('.');
+    if (parts.length <= 1) return true; // Assume files without extension are text (like Procfile/Makefile)
+    const ext = parts.pop()?.toLowerCase();
+    return ext && EDITABLE_EXTENSIONS.includes(ext);
+  }, []);
+
   React.useEffect(() => {
     const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen || isRenameOpen;
     
@@ -136,12 +142,10 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       forceCleanup();
       const t1 = setTimeout(forceCleanup, 50);
       const t2 = setTimeout(forceCleanup, 300);
-      const t3 = setTimeout(forceCleanup, 1000);
 
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);
-        clearTimeout(t3);
       };
     }
   }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen, isRenameOpen]);
@@ -154,11 +158,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       setFiles(result.files || []);
       setSelectedItems(new Set()); 
     } else {
-      toast({
-        variant: "destructive",
-        title: "Explorer Error",
-        description: result.error || "Failed to load files"
-      });
+      toast({ variant: "destructive", title: "Explorer Error", description: result.error || "Failed to load files" });
     }
     setLoading(false);
   }, [serverId, getSubPathString, toast]);
@@ -187,26 +187,20 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!serverId || !newItemName.trim() || isExpired) return;
-
     setIsCreating(true);
     try {
       const result = createType === "file" 
         ? await createServerFile(serverId, newItemName, getSubPathString())
         : await createServerFolder(serverId, newItemName, getSubPathString());
-
       if (result.success) {
         setIsCreateOpen(false);
         setNewItemName("");
         toast({ title: "Created", description: `Successfully created ${createType}: ${newItemName}` });
         fetchFiles();
-      } else {
-        throw new Error(result.error);
-      }
+      } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Creation Failed", description: error.message });
-    } finally {
-      setIsCreating(false);
-    }
+    } finally { setIsCreating(false); }
   };
 
   const handleRenameSubmit = async (e: React.FormEvent) => {
@@ -215,7 +209,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       setIsRenameOpen(false);
       return;
     }
-
     setIsRenaming(true);
     try {
       const result = await renameServerPath(serverId, renamingItemName, newRenameName, getSubPathString());
@@ -223,54 +216,34 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         setIsRenameOpen(false);
         toast({ title: "Renamed", description: `Successfully renamed to ${newRenameName}` });
         fetchFiles();
-      } else {
-        throw new Error(result.error);
-      }
+      } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Rename Failed", description: error.message });
-    } finally {
-      setIsRenaming(false);
-    }
+    } finally { setIsRenaming(false); }
   };
 
   const handleUploadFiles = async (inputFiles: FileList | null) => {
-    if (!serverId || !inputFiles || inputFiles.length === 0 || isExpired) {
-      if (isExpired) toast({ variant: "destructive", title: "Action Blocked", description: "File modification is disabled during grace period." });
-      return;
-    }
-    
+    if (!serverId || !inputFiles || inputFiles.length === 0 || isExpired) return;
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('serverId', serverId);
       formData.append('subPath', getSubPathString());
-      
-      for (let i = 0; i < inputFiles.length; i++) {
-        formData.append('files', inputFiles[i]);
-      }
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
+      for (let i = 0; i < inputFiles.length; i++) { formData.append('files', inputFiles[i]); }
+      const response = await fetch('/api/upload', { method: 'POST', body: formData });
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
-      
-      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) have been uploaded via streaming.` });
+      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) uploaded.` });
       fetchFiles();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleBulkDelete = async (itemsToDelete?: string[]) => {
     if (isExpired) return;
     const targets = itemsToDelete || Array.from(selectedItems);
     if (!serverId || targets.length === 0) return;
-    
     setLoading(true);
     try {
       const result = await deleteServerPaths(serverId, targets, getSubPathString());
@@ -280,9 +253,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Delete Error", description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleBulkArchive = async () => {
@@ -297,9 +268,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Archive Error", description: error.message });
-    } finally {
-      setIsArchiving(false);
-    }
+    } finally { setIsArchiving(false); }
   };
 
   const handleBulkMove = async () => {
@@ -315,9 +284,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Move Error", description: error.message });
-    } finally {
-      setIsMoving(false);
-    }
+    } finally { setIsMoving(false); }
   };
 
   const handleUnarchive = async (fileName: string) => {
@@ -331,9 +298,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Unarchive Error", description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleDownload = async (name: string) => {
@@ -344,9 +309,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       if (result.success) {
         const binaryString = window.atob(result.content);
         const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
         const blob = new Blob([bytes.buffer]);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -356,18 +319,18 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-      } else {
-        throw new Error(result.error);
-      }
+      } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Download Failed", description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleEditFile = async (name: string) => {
     if (!serverId) return;
+    if (!isEditable(name)) {
+      handleDownload(name);
+      return;
+    }
     setLoading(true);
     const result = await readFileContent(serverId, name, getSubPathString());
     if (result.success) {
@@ -527,7 +490,9 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         {file.type === "folder" ? <Folder className="size-4 text-accent fill-accent/10" /> : <File className="size-4 text-muted-foreground" />}
-                        <span className="cursor-pointer hover:text-primary transition-colors truncate" onClick={() => file.type === "folder" ? handleFolderClick(file.name) : handleEditFile(file.name)}>{file.name}</span>
+                        <span className="cursor-pointer hover:text-primary transition-colors truncate" onClick={() => file.type === "folder" ? handleFolderClick(file.name) : handleEditFile(file.name)}>
+                          {file.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden sm:table-cell">{file.size}</TableCell>
@@ -536,7 +501,12 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8 md:opacity-0 md:group-hover:opacity-100"><MoreVertical className="size-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> {isExpired ? 'View' : 'Edit'}</DropdownMenuItem>}
+                          {file.type === "file" && isEditable(file.name) && (
+                            <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}>
+                              <Edit2 className="size-4" /> {isExpired ? 'View' : 'Edit'}
+                            </DropdownMenuItem>
+                          )}
+                          
                           {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
                           
                           {file.type === "file" && <DropdownMenuItem className="gap-2" onClick={() => handleDownload(file.name)}><Download className="size-4" /> Download</DropdownMenuItem>}
