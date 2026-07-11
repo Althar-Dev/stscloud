@@ -33,6 +33,46 @@ interface TerminalConsoleProps {
   isExpired?: boolean;
 }
 
+// Optimized individual log entry for performance
+const LogItem = React.memo(({ log }: { log: LogLine }) => {
+  return (
+    <div className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-1 whitespace-pre">
+      {log.isSystem ? (
+        <>
+          <span className="text-primary font-bold shrink-0">[STS]</span>
+          <span className="text-neutral-500 tabular-nums shrink-0">[{log.timestamp}]</span>
+        </>
+      ) : null}
+      {log.html ? (
+        <span 
+          className={cn(
+            "break-normal",
+            log.type === "error" ? "text-red-400 font-bold" :
+            log.type === "warn" ? "text-yellow-400" :
+            log.type === "success" ? "text-green-400 font-semibold" : 
+            "text-slate-200"
+          )}
+          dangerouslySetInnerHTML={{ __html: log.html }}
+        />
+      ) : (
+        <span 
+          className={cn(
+            "break-normal min-h-[1em]",
+            log.type === "error" ? "text-red-400 font-bold" :
+            log.type === "warn" ? "text-yellow-400" :
+            log.type === "success" ? "text-green-400 font-semibold" : 
+            "text-slate-200"
+          )}
+        >
+          {log.message}
+        </span>
+      )}
+    </div>
+  );
+});
+
+LogItem.displayName = "LogItem";
+
 export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExpired }: TerminalConsoleProps) {
   const [logs, setLogs] = React.useState<LogLine[]>([]);
   const [inputValue, setInputValue] = React.useState("");
@@ -51,6 +91,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
     
     const result = await getServerLogs(serverId);
     if (result.success && result.content !== undefined) {
+      // Performance: Skip state update if logs haven't changed
       if (result.content === lastRawLogs.current) {
         setIsInitializing(false);
         return;
@@ -58,6 +99,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
       
       lastRawLogs.current = result.content;
       const lines = result.content.split('\n');
+      
+      // Pre-calculating HTML and types once during data reception instead of during render
       const mappedLogs: LogLine[] = lines.map((line, i) => {
         let type: LogLine["type"] = "user";
         let isSystem = false;
@@ -97,7 +140,6 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
     setIsInitializing(false);
   }, [serverId]);
 
-  // Mount Logic: Clear only if status first opened is offline
   React.useEffect(() => {
     if (externalStatus && initialStatusRef.current === null) {
       initialStatusRef.current = externalStatus;
@@ -113,7 +155,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
 
   React.useEffect(() => {
     fetchLogs();
-    const pollInterval = setInterval(fetchLogs, 800);
+    // Reduced frequency to 1.2s to improve UI responsiveness
+    const pollInterval = setInterval(fetchLogs, 1200);
     return () => clearInterval(pollInterval);
   }, [fetchLogs]);
 
@@ -144,7 +187,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
       console.error("Failed to send input:", err);
     } finally {
       setIsSending(false);
-      fetchLogs(); // Refresh immediately to show the user input line
+      fetchLogs();
     }
   };
 
@@ -212,38 +255,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="mb-0.5 animate-in fade-in duration-200 flex items-start gap-1 whitespace-pre">
-              {log.isSystem ? (
-                <>
-                  <span className="text-primary font-bold shrink-0">[STS]</span>
-                  <span className="text-neutral-500 tabular-nums shrink-0">[{log.timestamp}]</span>
-                </>
-              ) : null}
-              {log.html ? (
-                <span 
-                  className={cn(
-                    "break-normal",
-                    log.type === "error" ? "text-red-400 font-bold" :
-                    log.type === "warn" ? "text-yellow-400" :
-                    log.type === "success" ? "text-green-400 font-semibold" : 
-                    "text-slate-200"
-                  )}
-                  dangerouslySetInnerHTML={{ __html: log.html }}
-                />
-              ) : (
-                <span 
-                  className={cn(
-                    "break-normal min-h-[1em]",
-                    log.type === "error" ? "text-red-400 font-bold" :
-                    log.type === "warn" ? "text-yellow-400" :
-                    log.type === "success" ? "text-green-400 font-semibold" : 
-                    "text-slate-200"
-                  )}
-                >
-                  {log.message}
-                </span>
-              )}
-            </div>
+            <LogItem key={log.id} log={log} />
           ))
         )}
       </div>
@@ -251,11 +263,11 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
       <form onSubmit={handleCommand} className="p-2 md:p-3 border-t border-border/50 bg-secondary/20 flex gap-2">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-xs pointer-events-none">$</span>
-          <Input 
+          <input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={isExpired ? "Operational functions disabled" : (externalStatus === 'online' ? "Type command or input..." : "Server is offline")} 
-            className="h-9 md:h-10 bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7"
+            className="flex h-9 md:h-10 w-full rounded-md bg-background/50 border-none ring-1 ring-border/50 focus-visible:ring-primary/50 font-code text-xs md:text-sm pl-7 px-3 outline-none"
             disabled={externalStatus !== 'online' || isSending || isExpired}
           />
         </div>
@@ -272,4 +284,3 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
     </div>
   );
 }
-

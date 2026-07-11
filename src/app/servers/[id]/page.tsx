@@ -103,7 +103,6 @@ export default function ServerPage() {
   
   const [powerActionActive, setPowerActionActive] = React.useState(false);
 
-  // Renewal State
   const [isRenewing, setIsRenewing] = React.useState(false);
   const [renewalPaymentData, setRenewalPaymentData] = React.useState<any>(null);
   const [renewalPaymentStatus, setRenewalPaymentStatus] = React.useState<string>("pending");
@@ -118,7 +117,6 @@ export default function ServerPage() {
     }
   }, [user, loading, router]);
 
-  // Billing Stats - Client-side safe calculations
   const expiresDate = mounted && server?.expiresAt ? new Date(server.expiresAt) : null;
   const isExpired = mounted && expiresDate ? expiresDate < new Date() : false;
   const daysLeft = mounted && expiresDate ? Math.max(0, Math.ceil((expiresDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
@@ -148,7 +146,6 @@ export default function ServerPage() {
         setCommandRun(prev => prev === data.commandRun ? prev : (data.commandRun || ""));
         setEntryFile(prev => prev === data.entryFile ? prev : (data.entryFile || ""));
 
-        // Expiration Logic Trigger (Simulated for Prototype)
         if (data.expiresAt && !data.expirationNoticeSent && user?.email) {
           checkAndSendExpirationNotice(docSnap.id, user.email, data.name, data.expiresAt).then(res => {
             if (res.success) {
@@ -187,6 +184,7 @@ export default function ServerPage() {
   React.useEffect(() => {
     if (!id || !server || powerActionActive || server.status === 'starting') return;
 
+    // Performance: Increased monitoring interval to 5s to reduce server-action load
     const monitorInterval = setInterval(async () => {
       try {
         const status = await getServerProcessStatus(id as string, {
@@ -202,7 +200,7 @@ export default function ServerPage() {
           updateDoc(doc(db, "servers", id as string), { status: 'online' });
         }
       } catch (e) {}
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(monitorInterval);
   }, [id, server, db, powerActionActive, user?.email]);
@@ -214,13 +212,13 @@ export default function ServerPage() {
       if (res.success) {
         setDiskUsage(res.sizeInMB || 0);
       } else if (res.isPermissionError) {
-        // Emit rich contextual error to trigger dev overlay
         const permissionError = new FirestorePermissionError(res.context as SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       }
     };
     updateUsage();
-    const interval = setInterval(updateUsage, 15000);
+    // Reduced interval to 30s as disk usage doesn't change second-by-second
+    const interval = setInterval(updateUsage, 30000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -335,7 +333,6 @@ export default function ServerPage() {
     if (result.success) {
       setRenewalPaymentStatus(result.status);
       if (result.status === "success") {
-        // Record the transaction record for Analytics in Dev Console
         const txId = `tx-renew-${Date.now()}`;
         const tier = pricingTiers.find(p => p.name === server.plan);
         setDoc(doc(db, "transactions", txId), {
@@ -350,14 +347,13 @@ export default function ServerPage() {
 
         toast({ title: "Payment Verified!", description: "Extending your subscription..." });
         
-        // Calculate new expiration date
         const currentExp = server.expiresAt ? new Date(server.expiresAt) : new Date();
         const baseDate = currentExp > new Date() ? currentExp : new Date();
         const nextExp = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
         
         await updateDoc(doc(db, "servers", id as string), {
           expiresAt: nextExp.toISOString(),
-          expirationNoticeSent: false // Reset for the next cycle
+          expirationNoticeSent: false 
         });
 
         toast({ title: "Success", description: "Instance successfully extended for 30 days." });

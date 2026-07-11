@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -75,14 +76,12 @@ interface FileExplorerProps {
   isExpired?: boolean;
 }
 
-// List of extensions that are safe to open in the text editor
 const EDITABLE_EXTENSIONS = [
   'js', 'jsx', 'ts', 'tsx', 'py', 'php', 'json', 'yaml', 'yml', 'xml', 
   'html', 'css', 'scss', 'md', 'txt', 'env', 'conf', 'config', 'sh', 'sts',
   'sql', 'ini', 'bat', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h'
 ];
 
-// List of archive extensions that can be unarchived
 const ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.tar.gz', '.tgz'];
 
 export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
@@ -123,7 +122,7 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
 
   const isEditable = React.useCallback((name: string) => {
     const parts = name.split('.');
-    if (parts.length <= 1) return true; // Assume files without extension are text (like Procfile/Makefile)
+    if (parts.length <= 1) return true; 
     const ext = parts.pop()?.toLowerCase();
     return ext && EDITABLE_EXTENSIONS.includes(ext);
   }, []);
@@ -133,27 +132,12 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     return ARCHIVE_EXTENSIONS.some(ext => lowerName.endsWith(ext));
   }, []);
 
+  // Performance: Optimize body cleanup
   React.useEffect(() => {
     const isAnyModalOpen = isCreateOpen || isEditorOpen || isArchiveOpen || isMoveOpen || isRenameOpen;
-    
     if (!isAnyModalOpen) {
-      const forceCleanup = () => {
-        document.body.style.pointerEvents = "auto";
-        document.body.style.overflow = "auto";
-        document.body.style.paddingRight = "";
-        document.documentElement.style.pointerEvents = "auto";
-        document.documentElement.style.overflow = "auto";
-        document.body.removeAttribute('data-radix-scroll-lock');
-      };
-
-      forceCleanup();
-      const t1 = setTimeout(forceCleanup, 50);
-      const t2 = setTimeout(forceCleanup, 300);
-
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
+      document.body.style.pointerEvents = "";
+      document.body.style.overflow = "";
     }
   }, [isCreateOpen, isEditorOpen, isArchiveOpen, isMoveOpen, isRenameOpen]);
 
@@ -566,7 +550,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         </div>
       </div>
 
-      {/* Rename Dialog */}
       <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
         <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
           <DialogHeader>
@@ -589,7 +572,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Creation Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
           <DialogHeader>
@@ -607,7 +589,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Archive Dialog */}
       <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
         <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
           <DialogHeader><DialogTitle className="font-headline">Archive Selected Items</DialogTitle></DialogHeader>
@@ -621,7 +602,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Move Dialog */}
       <Dialog open={isMoveOpen} onOpenChange={setIsMoveOpen}>
         <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-lg">
           <DialogHeader><DialogTitle className="font-headline">Move Selected Items</DialogTitle></DialogHeader>
@@ -636,14 +616,20 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] flex flex-col p-0 bg-card border-border/50 rounded-lg">
           <DialogHeader className="p-6 border-b border-border/50 bg-secondary/30">
             <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2"><FileText className="size-5 text-primary" />{editingFileName} {isExpired && <Badge className="ml-4 bg-destructive/10 text-destructive border-destructive/20">Read-Only</Badge>}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-0 bg-black/20">
-            <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 focus-visible:ring-0 resize-none custom-scrollbar text-slate-300" placeholder="// Write your code here..." readOnly={isExpired} />
+            <textarea 
+              value={editingContent} 
+              onChange={(e) => setEditingContent(e.target.value)} 
+              className="w-full h-[60vh] border-none bg-transparent font-code text-sm p-6 outline-none resize-none custom-scrollbar text-slate-300" 
+              placeholder="// Write your code here..." 
+              readOnly={isExpired}
+              spellCheck={false} // Performance: Disable spellcheck for code editing
+            />
           </div>
           <div className="p-4 border-t border-border/50 bg-secondary/10 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsEditorOpen(false)}>Close</Button>
