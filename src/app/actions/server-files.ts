@@ -261,6 +261,20 @@ export async function readFileContent(serverId: string, fileName: string, subPat
   }
 }
 
+export async function downloadServerFile(serverId: string, fileName: string, subPath: string = '') {
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
+  if (loc.isRemote) return await callAgentAPI(loc.agent, 'download', { serverId, fileName, subPath });
+
+  try {
+    const filePath = path.join(getSafePath(serverId, subPath), fileName);
+    const content = await fs.readFile(filePath);
+    return { success: true, content: content.toString('base64'), fileName };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function updateFileContent(serverId: string, fileName: string, content: string, subPath: string = '') {
   const loc: any = await getServerLocation(serverId);
   if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };

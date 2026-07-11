@@ -65,7 +65,8 @@ import {
   readFileContent,
   updateFileContent,
   unarchiveServerFile,
-  renameServerPath
+  renameServerPath,
+  downloadServerFile
 } from "@/app/actions/server-files";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -241,7 +242,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     setLoading(true);
     try {
       const formData = new FormData();
-      // Crucial: Append metadata FIRST for streaming busboy processing
       formData.append('serverId', serverId);
       formData.append('subPath', getSubPathString());
       
@@ -249,7 +249,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
         formData.append('files', inputFiles[i]);
       }
       
-      // Using Dedicated API Route for faster Streaming Upload
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -332,6 +331,36 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       } else throw new Error(result.error);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Unarchive Error", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async (name: string) => {
+    if (!serverId) return;
+    setLoading(true);
+    try {
+      const result = await downloadServerFile(serverId, name, getSubPathString());
+      if (result.success) {
+        const binaryString = window.atob(result.content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes.buffer]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Download Failed", description: error.message });
     } finally {
       setLoading(false);
     }
@@ -510,6 +539,8 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
                           {file.type === "file" && <DropdownMenuItem className="gap-2" onSelect={(e) => { e.preventDefault(); handleEditFile(file.name); }}><Edit2 className="size-4" /> {isExpired ? 'View' : 'Edit'}</DropdownMenuItem>}
                           {file.type === "folder" && <DropdownMenuItem className="gap-2" onClick={() => handleFolderClick(file.name)}><FolderOpen className="size-4" /> Open Folder</DropdownMenuItem>}
                           
+                          {file.type === "file" && <DropdownMenuItem className="gap-2" onClick={() => handleDownload(file.name)}><Download className="size-4" /> Download</DropdownMenuItem>}
+
                           {!isExpired && (
                             <>
                               <DropdownMenuItem className="gap-2" onSelect={(e) => { 
@@ -632,4 +663,3 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     </div>
   );
 }
-
