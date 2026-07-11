@@ -42,7 +42,8 @@ import {
   FileText,
   Key,
   Wrench,
-  Clock
+  Clock,
+  ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1267,6 +1268,13 @@ function AgentCard({ id, location, domain, ip, load, status, onDelete }: any) {
           <div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden">
             <div className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} style={{ width: `${load}%` }} />
           </div>
+        </div>
+        <div className="pt-2">
+           <Link href={`/dev/agent/${id}`}>
+              <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest gap-2">
+                 <ExternalLink className="size-3" /> View Details
+              </Button>
+           </Link>
         </div>
       </CardContent>
     </Card>
