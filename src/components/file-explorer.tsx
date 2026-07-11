@@ -543,13 +543,27 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
 
                           {!isExpired && (
                             <>
-                              <DropdownMenuItem className="gap-2" onSelect={(e) => { 
-                                e.preventDefault(); 
-                                setRenamingItemName(file.name);
-                                setNewRenameName(file.name);
-                                setTimeout(() => setIsRenameOpen(true), 10);
-                              }}>
+                              <DropdownMenuItem 
+                                className="gap-2" 
+                                onSelect={(e) => { 
+                                  e.preventDefault(); 
+                                  setRenamingItemName(file.name);
+                                  setNewRenameName(file.name);
+                                  setTimeout(() => setIsRenameOpen(true), 10);
+                                }}
+                              >
                                 <Type className="size-4" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="gap-2" 
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  setSelectedItems(new Set([file.name]));
+                                  setZipName(`${file.name}.zip`);
+                                  setTimeout(() => setIsArchiveOpen(true), 10);
+                                }}
+                              >
+                                <Archive className="size-4" /> Archive
                               </DropdownMenuItem>
                               {file.name.toLowerCase().endsWith('.zip') && <DropdownMenuItem className="gap-2 text-primary font-bold" onClick={() => handleUnarchive(file.name)}><Archive className="size-4" /> Unarchive</DropdownMenuItem>}
                               <DropdownMenuSeparator />
