@@ -15,22 +15,43 @@ import { doc, getDoc } from 'firebase/firestore';
 // Helper to fetch Agent details from Firestore
 async function getRemoteAgent(agentId: string) {
   const { db } = initializeFirebase();
-  const agentDoc = await getDoc(doc(db, "infrastructure_agents", agentId));
-  if (!agentDoc.exists()) return null;
-  return agentDoc.data();
+  try {
+    const agentDoc = await getDoc(doc(db, "infrastructure_agents", agentId));
+    if (!agentDoc.exists()) return null;
+    return agentDoc.data();
+  } catch (error: any) {
+    if (error.code === 'permission-denied') {
+      return { 
+        isPermissionError: true, 
+        context: { path: `infrastructure_agents/${agentId}`, operation: 'get' } 
+      };
+    }
+    throw error;
+  }
 }
 
 // Helper to check if a server is remote
 async function getServerLocation(serverId: string) {
   const { db } = initializeFirebase();
-  const serverDoc = await getDoc(doc(db, "servers", serverId));
-  if (!serverDoc.exists()) return { isRemote: false };
-  const data = serverDoc.data();
-  if (data.agentId) {
-    const agent = await getRemoteAgent(data.agentId);
-    return { isRemote: !!agent, agent };
+  try {
+    const serverDoc = await getDoc(doc(db, "servers", serverId));
+    if (!serverDoc.exists()) return { isRemote: false };
+    const data = serverDoc.data();
+    if (data.agentId) {
+      const agentRes: any = await getRemoteAgent(data.agentId);
+      if (agentRes?.isPermissionError) return agentRes;
+      return { isRemote: !!agentRes, agent: agentRes };
+    }
+    return { isRemote: false };
+  } catch (error: any) {
+    if (error.code === 'permission-denied') {
+      return { 
+        isPermissionError: true, 
+        context: { path: `servers/${serverId}`, operation: 'get' } 
+      };
+    }
+    throw error;
   }
-  return { isRemote: false };
 }
 
 function getSafePath(serverId: string, subPath: string = '') {
@@ -67,7 +88,9 @@ async function callAgentAPI(agent: any, endpoint: string, payload: any) {
 }
 
 export async function getServerFiles(serverId: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
+  
   if (loc.isRemote) {
     return await callAgentAPI(loc.agent, 'list', { serverId, subPath });
   }
@@ -100,7 +123,8 @@ export async function getServerFiles(serverId: string, subPath: string = '') {
 }
 
 export async function createServerFile(serverId: string, fileName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'create', { serverId, fileName, subPath, type: 'file' });
 
   try {
@@ -113,7 +137,8 @@ export async function createServerFile(serverId: string, fileName: string, subPa
 }
 
 export async function createServerFolder(serverId: string, folderName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'create', { serverId, fileName: folderName, subPath, type: 'folder' });
 
   try {
@@ -126,7 +151,8 @@ export async function createServerFolder(serverId: string, folderName: string, s
 }
 
 export async function deleteServerPaths(serverId: string, names: string[], subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'delete', { serverId, names, subPath });
 
   try {
@@ -141,7 +167,8 @@ export async function deleteServerPaths(serverId: string, names: string[], subPa
 }
 
 export async function renameServerPath(serverId: string, oldName: string, newName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'rename', { serverId, oldName, newName, subPath });
 
   try {
@@ -156,7 +183,8 @@ export async function renameServerPath(serverId: string, oldName: string, newNam
 }
 
 export async function archiveServerPaths(serverId: string, names: string[], zipName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'archive', { serverId, names, zipName, subPath });
 
   try {
@@ -180,7 +208,8 @@ export async function archiveServerPaths(serverId: string, names: string[], zipN
 }
 
 export async function unarchiveServerFile(serverId: string, fileName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'unarchive', { serverId, fileName, subPath });
 
   try {
@@ -195,7 +224,8 @@ export async function unarchiveServerFile(serverId: string, fileName: string, su
 }
 
 export async function moveServerPaths(serverId: string, names: string[], currentSubPath: string, targetSubPath: string) {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'move', { serverId, names, currentSubPath, targetSubPath });
 
   try {
@@ -218,7 +248,8 @@ export async function moveServerPaths(serverId: string, names: string[], current
 }
 
 export async function readFileContent(serverId: string, fileName: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'read', { serverId, fileName, subPath });
 
   try {
@@ -231,7 +262,8 @@ export async function readFileContent(serverId: string, fileName: string, subPat
 }
 
 export async function updateFileContent(serverId: string, fileName: string, content: string, subPath: string = '') {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'write', { serverId, fileName, content, subPath });
 
   try {
@@ -244,7 +276,8 @@ export async function updateFileContent(serverId: string, fileName: string, cont
 }
 
 export async function getServerLogs(serverId: string) {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'logs', { serverId });
 
   try {
@@ -266,7 +299,8 @@ export async function getServerLogs(serverId: string) {
 }
 
 export async function clearServerLogs(serverId: string) {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'clear-logs', { serverId });
 
   try {
@@ -280,10 +314,16 @@ export async function clearServerLogs(serverId: string) {
 }
 
 export async function getServerDiskUsage(serverId: string) {
-  const loc = await getServerLocation(serverId);
-  if (loc.isRemote) return await callAgentAPI(loc.agent, 'disk-usage', { serverId });
-
   try {
+    const loc: any = await getServerLocation(serverId);
+    if (loc.isPermissionError) {
+      return { success: false, isPermissionError: true, context: loc.context };
+    }
+
+    if (loc.isRemote) {
+      return await callAgentAPI(loc.agent, 'disk-usage', { serverId });
+    }
+
     const serverPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files');
     try {
       await fs.access(serverPath);
@@ -317,7 +357,8 @@ export async function getServerDiskUsage(serverId: string) {
 }
 
 export async function decommissionServerFiles(serverId: string) {
-  const loc = await getServerLocation(serverId);
+  const loc: any = await getServerLocation(serverId);
+  if (loc.isPermissionError) return { success: false, isPermissionError: true, context: loc.context };
   if (loc.isRemote) return await callAgentAPI(loc.agent, 'decommission', { serverId });
 
   try {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -71,6 +72,8 @@ import { getServerDiskUsage, decommissionServerFiles, clearServerLogs } from "@/
 import { executeServerPower, getServerProcessStatus, checkAndSendExpirationNotice } from "@/app/actions/server-power";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 import { Loader } from "@/components/loader";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 
 const nodeVersions = ["16", "18", "20", "22", "24", "26"];
 const pythonVersions = ["3.10", "3.11", "3.12", "3.13"];
@@ -207,8 +210,14 @@ export default function ServerPage() {
   React.useEffect(() => {
     if (!id) return;
     const updateUsage = async () => {
-      const res = await getServerDiskUsage(id as string);
-      if (res.success) setDiskUsage(res.sizeInMB || 0);
+      const res: any = await getServerDiskUsage(id as string);
+      if (res.success) {
+        setDiskUsage(res.sizeInMB || 0);
+      } else if (res.isPermissionError) {
+        // Emit rich contextual error to trigger dev overlay
+        const permissionError = new FirestorePermissionError(res.context as SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      }
     };
     updateUsage();
     const interval = setInterval(updateUsage, 15000);
