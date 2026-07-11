@@ -32,8 +32,9 @@ if [ "\$EUID" -ne 0 ]; then
 fi
 
 # Request Domain
+# Force read from /dev/tty to allow input when script is piped from curl
 echo -e "\${YELLOW}Masukkan Domain Agent (contoh: node-01.stscloud.id):\${NC}"
-read AGENT_DOMAIN
+read AGENT_DOMAIN < /dev/tty
 
 if [ -z "\$AGENT_DOMAIN" ]; then
     echo -e "\${RED}Domain tidak boleh kosong!\${NC}"
