@@ -15,11 +15,11 @@ export async function GET() {
 set -e
 
 # Colors for terminal
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+BLUE='\\033[0;34m'
+YELLOW='\\033[1;33m'
+NC='\\033[0m'
 
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "\${BLUE}          STSCLOUD AGENT STORAGE INSTALLER             \${NC}"
@@ -76,7 +76,7 @@ cd /opt/stscloud/agent
 
 # Generate Secret Key if not exists
 if [ ! -f .env ]; then
-    SECRET_KEY=$(head /raw/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
+    SECRET_KEY=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
     echo "SECRET_KEY=\$SECRET_KEY" > .env
     echo "PORT=9005" >> .env
     echo "STORAGE_PATH=/opt/stscloud/storage/servers" >> .env
@@ -91,7 +91,7 @@ echo -e "\${GREEN}[3/5] Mengonfigurasi Nginx Reverse Proxy...\${NC}"
 cat > /etc/nginx/sites-available/stscloud-agent <<EOF
 server {
     listen 80;
-    server_name $AGENT_DOMAIN;
+    server_name \$AGENT_DOMAIN;
 
     # Maksimal ukuran upload
     client_max_body_size 5G;
@@ -107,11 +107,11 @@ server {
 
         proxy_http_version 1.1;
 
-        proxy_set_header Host $host;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
 
         # Streaming upload langsung ke backend
         proxy_request_buffering off;
@@ -122,7 +122,7 @@ server {
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
 
-        proxy_cache_bypass $http_upgrade;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
