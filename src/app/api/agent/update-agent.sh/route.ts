@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 
 /**
@@ -66,7 +65,7 @@ const express = require('express');
 const cors = require('cors');
 const os = require('os');
 const fs = require('fs').promises;
-const { createWriteStream } = require('fs');
+const { createWriteStream, createReadStream } = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const AdmZip = require('adm-zip');
@@ -82,7 +81,6 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 const SECRET_KEY = process.env.SECRET_KEY;
 const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers';
 
-// Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader === 'Bearer ' + SECRET_KEY) return next();
@@ -101,7 +99,6 @@ const getLogPath = (serverId) => {
     return path.join(STORAGE_BASE, serverId, 'files', '.sts', 'logs', 'logs.sts');
 };
 
-// --- SYSTEM APIs ---
 app.post('/api/system/info', auth, (req, res) => {
     try {
         const cpus = os.cpus();
@@ -134,7 +131,6 @@ app.post('/api/system/info', auth, (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// --- FILE APIs ---
 app.post('/api/files/list', auth, async (req, res) => {
     try {
         const { serverId, subPath } = req.body;
@@ -257,6 +253,35 @@ app.post('/api/files/download', auth, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+app.post('/api/files/disk-usage', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const base = path.resolve(STORAGE_BASE, serverId, 'files');
+        let total = 0;
+        async function calc(p) {
+            try {
+                const entries = await fs.readdir(p, { withFileTypes: true });
+                for (const e of entries) {
+                    const full = path.join(p, e.name);
+                    const s = await fs.stat(full);
+                    if (e.isDirectory()) await calc(full);
+                    else total += s.size;
+                }
+            } catch (err) {}
+        }
+        await calc(base);
+        res.json({ success: true, sizeInMB: total / (1024 * 1024) });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/decommission', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        await fs.rm(path.resolve(STORAGE_BASE, serverId), { recursive: true, force: true });
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
 app.post('/api/files/upload-raw', auth, (req, res) => {
     const busboy = Busboy({ headers: req.headers });
     const serverId = req.query.serverId;
@@ -273,7 +298,6 @@ app.post('/api/files/upload-raw', auth, (req, res) => {
     }).catch(e => res.status(500).json({ success: false, error: e.message }));
 });
 
-// --- POWER APIs ---
 const pids = new Map();
 app.post('/api/power/execute', auth, async (req, res) => {
     try {
@@ -298,7 +322,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
            const pkgPath = path.join(filesDir, 'package.json');
            try {
               await fs.access(pkgPath);
-              logStream.write('[STS] Checking dependencies...\n');
+              logStream.write('[STS] Checking dependencies...\\n');
               execSync('npm install --production', { cwd: filesDir });
            } catch(e) {}
         }
@@ -314,7 +338,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
         child.on('close', c => {
-            logStream.write('\n[STS] Process exited with code ' + c + '\n');
+            logStream.write('\\n[STS] Process exited with code ' + c + '\\n');
             pids.delete(serverId);
         });
 
@@ -324,6 +348,35 @@ app.post('/api/power/execute', auth, async (req, res) => {
 
 app.post('/api/power/status', auth, (req, res) => {
     res.json({ running: pids.has(req.body.serverId) });
+});
+
+app.post('/api/power/input', auth, (req, res) => {
+    const { serverId, text } = req.body;
+    const child = pids.get(serverId);
+    if (child && child.stdin && child.stdin.writable) {
+        child.stdin.write(text + '\\n');
+        return res.json({ success: true });
+    }
+    res.json({ success: false, error: "Not running or not writable" });
+});
+
+app.post('/api/files/logs', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const logPath = getLogPath(serverId);
+        const content = await fs.readFile(logPath, 'utf8');
+        const lines = content.split('\\n');
+        res.json({ success: true, content: lines.slice(-300).join('\\n') });
+    } catch (e) { res.json({ success: true, content: "" }); }
+});
+
+app.post('/api/files/clear-logs', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const logPath = getLogPath(serverId);
+        await fs.writeFile(logPath, "");
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.get('/', (req, res) => res.send('STSCloud Agent Active'));
