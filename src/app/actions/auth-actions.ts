@@ -57,7 +57,13 @@ export async function setSessionCookie(uid: string) {
   });
 }
 
+export async function getAuthSession() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get('sts_session');
+  return session?.value || null;
+}
+
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete('sts_session');
+  cookieStore.delete('sts_session', { domain: '.stscloud.id', path: '/' });
 }

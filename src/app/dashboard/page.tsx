@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,10 +37,11 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { doc, onSnapshot, collection, query, where, limit, updateDoc } from "firebase/firestore";
 import { checkAndSendExpirationNotice } from "@/app/actions/server-power";
+import { clearSessionCookie } from "@/app/actions/auth-actions";
 import { Loader } from "@/components/loader";
 
 export default function Dashboard() {
-  const { user, loading } = useUser();
+  const { user, loading, isAuthenticated, sessionUid } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
@@ -48,16 +50,18 @@ export default function Dashboard() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    if (!loading && !user) {
+    // If loading is done and NO authentication (Firebase OR Cookie) is found, redirect.
+    if (!loading && !isAuthenticated) {
       router.replace("/auth?type=login");
     }
-  }, [user, loading, router]);
+  }, [isAuthenticated, loading, router]);
 
   React.useEffect(() => {
     setMounted(true);
-    if (!user?.uid) return;
+    const uid = user?.uid || sessionUid;
+    if (!uid) return;
     
-    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (doc) => {
+    const unsubProfile = onSnapshot(doc(db, "users", uid), (doc) => {
       if (doc.exists()) {
         setProfile(doc.data());
       }
@@ -65,7 +69,7 @@ export default function Dashboard() {
 
     const serversQuery = query(
       collection(db, "servers"),
-      where("ownerId", "==", user.uid),
+      where("ownerId", "==", uid),
       limit(10)
     );
     
@@ -74,10 +78,11 @@ export default function Dashboard() {
       setServers(list);
 
       // Expiration Notice Scanner
-      if (user?.email) {
+      const email = profile?.email || user?.email;
+      if (email) {
         list.forEach(server => {
           if (server.expiresAt && !server.expirationNoticeSent) {
-            checkAndSendExpirationNotice(server.id, user.email!, server.name, server.expiresAt).then(res => {
+            checkAndSendExpirationNotice(server.id, email, server.name, server.expiresAt).then(res => {
               if (res.success) {
                 updateDoc(doc(db, "servers", server.id), { expirationNoticeSent: true });
               }
@@ -91,14 +96,15 @@ export default function Dashboard() {
       unsubProfile();
       unsubServers();
     };
-  }, [user, db]);
+  }, [user, sessionUid, db, profile?.email]);
 
   const handleSignOut = async () => {
     await signOut(auth);
+    await clearSessionCookie();
     router.push("/auth?type=login");
   };
 
-  if (loading || !user) {
+  if (loading && !isAuthenticated) {
     return <Loader />;
   }
 
@@ -143,7 +149,7 @@ export default function Dashboard() {
                     {displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">
-                    {mounted ? user?.email : ""}
+                    {profile?.email || user?.email}
                   </span>
                 </div>
               </Button>

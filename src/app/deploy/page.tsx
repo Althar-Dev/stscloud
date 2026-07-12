@@ -62,6 +62,7 @@ import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { createSvalePayment, checkPaymentStatus } from "@/app/actions/payment-actions";
 import { provisionServerFiles } from "@/app/actions/server-provisioning";
 import { getSystemHardwareInfo } from "@/app/actions/system-info";
+import { clearSessionCookie } from "@/app/actions/auth-actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader } from "@/components/loader";
 
@@ -101,7 +102,7 @@ const LucideIconMap: Record<string, any> = {
 
 export default function DeployPage() {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, isAuthenticated, sessionUid } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
@@ -130,10 +131,10 @@ export default function DeployPage() {
   const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
   React.useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       router.replace("/auth?type=login");
     }
-  }, [user, loading, router]);
+  }, [isAuthenticated, loading, router]);
 
   const isTierAvailable = React.useCallback((preset: any) => {
     if (preset.stock !== undefined && preset.stock <= 0) return false;
@@ -151,8 +152,10 @@ export default function DeployPage() {
       if (res.success) setVpsMetrics(res.data);
     });
 
-    if (!user?.uid) return;
-    const unsubProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+    const uid = user?.uid || sessionUid;
+    if (!uid) return;
+
+    const unsubProfile = onSnapshot(doc(db, "users", uid), (docSnap) => {
       if (docSnap.exists()) {
         setProfile(docSnap.data());
       }
@@ -197,7 +200,7 @@ export default function DeployPage() {
       unsubTemplates();
       unsubRegions();
     };
-  }, [user, db, selectedPreset, selectedRegion]);
+  }, [user, sessionUid, db, selectedPreset, selectedRegion]);
 
   React.useEffect(() => {
     if (step !== 2 || regions.length === 0) return;
@@ -238,7 +241,7 @@ export default function DeployPage() {
     }
   }, [selectedAppType]);
 
-  if (loading || !user) {
+  if (loading && !isAuthenticated) {
     return <Loader />;
   }
 
@@ -250,11 +253,13 @@ export default function DeployPage() {
 
   const handleSignOut = async () => {
     await signOut(auth);
+    await clearSessionCookie();
     router.push("/auth?type=login");
   };
 
   const handleInitializePayment = async () => {
-    if (!selectedPresetData || !user?.email) return;
+    const userEmail = profile?.email || user?.email;
+    if (!selectedPresetData || !userEmail) return;
     
     setStep(6);
     setPaymentLoading(true);
@@ -262,7 +267,7 @@ export default function DeployPage() {
     const invoiceId = `STS-${Date.now()}`;
     const result = await createSvalePayment({
       amount: selectedPresetData.priceValue,
-      email: user.email,
+      email: userEmail,
       external_id: invoiceId,
       description: `Server Deployment: ${serverName || 'My Project'}`
     });
@@ -285,9 +290,12 @@ export default function DeployPage() {
       setPaymentStatus(result.status);
       if (result.status === "success") {
         const txId = `tx-${Date.now()}`;
+        const uid = user?.uid || sessionUid;
+        const userEmail = profile?.email || user?.email;
+        
         setDoc(doc(db, "transactions", txId), {
-          userId: user?.uid,
-          userEmail: user?.email,
+          userId: uid,
+          userEmail: userEmail,
           amount: selectedPresetData?.priceValue || 0,
           plan: selectedPresetData?.name || "Unknown",
           status: "success",
@@ -303,7 +311,8 @@ export default function DeployPage() {
   };
 
   const handleFinalizeDeployment = async () => {
-    if (!user?.uid || !selectedPresetData) return;
+    const uid = user?.uid || sessionUid;
+    if (!uid || !selectedPresetData) return;
     setIsProvisioning(true);
 
     const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
@@ -313,8 +322,6 @@ export default function DeployPage() {
     const agentId = selectedRegionData?.agentId || null;
 
     try {
-      // If agentId exists, we don't provision local files. 
-      // The first power action ('start') will handle provisioning on the agent.
       if (!agentId) {
         const provision = await provisionServerFiles(serverId);
         if (!provision.success) throw new Error("File provisioning failed");
@@ -322,8 +329,8 @@ export default function DeployPage() {
 
       await setDoc(doc(db, "servers", serverId), {
         name: serverName || "Cloud Server",
-        ownerId: user.uid,
-        agentId: agentId, // CRITICAL: This links the server to the remote agent
+        ownerId: uid,
+        agentId: agentId,
         plan: selectedPresetData.name,
         status: "online",
         createdAt: serverTimestamp(),
@@ -380,7 +387,7 @@ export default function DeployPage() {
                 <Avatar className="size-8 md:size-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{userInitial}</AvatarFallback></Avatar>
                 <div className="hidden md:flex flex-col items-start text-left">
                   <span className="text-xs font-bold font-headline leading-none truncate max-w-[120px]">{displayName}</span>
-                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{mounted ? user?.email : ""}</span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-1 truncate max-w-[120px]">{profile?.email || user?.email}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
