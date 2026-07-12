@@ -406,10 +406,15 @@ function DevConsoleContent() {
     setLandingAgents(prev => [...prev, newAgent]);
   };
 
-  const handleDeleteLandingAgent = (id: string) => {
-    setIsLandingDirty(true);
-    setLandingAgents(prev => prev.filter(a => a.id !== id));
-    toast({ title: "Region removed locally", description: "Changes will be permanent once you click Save Changes." });
+  const handleDeleteLandingAgent = async (id: string) => {
+    const updated = landingAgents.filter(a => a.id !== id);
+    setLandingAgents(updated);
+    try {
+      await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
+      toast({ title: "Region Removed", description: "Public infrastructure list updated." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    }
   };
 
   const saveLandingAgentsToDB = async () => {
@@ -1128,7 +1133,7 @@ function DevConsoleContent() {
               <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
                 <div>
                   <CardTitle className="font-headline">Public Map Configuration</CardTitle>
-                  <CardDescription>Real-time status tracking for agents on Landing Page. {isLandingDirty && <span className="text-primary font-bold">(Unsaved Changes)</span>}</CardDescription>
+                  <CardDescription>Real-time status tracking for regions on Landing Page.</CardDescription>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddLandingAgentRow}>
@@ -1182,14 +1187,23 @@ function DevConsoleContent() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                               <Link href={`/dev/agent/${agent.id}`}>
-                                  <Button variant="ghost" size="icon" className="size-8 text-primary hover:bg-primary/10">
-                                     <ChevronRight className="size-4" />
-                                  </Button>
-                               </Link>
-                               <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteLandingAgent(agent.id)}>
-                                 <Trash2 className="size-4" />
-                               </Button>
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive">
+                                     <Trash2 className="size-4" />
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>Remove Region?</AlertDialogTitle>
+                                     <AlertDialogDescription>This will permanently remove <strong>{agent.name}</strong> from the public map. This action cannot be undone.</AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                     <AlertDialogAction className="bg-destructive text-white" onClick={() => handleDeleteLandingAgent(agent.id)}>Remove Permanent</AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1201,29 +1215,89 @@ function DevConsoleContent() {
             </Card>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-headline font-bold">Live Cluster Agents</h3>
-              {agentsList.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-                  {agentsList.map((agent) => (
-                    <AgentCard 
-                      key={agent.id} 
-                      id={agent.id} 
-                      location={agent.regionName} 
-                      domain={agent.domain} 
-                      ip={agent.ip}
-                      load={agent.load || 0} 
-                      status={agent.status} 
-                      onDelete={() => handleDeleteInfraAgent(agent.id)} 
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Card className="bg-secondary/10 border-dashed border-2 border-border/50 py-12 flex flex-col items-center justify-center text-center">
-                   <Globe className="size-10 text-muted-foreground mb-3 opacity-20" />
-                   <p className="text-sm text-muted-foreground font-medium">No registered cluster agents found.</p>
-                   <p className="text-[10px] text-muted-foreground uppercase mt-1">Use the "Register Agent" button to add a node.</p>
-                </Card>
-              )}
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xl font-headline font-bold">Registered Infrastructure Agents</h3>
+                <Badge variant="outline" className="font-code text-[10px]">{agentsList.length} Nodes</Badge>
+              </div>
+
+              <Card className="bg-card border-border/50 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead>Region Name</TableHead>
+                      <TableHead>Domain & Endpoint</TableHead>
+                      <TableHead>Public IP</TableHead>
+                      <TableHead>Load %</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Control</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {agentsList.map((agent) => (
+                      <TableRow key={agent.id} className="hover:bg-secondary/10 group">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                              <Globe className="size-4" />
+                            </div>
+                            <span className="font-bold text-xs">{agent.regionName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-code text-[10px] text-muted-foreground">{agent.domain}</TableCell>
+                        <TableCell className="font-code text-[10px] text-primary">{agent.ip}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-[80px]">
+                            <Progress value={agent.load} className="h-1.5 w-12" />
+                            <span className="text-[10px] font-bold">{agent.load}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                             <div className={cn("size-1.5 rounded-full", agent.status === 'online' ? "bg-green-500 animate-pulse" : "bg-red-500")} />
+                             <span className="text-[10px] font-bold uppercase">{agent.status}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/dev/agent/${agent.id}`}>
+                              <Button variant="ghost" size="icon" className="size-8 hover:text-primary">
+                                <ExternalLink className="size-4" />
+                              </Button>
+                            </Link>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive">
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Decommission Agent?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently remove <strong>{agent.regionName}</strong> from the infrastructure cluster. All files on this node will be unreachable.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive text-white" onClick={() => handleDeleteInfraAgent(agent.id)}>Remove Node</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {agentsList.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-16 opacity-50">
+                           <Globe className="size-10 mx-auto mb-3 opacity-20" />
+                           <p className="text-sm font-medium">No cluster agents registered.</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
@@ -1240,70 +1314,11 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
           <div className={cn("size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center", color)}>
             <Icon className="size-4 md:size-5" />
           </div>
-          <Badge variant="outline" className="text-[8px] border-none font-bold text-green-400">{trend}</Badge>
+          <Badge variant="outline" className="border-none font-bold text-green-400 text-[8px]">{trend}</Badge>
         </div>
         <div className="space-y-0.5">
           <div className="text-lg md:text-2xl font-bold font-headline">{value}</div>
           <div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{title}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AgentCard({ id, location, domain, ip, load, status, onDelete }: any) {
-  return (
-    <Card className="bg-card border-border/50 group relative hover:border-primary/50 transition-colors overflow-hidden">
-      <div className="absolute top-2 right-2 z-20">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-              <X className="size-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="w-[95vw] max-w-md rounded-xl border-border/50">
-            <AlertDialogHeader>
-              <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive mb-2">
-                <AlertTriangle className="size-6" />
-              </div>
-              <AlertDialogTitle className="font-headline font-bold">Decommission Agent?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently remove the infrastructure agent <strong>{location}</strong> from the live cluster. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onDelete} className="bg-destructive text-white rounded-lg">Yes, Remove Node</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-      <CardContent className="p-3 md:p-6 space-y-4">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-            <Globe className="size-4 md:size-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold font-headline text-xs md:text-base truncate">{location}</div>
-            <div className="text-[8px] md:text-[10px] text-muted-foreground uppercase font-bold truncate">{domain}</div>
-            <div className="text-[7px] md:text-[8px] text-primary/70 font-code font-bold truncate">{ip}</div>
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
-            <span className="text-muted-foreground">Load</span>
-            <span className={cn(load > 80 ? "text-red-500" : "text-primary")}>{load}%</span>
-          </div>
-          <div className="h-1 md:h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-            <div className={cn("h-full transition-all duration-1000", load > 80 ? "bg-red-500" : "bg-primary")} style={{ width: `${load}%` }} />
-          </div>
-        </div>
-        <div className="pt-2">
-           <Link href={`/dev/agent/${id}`}>
-              <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest gap-2 group/btn">
-                 <ExternalLink className="size-3 transition-transform group-hover/btn:translate-x-0.5" /> View Details
-              </Button>
-           </Link>
         </div>
       </CardContent>
     </Card>
