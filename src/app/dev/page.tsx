@@ -140,7 +140,7 @@ function DevConsoleContent() {
   const [transactions, setTransactions] = React.useState<any[]>([]);
 
   const [pricingData, setPricingData] = React.useState<any[]>([]);
-  const [pricingTab, setPricingTab] = React.useState("global"); // 'global' (localhost) or agentId
+  const [pricingTab, setPricingTab] = React.useState("global"); 
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
@@ -233,7 +233,6 @@ function DevConsoleContent() {
           const data = docSnap.data();
           if (data.tiers) setPricingData(data.tiers);
         } else {
-          // If a regional config doesn't exist yet, default to tiers
           setPricingData(defaultPricingTiers);
         }
       }
@@ -296,29 +295,16 @@ function DevConsoleContent() {
     const checkAgent = async (agent: any) => {
       const rawUrl = agent.url || agent.domain || "";
       if (!rawUrl) return;
-
-      // Map localhost to stscloud.id root project for real latency measurement
       const url = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "stscloud.id" : rawUrl;
-
-      setAgentLiveInfo(prev => ({ 
-        ...prev, 
-        [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
-      }));
-
+      setAgentLiveInfo(prev => ({ ...prev, [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } }));
       const start = performance.now();
       try {
         const targetUrl = url.startsWith("http") ? url : `https://${url}`;
         await fetch(targetUrl, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
         const end = performance.now();
-        setAgentLiveInfo(prev => ({ 
-          ...prev, 
-          [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } 
-        }));
+        setAgentLiveInfo(prev => ({ ...prev, [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } }));
       } catch (e) {
-        setAgentLiveInfo(prev => ({ 
-          ...prev, 
-          [agent.id]: { status: "DOWN", latency: "TIMEOUT", isChecking: false } 
-        }));
+        setAgentLiveInfo(prev => ({ ...prev, [agent.id]: { status: "DOWN", latency: "TIMEOUT", isChecking: false } }));
       }
     };
 
@@ -404,10 +390,8 @@ function DevConsoleContent() {
       toast({ variant: "destructive", title: "Validation Error", description: "Please select an agent and enter location." });
       return;
     }
-
     const sourceAgent = agentsList.find(a => a.id === selectedAgentId);
     if (!sourceAgent) return;
-
     setIsUpdatingLanding(true);
     const newRegion = {
       id: `reg-${Math.random().toString(36).substring(2, 7)}`,
@@ -418,10 +402,8 @@ function DevConsoleContent() {
       latency: "Checking...",
       status: "active"
     };
-
     const updated = [...landingAgents, newRegion];
     setLandingAgents(updated);
-
     try {
       await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
       toast({ title: "Region Added", description: `${sourceAgent.regionName} is now on public map.` });
@@ -439,7 +421,6 @@ function DevConsoleContent() {
     setIsLandingDirty(true);
     const updated = landingAgents.filter(a => a.id !== id);
     setLandingAgents(updated);
-    
     try {
       await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
       toast({ title: "Region Removed", description: "Public infrastructure list updated." });
@@ -646,12 +627,7 @@ function DevConsoleContent() {
                     <Label className="text-xs font-bold uppercase text-muted-foreground">Secret Key</Label>
                     <div className="relative">
                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                       <Input 
-                        placeholder="Shared secret token..." 
-                        className="bg-secondary/30 border-none h-11 pl-10" 
-                        value={agentSecret} 
-                        onChange={(e) => setAgentSecret(e.target.value)} 
-                       />
+                       <Input placeholder="Shared secret token..." className="bg-secondary/30 border-none h-11 pl-10" value={agentSecret} onChange={(e) => setAgentSecret(e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -684,273 +660,18 @@ function DevConsoleContent() {
               <StatCard title="Active Agents" value={agentsList.filter(a => a.status === 'online').length} trend="Online" icon={Activity} color="text-primary" />
               <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
             </div>
-
             <div className="space-y-6">
               <div className="flex items-center gap-3 px-1">
-                <div className="size-10 rounded-xl bg-secondary flex items-center justify-center text-primary shadow-inner">
-                  <Monitor className="size-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-headline font-bold">Physical Resources</h3>
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Host Hardware Metrics</p>
-                </div>
+                <div className="size-10 rounded-xl bg-secondary flex items-center justify-center text-primary shadow-inner"><Monitor className="size-5" /></div>
+                <div><h3 className="text-xl font-headline font-bold">Physical Resources</h3><p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Host Hardware Metrics</p></div>
               </div>
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-card border-border/50 relative overflow-hidden group">
-                  <CardContent className="p-6">
-                     <div className="flex items-center justify-between mb-4">
-                       <Cpu className="size-5 text-primary" />
-                       <Badge variant="outline" className="text-[8px] uppercase border-primary/20 text-primary">Processor</Badge>
-                     </div>
-                     <div className="space-y-1">
-                        <div className="text-lg font-bold font-headline truncate max-w-full" title={vpsMetrics?.cpuModel || "Loading..."}>
-                          {vpsMetrics ? vpsMetrics.cpuModel : "---"}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Model Identifier</div>
-                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card border-border/50 relative overflow-hidden group">
-                  <CardContent className="p-6">
-                     <div className="flex items-center justify-between mb-4">
-                       <Activity className="size-5 text-accent" />
-                       <Badge variant="outline" className="text-[8px] uppercase border-accent/20 text-accent">Concurrency</Badge>
-                     </div>
-                     <div className="space-y-1">
-                        <div className="text-2xl font-bold font-headline">
-                          {vpsMetrics ? vpsMetrics.cpuCores : "--"} Cores
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Logical CPU</div>
-                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card border-border/50 relative overflow-hidden group">
-                  <CardContent className="p-6">
-                     <div className="flex items-center justify-between mb-4">
-                       <Database className="size-5 text-green-400" />
-                       <Badge variant="outline" className="text-[8px] uppercase border-green-400/20 text-green-400">Memory</Badge>
-                     </div>
-                     <div className="space-y-3">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold font-headline">{vpsMetrics ? `${vpsMetrics.usedRam} / ${vpsMetrics.totalRam}` : "-- GB"}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                           <Progress value={ramUsage} className="h-1 bg-secondary" />
-                           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Usage: {ramUsage.toFixed(1)}%</div>
-                        </div>
-                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card border-border/50 relative overflow-hidden group">
-                  <CardContent className="p-6">
-                     <div className="flex items-center justify-between mb-4">
-                       <HardDrive className="size-5 text-orange-400" />
-                       <Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge>
-                     </div>
-                     <div className="space-y-3">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? `${vpsMetrics.usedDisk} / ${vpsMetrics.totalDisk}` : "-- GB"}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                           <Progress value={diskUsage} className="h-1 bg-secondary" />
-                           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Occupied: {diskUsage.toFixed(1)}%</div>
-                        </div>
-                     </div>
-                  </CardContent>
-                </Card>
+                <Card className="bg-card border-border/50 relative overflow-hidden group"><CardContent className="p-6"><div className="flex items-center justify-between mb-4"><Cpu className="size-5 text-primary" /><Badge variant="outline" className="text-[8px] uppercase border-primary/20 text-primary">Processor</Badge></div><div className="space-y-1"><div className="text-lg font-bold font-headline truncate max-w-full" title={vpsMetrics?.cpuModel || "Loading..."}>{vpsMetrics ? vpsMetrics.cpuModel : "---"}</div><div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Model Identifier</div></div></CardContent></Card>
+                <Card className="bg-card border-border/50 relative overflow-hidden group"><CardContent className="p-6"><div className="flex items-center justify-between mb-4"><Activity className="size-5 text-accent" /><Badge variant="outline" className="text-[8px] uppercase border-accent/20 text-accent">Concurrency</Badge></div><div className="space-y-1"><div className="text-2xl font-bold font-headline">{vpsMetrics ? vpsMetrics.cpuCores : "--"} Cores</div><div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Logical CPU</div></div></CardContent></Card>
+                <Card className="bg-card border-border/50 relative overflow-hidden group"><CardContent className="p-6"><div className="flex items-center justify-between mb-4"><Database className="size-5 text-green-400" /><Badge variant="outline" className="text-[8px] uppercase border-green-400/20 text-green-400">Memory</Badge></div><div className="space-y-3"><div className="flex items-baseline gap-1"><span className="text-2xl font-bold font-headline">{vpsMetrics ? `${vpsMetrics.usedRam} / ${vpsMetrics.totalRam}` : "-- GB"}</span></div><div className="space-y-1.5"><Progress value={ramUsage} className="h-1 bg-secondary" /><div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Usage: {ramUsage.toFixed(1)}%</div></div></div></CardContent></Card>
+                <Card className="bg-card border-border/50 relative overflow-hidden group"><CardContent className="p-6"><div className="flex items-center justify-between mb-4"><HardDrive className="size-5 text-orange-400" /><Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge></div><div className="space-y-3"><div className="flex items-baseline gap-1"><span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? `${vpsMetrics.usedDisk} / ${vpsMetrics.totalDisk}` : "-- GB"}</span></div><div className="space-y-1.5"><Progress value={diskUsage} className="h-1 bg-secondary" /><div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Occupied: {diskUsage.toFixed(1)}%</div></div></div></CardContent></Card>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="system" className="space-y-6 animate-in fade-in duration-500">
-            <Card className="bg-card border-border/50">
-               <CardHeader>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Wrench className="size-5 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Global Control</span>
-                  </div>
-                  <CardTitle className="font-headline">System Settings</CardTitle>
-                  <CardDescription>Manage application-wide states and maintenance controls.</CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-8 p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50">
-                      <div className="space-y-1">
-                        <div className="font-bold flex items-center gap-2">
-                          Maintenance Mode
-                          {isUpdatingSystem && <Loader2 className="size-3 animate-spin text-primary" />}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Redirect all non-developer users to a maintenance page.</p>
-                      </div>
-                      <Switch 
-                        checked={systemSettings.maintenance || false} 
-                        onCheckedChange={handleToggleMaintenance}
-                        disabled={isUpdatingSystem}
-                      />
-                    </div>
-
-                    <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50 space-y-4">
-                      <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2 font-bold">
-                            <Clock className="size-4 text-primary" />
-                            Estimated Time
-                         </div>
-                         <Button 
-                           size="sm" 
-                           variant="ghost" 
-                           className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 text-primary"
-                           onClick={() => handleUpdateSystemValue('estimatedTime', systemSettings.estimatedTime)}
-                           disabled={isUpdatingSystem}
-                         >
-                           {isUpdatingSystem ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
-                           Save
-                         </Button>
-                      </div>
-                      <Input 
-                        placeholder="e.g., 30 Minutes" 
-                        className="bg-background/50 border-border/50 h-10 text-sm font-medium"
-                        value={systemSettings.estimatedTime || ""}
-                        onChange={(e) => setSystemSettings(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                      />
-                      <p className="text-[10px] text-muted-foreground leading-relaxed italic">
-                        This text will be displayed on the public maintenance page to inform users how long the system will be offline.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
-                        <div className="flex items-center gap-3">
-                           <ShieldAlert className="size-5 text-primary" />
-                           <h4 className="font-bold">Access Policy</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          When maintenance is enabled, ordinary users will be blocked from accessing the Dashboard and Server Deployment. 
-                          Account creation and logins will also be restricted to prevent data inconsistencies.
-                        </p>
-                     </div>
-                     <div className="p-6 rounded-2xl bg-accent/5 border border-accent/20 space-y-4">
-                        <div className="flex items-center gap-3">
-                           <Monitor className="size-5 text-accent" />
-                           <h4 className="font-bold">Dev Bypass</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Users with the <strong>DEVELOPER</strong> role will see a notice at the top of the site but can continue to use all features normally. 
-                          This allows you to test fixes in a live environment.
-                        </p>
-                     </div>
-                  </div>
-               </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users" className="space-y-6 animate-in fade-in duration-500">
-            <Card className="bg-card border-border/50">
-              <CardHeader>
-                <CardTitle className="font-headline">User Directory</CardTitle>
-                <CardDescription>Manage application users and roles.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usersList.map((u) => (
-                      <TableRow key={u.id} className="hover:bg-secondary/10">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="size-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
-                                {(u.displayName || u.email || "?").charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-bold text-xs">{u.displayName || "Standard User"}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("text-[8px] uppercase px-1.5", u.dev ? "border-primary text-primary bg-primary/5" : "text-muted-foreground")}>
-                            {u.dev ? "DEVELOPER" : "USER"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : "N/A"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Link href={`/dev/users/${u.id}`}>
-                            <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
-                              Detail <ChevronRight className="size-3" />
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="billing" className="space-y-6 animate-in fade-in duration-500">
-            <Card className="bg-card border-border/50">
-              <CardHeader>
-                <CardTitle className="font-headline">Transaction History</CardTitle>
-                <CardDescription>Monitor platform revenue and payments.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((tx) => (
-                      <TableRow key={tx.id} className="hover:bg-secondary/10">
-                        <TableCell className="font-code text-[10px] text-primary">{tx.externalId || tx.id}</TableCell>
-                        <TableCell className="text-xs">{tx.userEmail || "Anonymous"}</TableCell>
-                        <TableCell className="text-xs font-bold">IDR {tx.amount?.toLocaleString()}</TableCell>
-                        <TableCell className="text-xs uppercase font-bold text-muted-foreground">{tx.plan || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge className={cn(
-                            "text-[8px] font-bold uppercase",
-                            tx.status === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                            tx.status === "pending" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                            "bg-red-500/10 text-red-500 border-red-500/20"
-                          )}>
-                            {tx.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : "N/A"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {transactions.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-20 opacity-50 text-sm">No transactions found.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
@@ -967,7 +688,7 @@ function DevConsoleContent() {
                       <Globe className="size-3.5" /> Global Config
                     </Button>
                     <div className="w-px h-4 bg-border mx-2" />
-                    {landingAgents.map(agent => (
+                    {landingAgents.filter(agent => !agent.url?.includes('localhost') && !agent.url?.includes('127.0.0.1')).map(agent => (
                       <Button 
                         key={agent.id}
                         variant={pricingTab === agent.id ? 'secondary' : 'ghost'} 
@@ -975,7 +696,7 @@ function DevConsoleContent() {
                         className={cn("rounded-lg gap-2 text-xs font-bold h-9 px-4", pricingTab === agent.id && "bg-primary text-primary-foreground shadow-lg shadow-primary/20")}
                         onClick={() => { setPricingTab(agent.id); setIsPricingDirty(false); }}
                       >
-                        <MapPin className="size-3.5" /> {agent.name}
+                        <MapPin className="size-3.5" /> {agent.location}
                       </Button>
                     ))}
                  </div>
@@ -985,40 +706,21 @@ function DevConsoleContent() {
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
                   <div>
                     <CardTitle className="font-headline flex items-center gap-2">
-                      Tiers Management 
+                      Product Tiers Management 
                       <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                        {pricingTab === 'global' ? 'Global Scope' : landingAgents.find(a => a.id === pricingTab)?.name}
+                        {pricingTab === 'global' ? 'Global Config' : landingAgents.find(a => a.id === pricingTab)?.location}
                       </Badge>
                     </CardTitle>
-                    <CardDescription>
-                      Configure resources and pricing for this specific scope.
-                      {isPricingDirty && <span className="text-primary font-bold ml-2">(Unsaved Changes)</span>}
-                    </CardDescription>
+                    <CardDescription>Configure resources and pricing for the selected location.{isPricingDirty && <span className="text-primary font-bold ml-2">(Unsaved)</span>}</CardDescription>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
-                    <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}>
-                      <PlusCircle className="size-4" /> Add Row
-                    </Button>
-                    <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={savePricingToDB} disabled={isUpdatingPricing}>
-                      {isUpdatingPricing ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
-                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}><PlusCircle className="size-4" /> Add Row</Button>
+                    <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={savePricingToDB} disabled={isUpdatingPricing}>{isUpdatingPricing ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tier Name</TableHead>
-                        <TableHead>Price Display</TableHead>
-                        <TableHead>Value (IDR)</TableHead>
-                        <TableHead>RAM</TableHead>
-                        <TableHead>CPU</TableHead>
-                        <TableHead>Disk</TableHead>
-                        <TableHead>Manual Stock</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow><TableHead>Tier Name</TableHead><TableHead>Price Display</TableHead><TableHead>Value (IDR)</TableHead><TableHead>RAM</TableHead><TableHead>CPU</TableHead><TableHead>Disk</TableHead><TableHead>Stock</TableHead><TableHead>Status</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
                     <TableBody>
                       {pricingData.map((tier) => (
                         <TableRow key={tier.id} className="hover:bg-secondary/10">
@@ -1028,27 +730,9 @@ function DevConsoleContent() {
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 px-2">
-                               <Package className="size-3.5 text-muted-foreground" />
-                               <Input 
-                                 type="number"
-                                 className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
-                                 value={tier.stock || 0}
-                                 onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
-                               />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>
-                              {tier.popular ? 'Popular' : 'Standard'}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}>
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </TableCell>
+                          <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-16" value={tier.stock || 0} onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)} /></TableCell>
+                          <TableCell><Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>{tier.popular ? 'Popular' : 'Standard'}</Button></TableCell>
+                          <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}><Trash2 className="size-4" /></Button></TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1061,59 +745,21 @@ function DevConsoleContent() {
           <TabsContent value="templates" className="space-y-6 animate-in fade-in duration-500">
             <Card className="bg-card border-border/50">
               <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
-                <div>
-                  <CardTitle className="font-headline">Deployment Templates</CardTitle>
-                  <CardDescription>Manage available categories for server creation. {isTemplatesDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTemplateRow}>
-                    <PlusCircle className="size-4" /> Add Template
-                  </Button>
-                  <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={saveTemplatesToDB} disabled={isUpdatingTemplates}>
-                    {isUpdatingTemplates ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
-                  </Button>
-                </div>
+                <div><CardTitle className="font-headline">Deployment Templates</CardTitle><CardDescription>Manage available categories for server creation. {isTemplatesDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription></div>
+                <div className="flex gap-2 w-full sm:w-auto"><Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTemplateRow}><PlusCircle className="size-4" /> Add Template</Button><Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={saveTemplatesToDB} disabled={isUpdatingTemplates}>{isUpdatingTemplates ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes</Button></div>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Template Name</TableHead>
-                      <TableHead>Group</TableHead>
-                      <TableHead>Icon (Lucide)</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12"></TableHead>
+                <Table><TableHeader><TableRow><TableHead>Template Name</TableHead><TableHead>Group</TableHead><TableHead>Icon (Lucide)</TableHead><TableHead>Status</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader><TableBody>
+                  {templatesData.map((tmpl) => (
+                    <TableRow key={tmpl.id} className="hover:bg-secondary/10">
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tmpl.name} onChange={(e) => handleUpdateTemplate(tmpl.id, 'name', e.target.value)} /></TableCell>
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs" value={tmpl.group} onChange={(e) => handleUpdateTemplate(tmpl.id, 'group', e.target.value)} /></TableCell>
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.icon} onChange={(e) => handleUpdateTemplate(tmpl.id, 'icon', e.target.value)} /></TableCell>
+                      <TableCell><Button variant="ghost" size="sm" className={cn("h-8 gap-2 text-[10px] font-bold uppercase px-3", tmpl.status === "active" ? "text-green-500 bg-green-500/10" : "text-muted-foreground bg-secondary/50")} onClick={() => handleUpdateTemplate(tmpl.id, 'status', tmpl.status === 'active' ? 'inactive' : 'active')}><Power className="size-3" />{tmpl.status === "active" ? "Active" : "Inactive"}</Button></TableCell>
+                      <TableCell><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTemplate(tmpl.id)}><Trash2 className="size-4" /></Button></TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {templatesData.map((tmpl) => (
-                      <TableRow key={tmpl.id} className="hover:bg-secondary/10">
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tmpl.name} onChange={(e) => handleUpdateTemplate(tmpl.id, 'name', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs" value={tmpl.group} onChange={(e) => handleUpdateTemplate(tmpl.id, 'group', e.target.value)} /></TableCell>
-                        <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-code" value={tmpl.icon} onChange={(e) => handleUpdateTemplate(tmpl.id, 'icon', e.target.value)} /></TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={cn(
-                              "h-8 gap-2 text-[10px] font-bold uppercase px-3",
-                              tmpl.status === "active" ? "text-green-500 bg-green-500/10" : "text-muted-foreground bg-secondary/50"
-                            )}
-                            onClick={() => handleUpdateTemplate(tmpl.id, 'status', tmpl.status === 'active' ? 'inactive' : 'active')}
-                          >
-                            <Power className="size-3" />
-                            {tmpl.status === "active" ? "Active" : "Inactive"}
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTemplate(tmpl.id)}>
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody></Table>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1121,296 +767,58 @@ function DevConsoleContent() {
           <TabsContent value="socials" className="space-y-6 animate-in fade-in duration-500">
             <Card className="bg-card border-border/50">
               <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
-                <div>
-                  <CardTitle className="font-headline">Social Media Links</CardTitle>
-                  <CardDescription>Configure platform presence on footer. {isSocialsDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription>
-                </div>
-                <Button className="bg-primary text-white gap-2 font-bold w-full sm:w-auto" onClick={saveSocialsToDB} disabled={isUpdatingSocials}>
-                  {isUpdatingSocials ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
-                </Button>
+                <div><CardTitle className="font-headline">Social Media Links</CardTitle><CardDescription>Configure platform presence on footer. {isSocialsDirty && <span className="text-primary font-bold">(Unsaved)</span>}</CardDescription></div>
+                <Button className="bg-primary text-white gap-2 font-bold w-full sm:w-auto" onClick={saveSocialsToDB} disabled={isUpdatingSocials}>{isUpdatingSocials ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes</Button>
               </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Twitter (X) URL</Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="https://x.com/..." 
-                        className="bg-secondary/30 border-none pl-10 h-11"
-                        value={socialsData.twitter || ''}
-                        onChange={(e) => handleUpdateSocial('twitter', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">LinkedIn URL</Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="https://linkedin.com/in/..." 
-                        className="bg-secondary/30 border-none pl-10 h-11"
-                        value={socialsData.linkedin || ''}
-                        onChange={(e) => handleUpdateSocial('linkedin', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Instagram URL</Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="https://instagram.com/..." 
-                        className="bg-secondary/30 border-none pl-10 h-11"
-                        value={socialsData.instagram || ''}
-                        onChange={(e) => handleUpdateSocial('instagram', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">WhatsApp Link</Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="https://wa.me/..." 
-                        className="bg-secondary/30 border-none pl-10 h-11"
-                        value={socialsData.whatsapp || ''}
-                        onChange={(e) => handleUpdateSocial('whatsapp', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+              <CardContent className="p-8 space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Twitter (X) URL</Label><div className="relative"><LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="https://x.com/..." className="bg-secondary/30 border-none pl-10 h-11" value={socialsData.twitter || ''} onChange={(e) => handleUpdateSocial('twitter', e.target.value)} /></div></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">LinkedIn URL</Label><div className="relative"><LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="https://linkedin.com/in/..." className="bg-secondary/30 border-none pl-10 h-11" value={socialsData.linkedin || ''} onChange={(e) => handleUpdateSocial('linkedin', e.target.value)} /></div></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Instagram URL</Label><div className="relative"><LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="https://instagram.com/..." className="bg-secondary/30 border-none pl-10 h-11" value={socialsData.instagram || ''} onChange={(e) => handleUpdateSocial('instagram', e.target.value)} /></div></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">WhatsApp Link</Label><div className="relative"><LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="https://wa.me/..." className="bg-secondary/30 border-none pl-10 h-11" value={socialsData.whatsapp || ''} onChange={(e) => handleUpdateSocial('whatsapp', e.target.value)} /></div></div>
+              </div></CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-12 animate-in slide-in-from-bottom-4 duration-500">
             <Card className="bg-card border-border/50">
               <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
-                <div>
-                  <CardTitle className="font-headline">Public Map Configuration</CardTitle>
-                  <CardDescription>Real-time status tracking for regions on Landing Page.</CardDescription>
-                </div>
+                <div><CardTitle className="font-headline">Public Map Configuration</CardTitle><CardDescription>Real-time status tracking for regions on Landing Page.</CardDescription></div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Dialog open={isAddRegionOpen} onOpenChange={setIsAddRegionOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none">
-                        <PlusCircle className="size-4" /> Add Region
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg">
-                      <DialogHeader>
-                        <DialogTitle className="font-headline font-bold text-xl">Select Agent for Public Map</DialogTitle>
-                        <DialogDescription>Choose an existing infrastructure node to display on the landing page.</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label className="text-xs font-bold uppercase text-muted-foreground">Select Agent</Label>
-                          <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-                            <SelectTrigger className="bg-secondary/30 border-none h-11">
-                              <SelectValue placeholder="Select a node..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {agentsList.map(agent => (
-                                <SelectItem key={agent.id} value={agent.id}>
-                                  <div className="flex items-center gap-2">
-                                    <Globe className="size-3 text-primary" />
-                                    <span>{agent.regionName} ({agent.domain})</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                              {agentsList.length === 0 && (
-                                <div className="p-4 text-center text-xs text-muted-foreground">No registered agents.</div>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid gap-2">
-                          <Label className="text-xs font-bold uppercase text-muted-foreground">Display Location</Label>
-                          <div className="relative">
-                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                             <Input 
-                               placeholder="e.g., Jakarta Region (JKT-01)" 
-                               className="bg-secondary/30 border-none h-11 pl-10" 
-                               value={regionLocationInput} 
-                               onChange={(e) => setRegionLocationInput(e.target.value)} 
-                             />
-                          </div>
-                        </div>
-                        {selectedAgentId && (
-                           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1 animate-in fade-in slide-in-from-top-1">
-                              <p className="text-[10px] font-bold uppercase text-primary">Preview URL</p>
-                              <p className="text-xs font-code truncate">{agentsList.find(a => a.id === selectedAgentId)?.domain}</p>
-                           </div>
-                        )}
-                      </div>
-                      <DialogFooter>
-                        <Button className="w-full bg-primary text-white font-bold h-11" onClick={handleConfirmAddRegion} disabled={isUpdatingLanding || !selectedAgentId}>
-                          {isUpdatingLanding ? <Loader2 className="size-4 animate-spin mr-2" /> : <CheckCircle2 className="size-4 mr-2" />}Add Region
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
+                    <DialogTrigger asChild><Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none"><PlusCircle className="size-4" /> Add Region</Button></DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg"><DialogHeader><DialogTitle className="font-headline font-bold text-xl">Select Agent for Public Map</DialogTitle><DialogDescription>Choose an existing infrastructure node to display on the landing page.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><div className="grid gap-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Select Agent</Label><Select value={selectedAgentId} onValueChange={setSelectedAgentId}><SelectTrigger className="bg-secondary/30 border-none h-11"><SelectValue placeholder="Select a node..." /></SelectTrigger><SelectContent>{agentsList.map(agent => (<SelectItem key={agent.id} value={agent.id}><div className="flex items-center gap-2"><Globe className="size-3 text-primary" /><span>{agent.regionName} ({agent.domain})</span></div></SelectItem>))}{agentsList.length === 0 && (<div className="p-4 text-center text-xs text-muted-foreground">No registered agents.</div>)}</SelectContent></Select></div><div className="grid gap-2"><Label className="text-xs font-bold uppercase text-muted-foreground">Display Location</Label><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" /><Input placeholder="e.g., Jakarta Region (JKT-01)" className="bg-secondary/30 border-none h-11 pl-10" value={regionLocationInput} onChange={(e) => setRegionLocationInput(e.target.value)} /></div></div>{selectedAgentId && (<div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1 animate-in fade-in slide-in-from-top-1"><p className="text-[10px] font-bold uppercase text-primary">Preview URL</p><p className="text-xs font-code truncate">{agentsList.find(a => a.id === selectedAgentId)?.domain}</p></div>)}</div><DialogFooter><Button className="w-full bg-primary text-white font-bold h-11" onClick={handleConfirmAddRegion} disabled={isUpdatingLanding || !selectedAgentId}>{isUpdatingLanding ? <Loader2 className="size-4 animate-spin mr-2" /> : <CheckCircle2 className="size-4 mr-2" />}Add Region</Button></DialogFooter></DialogContent>
                   </Dialog>
-                  <Button className="bg-primary text-white font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}>
-                    {isUpdatingLanding ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
-                  </Button>
+                  <Button className="bg-primary text-white font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}>{isUpdatingLanding ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes</Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Region</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Url/Domain</TableHead>
-                      <TableHead>Latency (Live)</TableHead>
-                      <TableHead>Status (Live)</TableHead>
-                      <TableHead className="w-20 text-right">Actions</TableHead>
+              <CardContent className="p-0 overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Region</TableHead><TableHead>Location</TableHead><TableHead>Url/Domain</TableHead><TableHead>Latency (Live)</TableHead><TableHead>Status (Live)</TableHead><TableHead className="w-20 text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
+                {landingAgents.map((agent) => {
+                  const live = agentLiveInfo[agent.id];
+                  const isChecking = live?.isChecking || !live;
+                  const isActive = live?.status === "ACTIVE";
+                  return (
+                    <TableRow key={agent.id} className="hover:bg-secondary/10">
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
+                      <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || agent.domain || ''} placeholder="node.domain.com" readOnly /></TableCell>
+                      <TableCell><div className="flex items-center gap-2 text-[10px] font-bold text-primary px-2">{isChecking ? (<Loader2 className="size-3 animate-spin opacity-50" />) : (<span className={cn(isActive ? "text-primary" : "text-destructive")}>{live?.latency || "N/A"}</span>)}</div></TableCell>
+                      <TableCell><Badge variant="outline" className={cn("text-[8px] uppercase font-bold tracking-widest px-2 h-5", isChecking ? "bg-secondary text-muted-foreground animate-pulse" : isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{isChecking ? "PROBING" : live?.status}</Badge></TableCell>
+                      <TableCell className="text-right"><div className="flex items-center justify-end gap-1"><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remove Region?</AlertDialogTitle><AlertDialogDescription>This will permanently remove <strong>{agent.name}</strong> from the public map. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-white" onClick={() => handleDeleteLandingAgent(agent.id)}>Remove Permanent</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div></TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {landingAgents.map((agent) => {
-                      const live = agentLiveInfo[agent.id];
-                      const isChecking = live?.isChecking || !live;
-                      const isActive = live?.status === "ACTIVE";
-
-                      return (
-                        <TableRow key={agent.id} className="hover:bg-secondary/10">
-                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
-                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
-                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || agent.domain || ''} placeholder="node.domain.com" readOnly /></TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-2">
-                              {isChecking ? (
-                                <Loader2 className="size-3 animate-spin opacity-50" />
-                              ) : (
-                                <span className={cn(isActive ? "text-primary" : "text-destructive")}>{live?.latency || "N/A"}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={cn(
-                              "text-[8px] uppercase font-bold tracking-widest px-2 h-5",
-                              isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
-                              isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                            )}>
-                              {isChecking ? "PROBING" : live?.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                               <AlertDialog>
-                                 <AlertDialogTrigger asChild>
-                                   <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive">
-                                     <Trash2 className="size-4" />
-                                   </Button>
-                                 </AlertDialogTrigger>
-                                 <AlertDialogContent>
-                                   <AlertDialogHeader>
-                                     <AlertDialogTitle>Remove Region?</AlertDialogTitle>
-                                     <AlertDialogDescription>This will permanently remove <strong>{agent.name}</strong> from the public map. This action cannot be undone.</AlertDialogDescription>
-                                   </AlertDialogHeader>
-                                   <AlertDialogFooter>
-                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                     <AlertDialogAction className="bg-destructive text-white" onClick={() => handleDeleteLandingAgent(agent.id)}>Remove Permanent</AlertDialogAction>
-                                   </AlertDialogFooter>
-                                 </AlertDialogContent>
-                               </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
+                  );
+                })}
+              </TableBody></Table></CardContent>
             </Card>
+          </TabsContent>
 
-            <div className="space-y-6">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-xl font-headline font-bold">Registered Infrastructure Agents</h3>
-                <Badge variant="outline" className="font-code text-[10px]">{agentsList.length} Nodes</Badge>
-              </div>
-
-              <Card className="bg-card border-border/50 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-secondary/20">
-                    <TableRow>
-                      <TableHead>Region Name</TableHead>
-                      <TableHead>Domain & Endpoint</TableHead>
-                      <TableHead>Public IP</TableHead>
-                      <TableHead>Load %</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Control</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {agentsList.map((agent) => (
-                      <TableRow key={agent.id} className="hover:bg-secondary/10 group">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                              <Globe className="size-4" />
-                            </div>
-                            <span className="font-bold text-xs">{agent.regionName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-code text-[10px] text-muted-foreground">{agent.domain}</TableCell>
-                        <TableCell className="font-code text-[10px] text-primary">{agent.ip}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 min-w-[80px]">
-                            <Progress value={agent.load} className="h-1.5 w-12" />
-                            <span className="text-[10px] font-bold">{agent.load}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                             <div className={cn("size-1.5 rounded-full", agent.status === 'online' ? "bg-green-500 animate-pulse" : "bg-red-500")} />
-                             <span className="text-[10px] font-bold uppercase">{agent.status}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link href={`/dev/agent/${agent.id}`}>
-                              <Button variant="ghost" size="icon" className="size-8 hover:text-primary">
-                                <ExternalLink className="size-4" />
-                              </Button>
-                            </Link>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive">
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Decommission Agent?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to permanently remove <strong>{agent.regionName}</strong> from the infrastructure cluster? This will stop all server routing on this node.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive text-white" onClick={() => handleDeleteInfraAgent(agent.id)}>Remove Node</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {agentsList.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-16 opacity-50">
-                           <Globe className="size-10 mx-auto mb-3 opacity-20" />
-                           <p className="text-sm font-medium">No cluster agents registered.</p>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
+          <TabsContent value="system" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+               <CardHeader><div className="flex items-center gap-3 mb-2"><Wrench className="size-5 text-primary" /><span className="text-[10px] font-bold uppercase tracking-widest text-primary">Global Control</span></div><CardTitle className="font-headline">System Settings</CardTitle><CardDescription>Manage application-wide states and maintenance controls.</CardDescription></CardHeader>
+               <CardContent className="space-y-8 p-8"><div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="flex items-center justify-between p-6 rounded-2xl bg-secondary/20 border border-border/50"><div className="space-y-1"><div className="font-bold flex items-center gap-2">Maintenance Mode{isUpdatingSystem && <Loader2 className="size-3 animate-spin text-primary" />}</div><p className="text-sm text-muted-foreground">Redirect all non-developer users to a maintenance page.</p></div><Switch checked={systemSettings.maintenance || false} onCheckedChange={handleToggleMaintenance} disabled={isUpdatingSystem} /></div>
+                 <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50 space-y-4"><div className="flex items-center justify-between"><div className="flex items-center gap-2 font-bold"><Clock className="size-4 text-primary" />Estimated Time</div><Button size="sm" variant="ghost" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 text-primary" onClick={() => handleUpdateSystemValue('estimatedTime', systemSettings.estimatedTime)} disabled={isUpdatingSystem}>{isUpdatingSystem ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}Save</Button></div><Input placeholder="e.g., 30 Minutes" className="bg-background/50 border-border/50 h-10 text-sm font-medium" value={systemSettings.estimatedTime || ""} onChange={(e) => setSystemSettings(prev => ({ ...prev, estimatedTime: e.target.value }))} /><p className="text-[10px] text-muted-foreground leading-relaxed italic">This text will be displayed on the public maintenance page.</p></div>
+               </div></CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
@@ -1423,15 +831,10 @@ function StatCard({ title, value, trend, icon: Icon, color }: any) {
     <Card className="bg-card border-border/50 overflow-hidden relative group">
       <CardContent className="p-3 md:p-6">
         <div className="flex items-center justify-between mb-3 md:mb-4">
-          <div className={cn("size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center", color)}>
-            <Icon className="size-4 md:size-5" />
-          </div>
+          <div className={cn("size-8 md:size-10 rounded-lg bg-secondary flex items-center justify-center", color)}><Icon className="size-4 md:size-5" /></div>
           <Badge variant="outline" className="border-none font-bold text-green-400 text-[8px]">{trend}</Badge>
         </div>
-        <div className="space-y-0.5">
-          <div className="text-lg md:text-2xl font-bold font-headline">{value}</div>
-          <div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{title}</div>
-        </div>
+        <div className="space-y-0.5"><div className="text-lg md:text-2xl font-bold font-headline">{value}</div><div className="text-[8px] md:text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{title}</div></div>
       </CardContent>
     </Card>
   );
