@@ -135,14 +135,11 @@ export default function DeployPage() {
     }
   }, [user, loading, router]);
 
-  // Stock availability helper (Manual)
   const isTierAvailable = React.useCallback((preset: any) => {
-    // If stock property exists and is 0 or less, it's sold out
     if (preset.stock !== undefined && preset.stock <= 0) return false;
     return true;
   }, []);
 
-  // Check if at least one tier is available for a region
   const isAnyTierAvailable = React.useMemo(() => {
     if (resourcePresets.length === 0) return true;
     return resourcePresets.some(preset => isTierAvailable(preset));
@@ -150,7 +147,6 @@ export default function DeployPage() {
 
   React.useEffect(() => {
     setMounted(true);
-    // Fetch Host VPS Metrics (Keep for UI awareness)
     getSystemHardwareInfo().then(res => {
       if (res.success) setVpsMetrics(res.data);
     });
@@ -207,7 +203,6 @@ export default function DeployPage() {
     if (step !== 2 || regions.length === 0) return;
 
     const checkRegion = async (agent: any) => {
-      // Map localhost to stscloud.id root project for real latency measurement
       const rawUrl = agent.url || "";
       const url = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "stscloud.id" : rawUrl;
       
@@ -289,7 +284,6 @@ export default function DeployPage() {
     if (result.success) {
       setPaymentStatus(result.status);
       if (result.status === "success") {
-        // Record the transaction record for analytics in Dev Console
         const txId = `tx-${Date.now()}`;
         setDoc(doc(db, "transactions", txId), {
           userId: user?.uid,
@@ -316,13 +310,20 @@ export default function DeployPage() {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
+    const agentId = selectedRegionData?.agentId || null;
+
     try {
-      const provision = await provisionServerFiles(serverId);
-      if (!provision.success) throw new Error("File provisioning failed");
+      // If agentId exists, we don't provision local files. 
+      // The first power action ('start') will handle provisioning on the agent.
+      if (!agentId) {
+        const provision = await provisionServerFiles(serverId);
+        if (!provision.success) throw new Error("File provisioning failed");
+      }
 
       await setDoc(doc(db, "servers", serverId), {
         name: serverName || "Cloud Server",
         ownerId: user.uid,
+        agentId: agentId, // CRITICAL: This links the server to the remote agent
         plan: selectedPresetData.name,
         status: "online",
         createdAt: serverTimestamp(),

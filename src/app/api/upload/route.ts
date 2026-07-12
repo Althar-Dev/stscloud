@@ -48,9 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid content type" }, { status: 400 });
     }
 
-    // 1. Pre-auth & Location Check (Peek at serverId from headers or early field)
-    // Note: We need the serverId to know WHERE to send the stream.
-    // For extreme optimization, the UI should send serverId in a header.
+    // 1. Pre-auth & Location Check (Peek at serverId from headers)
     const serverId = req.headers.get('x-sts-server-id');
     const subPath = req.headers.get('x-sts-sub-path') || '';
 
@@ -66,7 +64,6 @@ export async function POST(req: NextRequest) {
       const url = `https://${agent.domain}/api/files/upload-raw?serverId=${serverId}&subPath=${encodeURIComponent(subPath)}`;
       
       // Pipe the entire request body directly to the remote agent
-      // This is the fastest way: Browser -> Panel (Pipe) -> Agent
       const agentResponse = await fetch(url, {
         method: 'POST',
         headers: {
@@ -74,7 +71,7 @@ export async function POST(req: NextRequest) {
           'Authorization': `Bearer ${agent.secretKey}`
         },
         body: req.body as any,
-        // @ts-ignore - duplex is required for streaming bodies in some fetch implementations
+        // @ts-ignore - duplex is required for streaming bodies
         duplex: 'half'
       });
 
@@ -107,7 +104,6 @@ export async function POST(req: NextRequest) {
 
         activeWrites++;
 
-        // Ensure directory exists asynchronously (non-blocking)
         fs.mkdir(targetDir, { recursive: true }).then(() => {
           const writeStream = createWriteStream(targetPath, { highWaterMark: 1024 * 1024 }); // 1MB chunk buffer
           

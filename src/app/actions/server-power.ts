@@ -7,14 +7,35 @@ import { spawn, execSync, ChildProcess } from 'child_process';
 import crypto from 'crypto';
 import { getServerDiskUsage } from './server-files';
 import { sendResourceLimitNotification, sendExpirationReminderNotification } from '@/lib/email/notifications';
+import { initializeFirebase } from '@/firebase/index';
+import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * @fileOverview Server actions to handle ACTUAL server execution with real-time log streaming.
- * Updated: Storage moved outside project root (../storage).
+ * Supports Remote Agents via Proxy Bridge.
  */
 
-// Global map to store interactive handles
+// Global map to store interactive handles (Local processes only)
 const stdinMap = new Map<string, ChildProcess>();
+
+// Helper to check if a server is remote
+async function getServerLocation(serverId: string) {
+  const { db } = initializeFirebase();
+  try {
+    const serverDoc = await getDoc(doc(db, "servers", serverId));
+    if (!serverDoc.exists()) return { isRemote: false };
+    const data = serverDoc.data();
+    if (data.agentId) {
+      const agentDoc = await getDoc(doc(db, "infrastructure_agents", data.agentId));
+      if (agentDoc.exists()) {
+        return { isRemote: true, agent: agentDoc.data() };
+      }
+    }
+    return { isRemote: false };
+  } catch (e) {
+    return { isRemote: false };
+  }
+}
 
 async function getFileHash(filePath: string): Promise<string> {
   try {
@@ -70,7 +91,6 @@ export async function checkAndSendExpirationNotice(serverId: string, email: stri
     const diff = expiry - now;
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
-    // Send if within 24h window OR already expired but notice not yet sent
     if (diff <= oneDayInMs) {
       await sendExpirationReminderNotification(email, serverName, expiresAt);
       return { success: true };
@@ -82,6 +102,24 @@ export async function checkAndSendExpirationNotice(serverId: string, email: stri
 }
 
 export async function sendServerInput(serverId: string, text: string) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote && loc.agent) {
+    try {
+      const url = `https://${loc.agent.domain}/api/power/input`;
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${loc.agent.secretKey}`
+        },
+        body: JSON.stringify({ serverId, text })
+      });
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
   const child = stdinMap.get(serverId);
   if (child && child.stdin && child.stdin.writable) {
     child.stdin.write(text + '\n');
@@ -91,6 +129,24 @@ export async function sendServerInput(serverId: string, text: string) {
 }
 
 export async function getServerProcessStatus(serverId: string, config?: { ramLimit: string; cpuLimit: string; serverName: string; userEmail: string }) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote && loc.agent) {
+    try {
+      const url = `https://${loc.agent.domain}/api/power/status`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${loc.agent.secretKey}`
+        },
+        body: JSON.stringify({ serverId, config })
+      });
+      return await res.json();
+    } catch (e) {
+      return { running: false };
+    }
+  }
+
   const pidPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files', '.sts', 'run.pid');
   try {
     const pidStr = await fs.readFile(pidPath, 'utf8');
@@ -153,6 +209,24 @@ export async function executeServerPower(serverId: string, action: 'start' | 'st
   serverName?: string;
   userEmail?: string;
 }) {
+  const loc = await getServerLocation(serverId);
+  if (loc.isRemote && loc.agent) {
+    try {
+      const url = `https://${loc.agent.domain}/api/power/execute`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${loc.agent.secretKey}`
+        },
+        body: JSON.stringify({ serverId, action, config })
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: `Agent unreachable: ${e.message}` };
+    }
+  }
+
   const baseDir = path.join(process.cwd(), '..', 'storage', 'servers', serverId);
   const filesDir = path.join(baseDir, 'files');
   const stsDir = path.join(filesDir, '.sts');

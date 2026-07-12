@@ -110,12 +110,6 @@ const defaultPricingTiers = [
   { id: "p6", name: "Infinity", ram: "Unlimited", cpu: "Unlimited", disk: "Unlimited", price: "IDR 50.000", priceValue: 50000, popular: false, stock: 99 },
 ];
 
-const defaultGlobalAgents = [
-  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "stscloud.id", latency: "Checking...", status: "active" },
-  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", url: "google.com", latency: "Checking...", status: "active" },
-  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "127.0.0.1", latency: "Checking...", status: "active" },
-];
-
 const defaultTemplates = [
   { id: "website", name: "Website", group: "Cloud", icon: "Globe", status: "active" },
   { id: "bots", name: "Bots", group: "Cloud", icon: "Bot", status: "active" },
@@ -247,7 +241,7 @@ function DevConsoleContent() {
           const data = docSnap.data();
           if (data.list) setLandingAgents(data.list);
         } else {
-          setLandingAgents(defaultGlobalAgents);
+          setLandingAgents([]);
         }
       }
     });
@@ -412,6 +406,7 @@ function DevConsoleContent() {
     setIsUpdatingLanding(true);
     const newRegion = {
       id: `reg-${Math.random().toString(36).substring(2, 7)}`,
+      agentId: selectedAgentId, // Essential for routing
       name: sourceAgent.regionName,
       location: regionLocationInput,
       url: sourceAgent.domain,
