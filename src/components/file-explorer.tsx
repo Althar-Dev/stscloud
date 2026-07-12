@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -217,7 +216,6 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     setLoading(true);
     try {
       const formData = new FormData();
-      // Using headers to pass serverId and subPath to allow direct streaming in the API route
       for (let i = 0; i < inputFiles.length; i++) { 
         formData.append('files', inputFiles[i]); 
       }
@@ -378,20 +376,26 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
       )}
 
       {selectedItems.size > 0 && !isExpired && (
-        <div className="flex items-center justify-between bg-primary/10 border border-primary/30 p-2 rounded-lg animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3 px-2">
-            <X className="size-4 cursor-pointer text-primary" onClick={() => setSelectedItems(new Set())} />
-            <span className="text-xs font-bold font-headline">{selectedItems.size} selected</span>
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-primary/10 border border-primary/30 p-2 sm:p-3 rounded-xl animate-in slide-in-from-top-2 shadow-lg shadow-primary/5 gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto px-1">
+            <Button size="icon" variant="ghost" className="size-8 hover:bg-primary/20 shrink-0" onClick={() => setSelectedItems(new Set())}>
+              <X className="size-4 text-primary" />
+            </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
+              <span className="text-xs font-bold font-headline whitespace-nowrap">{selectedItems.size} item(s) terpilih</span>
+              <span className="hidden sm:block text-muted-foreground opacity-30">|</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" className="h-8 gap-2 hover:bg-primary/20" onClick={() => setIsArchiveOpen(true)}>
-              <Archive className="size-3.5" /> Archive
+          <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+            <Button size="sm" variant="ghost" className="h-9 px-3 gap-2 hover:bg-primary/20 text-xs font-bold" onClick={() => setIsArchiveOpen(true)}>
+              <Archive className="size-4 text-primary" /> <span className="hidden xs:inline">Archive</span>
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 gap-2 hover:bg-primary/20" onClick={() => setIsMoveOpen(true)}>
-              <ArrowRightLeft className="size-3.5" /> Move
+            <Button size="sm" variant="ghost" className="h-9 px-3 gap-2 hover:bg-primary/20 text-xs font-bold" onClick={() => setIsMoveOpen(true)}>
+              <ArrowRightLeft className="size-4 text-primary" /> <span className="hidden xs:inline">Move</span>
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleBulkDelete()}>
-              <Trash2 className="size-3.5" /> Delete
+            <div className="w-px h-4 bg-primary/20 mx-1 hidden sm:block" />
+            <Button size="sm" variant="ghost" className="h-9 px-3 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-bold" onClick={() => handleBulkDelete()}>
+              <Trash2 className="size-4" /> <span className="hidden xs:inline">Delete</span>
             </Button>
           </div>
         </div>
