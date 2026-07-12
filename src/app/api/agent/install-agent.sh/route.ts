@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
  * Expanded: Complete Agent Worker with File & Power management APIs.
- * Fixed: Escaped JS variables and comprehensive API endpoints.
+ * Fixed: Escaped JS variables and robust syntax for Next.js compilation.
  */
 
 export async function GET() {
@@ -48,7 +48,7 @@ apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essen
 
 # Install/Check Node.js
 if command -v node &> /dev/null; then
-    NODE_VER=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
+    NODE_VER=\$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
     echo -e "\${BLUE}Node.js sudah terpasang (v\${NODE_VER}).\${NC}"
     if [ "\$NODE_VER" -lt 18 ]; then
         echo -e "\${YELLOW}Versi Node.js terlalu lama. Mencoba memperbarui ke v20...\${NC}"
@@ -77,13 +77,13 @@ cd /opt/stscloud/agent
 
 # Generate Secret Key if not exists
 if [ ! -f .env ]; then
-    SECRET_KEY=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
+    SECRET_KEY=\$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
     echo "SECRET_KEY=\$SECRET_KEY" > .env
     echo "PORT=9005" >> .env
     echo "STORAGE_PATH=/opt/stscloud/storage/servers" >> .env
     echo -e "\${GREEN}Secret Key baru dibuat.\${NC}"
 else
-    SECRET_KEY=$(grep SECRET_KEY .env | cut -d '=' -f 2)
+    SECRET_KEY=\$(grep SECRET_KEY .env | cut -d '=' -f 2)
     echo -e "\${BLUE}Menggunakan Secret Key yang sudah ada.\${NC}"
 fi
 
@@ -103,17 +103,17 @@ server {
     location / {
         proxy_pass http://localhost:9005;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_request_buffering off;
         proxy_buffering off;
         proxy_connect_timeout 300s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
-        proxy_cache_bypass $http_upgrade;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
@@ -178,7 +178,7 @@ const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers'
 // Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (authHeader === `Bearer \${SECRET_KEY}`) return next();
+    if (authHeader === 'Bearer ' + SECRET_KEY) return next();
     if (req.body && req.body.secret === SECRET_KEY) return next();
     return res.status(401).json({ success: false, error: 'Unauthorized' });
 };
@@ -204,7 +204,7 @@ app.post('/api/system/info', auth, (req, res) => {
         let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB";
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
-            const parts = output.split(/\\s+/);
+            const parts = output.split(/\s+/);
             if (parts.length >= 4) {
                 const total = parseInt(parts[1]);
                 const free = parseInt(parts[3]);
@@ -239,7 +239,7 @@ app.post('/api/files/list', auth, async (req, res) => {
             return {
                 name: e.name,
                 type: e.isDirectory() ? 'folder' : 'file',
-                size: e.isDirectory() ? '--' : \`\${(stats.size / 1024).toFixed(1)} KB\`,
+                size: e.isDirectory() ? '--' : (stats.size / 1024).toFixed(1) + ' KB',
                 modified: stats.mtime.toLocaleDateString()
             };
         }));
@@ -317,7 +317,7 @@ app.post('/api/files/archive', auth, async (req, res) => {
             if (stats.isDirectory()) zip.addLocalFolder(target, name);
             else zip.addLocalFile(target);
         }
-        const finalZip = zipName.endsWith('.zip') ? zipName : \`\${zipName}.zip\`;
+        const finalZip = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
         zip.writeZip(path.join(base, finalZip));
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
@@ -381,12 +381,13 @@ app.post('/api/files/decommission', auth, async (req, res) => {
 
 app.post('/api/files/upload-raw', auth, (req, res) => {
     const busboy = Busboy({ headers: req.headers });
-    const { serverId, subPath } = req.query;
+    const serverId = req.query.serverId;
+    const subPath = req.query.subPath;
     const targetDir = getSafePath(serverId, subPath);
     let errorSent = false;
 
     busboy.on('file', (name, file, info) => {
-        const { filename } = info;
+        const filename = info.filename;
         const targetPath = path.join(targetDir, filename);
         const writeStream = createWriteStream(targetPath);
         file.pipe(writeStream);
@@ -415,7 +416,11 @@ app.post('/api/power/execute', auth, async (req, res) => {
 
         if (action === 'stop' || action === 'restart') {
             const child = pids.get(serverId);
-            if (child) { try { process.kill(-child.pid, 'SIGKILL'); } catch(e) { try { process.kill(child.pid, 'SIGKILL'); } catch(e2) {} } pids.delete(serverId); }
+            if (child) { 
+                try { process.kill(-child.pid, 'SIGKILL'); } 
+                catch(e) { try { process.kill(child.pid, 'SIGKILL'); } catch(e2) {} } 
+                pids.delete(serverId); 
+            }
             if (action === 'stop') return res.json({ success: true });
         }
 
@@ -423,7 +428,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
         let cmd = config.startupCommand;
-        if (config.runtime === 'nodejs') cmd = \`npx -y -p node@\${config.version} -- \${cmd}\`;
+        if (config.runtime === 'nodejs') cmd = 'npx -y -p node@' + config.version + ' -- ' + cmd;
         
         const child = spawn(cmd, { shell: true, cwd: baseDir, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
         pids.set(serverId, child);
@@ -431,7 +436,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
         child.on('close', code => { 
-            logStream.write(\`\\n[STS] Process exited with code \${code}\\n\`); 
+            logStream.write('\n[STS] Process exited with code ' + code + '\n'); 
             pids.delete(serverId); 
         });
         
@@ -449,7 +454,7 @@ app.post('/api/power/input', auth, (req, res) => {
     const { serverId, text } = req.body;
     const child = pids.get(serverId);
     if (child && child.stdin && child.stdin.writable) {
-        child.stdin.write(text + '\\n');
+        child.stdin.write(text + '\n');
         return res.json({ success: true });
     }
     res.json({ success: false, error: "Not running or not writable" });
@@ -460,8 +465,8 @@ app.post('/api/files/logs', auth, async (req, res) => {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
         const content = await fs.readFile(logPath, 'utf8');
-        const lines = content.split('\\n');
-        res.json({ success: true, content: lines.slice(-300).join('\\n') });
+        const lines = content.split('\n');
+        res.json({ success: true, content: lines.slice(-300).join('\n') });
     } catch (e) { res.json({ success: true, content: "" }); }
 });
 
@@ -477,7 +482,7 @@ app.post('/api/files/clear-logs', auth, async (req, res) => {
 app.get('/', (req, res) => res.send('STSCloud Agent Active'));
 
 const PORT = process.env.PORT || 9005;
-app.listen(PORT, () => console.log(\`Agent worker running on port \${PORT}\`));
+app.listen(PORT, () => console.log('Agent worker running on port ' + PORT));
 EOF
 
 npm install --production
