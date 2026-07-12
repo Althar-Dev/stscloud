@@ -140,7 +140,7 @@ function DevConsoleContent() {
   const [transactions, setTransactions] = React.useState<any[]>([]);
 
   const [pricingData, setPricingData] = React.useState<any[]>([]);
-  const [pricingTab, setPricingTab] = React.useState("global");
+  const [pricingTab, setPricingTab] = React.useState("global"); // 'global' (localhost) or agentId
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
@@ -225,6 +225,7 @@ function DevConsoleContent() {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (err) => console.warn("Transactions list permission denied"));
 
+    // Pricing Listener (Dynamic document based on tab)
     const pricingDocId = pricingTab === "global" ? "product" : `product_${pricingTab}`;
     const unsubPricing = onSnapshot(doc(db, "main", pricingDocId), (docSnap) => {
       if (!isPricingDirty) {
@@ -232,6 +233,7 @@ function DevConsoleContent() {
           const data = docSnap.data();
           if (data.tiers) setPricingData(data.tiers);
         } else {
+          // If a regional config doesn't exist yet, default to tiers
           setPricingData(defaultPricingTiers);
         }
       }
@@ -953,6 +955,7 @@ function DevConsoleContent() {
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col gap-6">
+              {/* Location Tabs Selection */}
               <div className="bg-secondary/30 p-1.5 rounded-xl w-full overflow-x-auto border border-border/50">
                  <div className="flex items-center gap-1 min-w-max">
                     <Button 
@@ -1033,8 +1036,6 @@ function DevConsoleContent() {
                                  className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
                                  value={tier.stock || 0}
                                  onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
-                                 onKeyDown={(e) => (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.preventDefault()}
-                                 onWheel={(e) => (e.target as HTMLInputElement).blur()}
                                />
                             </div>
                           </TableCell>
