@@ -15,11 +15,11 @@ export async function GET() {
 set -e
 
 # Colors for terminal
-RED='\\033[0;31m'
-GREEN='\\033[0;32m'
-BLUE='\\033[0;34m'
-YELLOW='\\033[1;33m'
-NC='\\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "\${BLUE}            STSCLOUD AGENT UPDATE UTILITY              \${NC}"
@@ -47,7 +47,7 @@ echo -e "\${GREEN}[1/3] Memperbarui file aplikasi...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -60,7 +60,7 @@ cat > package.json <<'EOF'
 }
 EOF
 
-# Update index.js (Latest Logic)
+# Update index.js (Latest Full Logic)
 cat > index.js <<'EOF'
 const express = require('express');
 const cors = require('cors');
@@ -101,7 +101,7 @@ const getLogPath = (serverId) => {
     return path.join(STORAGE_BASE, serverId, 'files', '.sts', 'logs', 'logs.sts');
 };
 
-// System Info API
+// --- SYSTEM APIs ---
 app.post('/api/system/info', auth, (req, res) => {
     try {
         const cpus = os.cpus();
@@ -110,7 +110,7 @@ app.post('/api/system/info', auth, (req, res) => {
         let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB", freeDiskBytes = 0;
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
-            const parts = output.split(/\\s+/);
+            const parts = output.split(/\s+/);
             if (parts.length >= 4) {
                 const total = parseInt(parts[1]);
                 const free = parseInt(parts[3]);
@@ -134,7 +134,7 @@ app.post('/api/system/info', auth, (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// File Management APIs
+// --- FILE APIs ---
 app.post('/api/files/list', auth, async (req, res) => {
     try {
         const { serverId, subPath } = req.body;
@@ -154,6 +154,109 @@ app.post('/api/files/list', auth, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+app.post('/api/files/read', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        const content = await fs.readFile(target, 'utf8');
+        res.json({ success: true, content });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/write', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, content, subPath } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        await fs.writeFile(target, content, 'utf8');
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/create', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath, type } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        if (type === 'folder') await fs.mkdir(target, { recursive: true });
+        else await fs.writeFile(target, '');
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/delete', auth, async (req, res) => {
+    try {
+        const { serverId, names, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        for (const name of names) await fs.rm(path.join(base, name), { recursive: true, force: true });
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/rename', auth, async (req, res) => {
+    try {
+        const { serverId, oldName, newName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        await fs.rename(path.join(base, oldName), path.join(base, newName));
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/move', auth, async (req, res) => {
+    try {
+        const { serverId, names, currentSubPath, targetSubPath } = req.body;
+        const sourceBase = getSafePath(serverId, currentSubPath);
+        const targetBase = getSafePath(serverId, path.join(currentSubPath, targetSubPath));
+        await fs.mkdir(targetBase, { recursive: true });
+        for (const name of names) {
+            await fs.rename(path.join(sourceBase, name), path.join(targetBase, name));
+        }
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/archive', auth, async (req, res) => {
+    try {
+        const { serverId, names, zipName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        const zip = new AdmZip();
+        for (const name of names) {
+            const target = path.join(base, name);
+            const stats = await fs.stat(target);
+            if (stats.isDirectory()) zip.addLocalFolder(target, name);
+            else zip.addLocalFile(target);
+        }
+        const finalZip = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
+        zip.writeZip(path.join(base, finalZip));
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/unarchive', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        const target = path.join(base, fileName);
+        const lower = fileName.toLowerCase();
+        if (lower.endsWith('.zip')) {
+            const zip = new AdmZip(target);
+            zip.extractAllTo(base, true);
+        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.tar')) {
+            await tar.x({ file: target, cwd: base });
+        } else {
+            return res.json({ success: false, error: "Unsupported format" });
+        }
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/download', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        const content = await fs.readFile(target);
+        res.json({ success: true, content: content.toString('base64'), fileName });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
 app.post('/api/files/upload-raw', auth, (req, res) => {
     const busboy = Busboy({ headers: req.headers });
     const serverId = req.query.serverId;
@@ -170,7 +273,7 @@ app.post('/api/files/upload-raw', auth, (req, res) => {
     }).catch(e => res.status(500).json({ success: false, error: e.message }));
 });
 
-// Power Management APIs
+// --- POWER APIs ---
 const pids = new Map();
 app.post('/api/power/execute', auth, async (req, res) => {
     try {
@@ -191,12 +294,11 @@ app.post('/api/power/execute', auth, async (req, res) => {
         await fs.mkdir(path.dirname(logPath), { recursive: true });
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
-        // Runtime Setup (Identical to local panel logic)
         if (config.runtime === 'nodejs') {
            const pkgPath = path.join(filesDir, 'package.json');
            try {
               await fs.access(pkgPath);
-              logStream.write('[STS] Checking dependencies...\\n');
+              logStream.write('[STS] Checking dependencies...\n');
               execSync('npm install --production', { cwd: filesDir });
            } catch(e) {}
         }
@@ -212,7 +314,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
         child.on('close', c => {
-            logStream.write('\\n[STS] Process exited with code ' + c + '\\n');
+            logStream.write('\n[STS] Process exited with code ' + c + '\n');
             pids.delete(serverId);
         });
 

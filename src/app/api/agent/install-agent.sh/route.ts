@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Updated: Robust Agent Worker with parity logic for file & power management.
+ * Robust Agent Worker with parity logic for file & power management.
  */
 
 export async function GET() {
@@ -15,11 +15,11 @@ export async function GET() {
 set -e
 
 # Colors for terminal
-RED='\\033[0;31m'
-GREEN='\\033[0;32m'
-BLUE='\\033[0;34m'
-YELLOW='\\033[1;33m'
-NC='\\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "\${BLUE}          STSCLOUD AGENT STORAGE INSTALLER             \${NC}"
@@ -47,7 +47,7 @@ apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essen
 
 # Install/Check Node.js
 if command -v node &> /dev/null; then
-    NODE_VER=\$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
+    NODE_VER=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
     echo -e "\${BLUE}Node.js sudah terpasang (v\${NODE_VER}).\${NC}"
     if [ "\$NODE_VER" -lt 18 ]; then
         echo -e "\${YELLOW}Versi Node.js terlalu lama. Mencoba memperbarui ke v20...\${NC}"
@@ -76,13 +76,13 @@ cd /opt/stscloud/agent
 
 # Generate Secret Key if not exists
 if [ ! -f .env ]; then
-    SECRET_KEY=\$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
+    SECRET_KEY=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32 ; echo '')
     echo "SECRET_KEY=\$SECRET_KEY" > .env
     echo "PORT=9005" >> .env
     echo "STORAGE_PATH=/opt/stscloud/storage/servers" >> .env
     echo -e "\${GREEN}Secret Key baru dibuat.\${NC}"
 else
-    SECRET_KEY=\$(grep SECRET_KEY .env | cut -d '=' -f 2)
+    SECRET_KEY=$(grep SECRET_KEY .env | cut -d '=' -f 2)
     echo -e "\${BLUE}Menggunakan Secret Key yang sudah ada.\${NC}"
 fi
 
@@ -140,7 +140,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
