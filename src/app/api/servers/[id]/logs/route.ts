@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * @fileOverview Real-time Log Streamer using Server-Sent Events (SSE).
- * Enhanced: Supports Local Storage and Remote Agent Proxying with Clear-Log detection.
+ * Enhanced: Supports Local Storage and Remote Agent Proxying with DELTA streaming.
  */
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       };
 
       if (loc.isRemote && loc.agent) {
-        // REMOTE MODE: Polling Agent for Logs and streaming via SSE
+        // REMOTE MODE: High-frequency Polling with Change Detection for Streaming Feel
         let lastContent = "";
         const agent = loc.agent;
         
@@ -65,39 +65,40 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             if (data.success) {
               if (data.content === lastContent) return;
 
-              // Detect log clearing or reduction
+              // 1. Detect if log was cleared/reset
               if (data.content.length < lastContent.length || (lastContent !== "" && data.content === "")) {
                 sendEvent({ content: data.content, initial: true, cleared: true });
-              } else if (!lastContent || lastContent === "") {
+              } 
+              // 2. Initial fetch or total replacement
+              else if (!lastContent || !data.content.startsWith(lastContent)) {
                 sendEvent({ content: data.content, initial: true });
-              } else if (data.content.startsWith(lastContent)) {
+              } 
+              // 3. Delta (Streaming feel)
+              else {
                 const delta = data.content.substring(lastContent.length);
                 sendEvent({ content: delta, initial: false });
-              } else {
-                // Large change, treat as initial
-                sendEvent({ content: data.content, initial: true });
               }
+              
               lastContent = data.content;
             }
           } catch (e) {}
         };
 
-        await fetchRemote(); // Initial fetch
-        const interval = setInterval(fetchRemote, 2000);
+        await fetchRemote(); // Initial
+        // High frequency polling (800ms) to simulate real-time stream
+        const interval = setInterval(fetchRemote, 800);
 
         req.signal.onabort = () => {
           clearInterval(interval);
           try { controller.close(); } catch(e) {}
         };
       } else {
-        // LOCAL MODE: High performance file watching
+        // LOCAL MODE: Native file watching
         const logPath = path.join(process.cwd(), '..', 'storage', 'servers', serverId, 'files', '.sts', 'logs', 'logs.sts');
         
-        // 1. Send initial logs
         try {
           const content = await fs.readFile(logPath, 'utf8');
-          const lines = content.split('\n').slice(-300).join('\n');
-          sendEvent({ content: lines, initial: true });
+          sendEvent({ content: content.split('\n').slice(-300).join('\n'), initial: true });
         } catch (e) {
           sendEvent({ content: "", initial: true });
         }
@@ -116,16 +117,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
               const buffer = Buffer.alloc(stats.size - lastSize);
               await fd.read(buffer, 0, stats.size - lastSize, lastSize);
               await fd.close();
-              
-              const newData = buffer.toString('utf8');
-              sendEvent({ content: newData, initial: false });
+              sendEvent({ content: buffer.toString('utf8'), initial: false });
               lastSize = stats.size;
             } else if (stats.size < lastSize) {
               lastSize = stats.size;
               sendEvent({ content: "", initial: true, cleared: true });
             }
           } catch (e) {}
-        }, 1000);
+        }, 800);
 
         req.signal.onabort = () => {
           clearInterval(checkInterval);

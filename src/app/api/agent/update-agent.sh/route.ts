@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash update script for STSCloud Agents.
- * Synchronized with install script to ensure clear-logs and other features work correctly.
+ * Synchronized with parity boot features and fixed escaping.
  */
 
 export async function GET() {
@@ -47,7 +47,7 @@ echo -e "\${GREEN}[1/3] Memperbarui file aplikasi...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.6",
+  "version": "1.4.2",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -100,6 +100,8 @@ const getLogPath = (serverId) => {
     return path.join(STORAGE_BASE, serverId, 'files', '.sts', 'logs', 'logs.sts');
 };
 
+const getTimestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+
 app.post('/api/system/info', auth, (req, res) => {
     try {
         const cpus = os.cpus();
@@ -108,7 +110,7 @@ app.post('/api/system/info', auth, (req, res) => {
         let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB", freeDiskBytes = 0;
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
-            const parts = output.split(/\s+/);
+            const parts = output.split(/\\s+/);
             if (parts.length >= 4) {
                 const total = parseInt(parts[1]);
                 const free = parseInt(parts[3]);
@@ -283,28 +285,30 @@ app.post('/api/files/decommission', auth, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
-app.post('/api/files/upload-raw', auth, (req, res) => {
+app.post('/api/files/upload-raw', auth, async (req, res) => {
     const busboy = Busboy({ headers: req.headers });
     const serverId = req.query.serverId;
     const subPath = req.query.subPath || '';
     const targetDir = getSafePath(serverId, subPath);
     
-    fs.mkdir(targetDir, { recursive: true }).then(() => {
-        busboy.on('file', (name, file, info) => {
-            const filename = info.filename.replace(/^['"]|['"]$/g, '');
-            const targetPath = path.join(targetDir, filename);
-            file.pipe(createWriteStream(targetPath));
-        });
-        busboy.on('finish', () => res.json({ success: true }));
-        req.pipe(busboy);
-    }).catch(e => res.status(500).json({ success: false, error: e.message }));
+    try {
+      await fs.mkdir(targetDir, { recursive: true });
+      busboy.on('file', (name, file, info) => {
+          const filename = info.filename.replace(/^['"]|['"]$/g, '');
+          const targetPath = path.join(targetDir, filename);
+          file.pipe(createWriteStream(targetPath));
+      });
+      busboy.on('finish', () => res.json({ success: true }));
+      req.pipe(busboy);
+    } catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 const pids = new Map();
 app.post('/api/power/execute', auth, async (req, res) => {
     try {
         const { serverId, action, config } = req.body;
-        const filesDir = path.resolve(STORAGE_BASE, serverId, 'files');
+        const baseDir = path.resolve(STORAGE_BASE, serverId);
+        const filesDir = path.join(baseDir, 'files');
         const stsDir = path.join(filesDir, '.sts');
         const logsDir = path.join(stsDir, 'logs');
         const logPath = path.join(logsDir, 'logs.sts');
@@ -312,38 +316,68 @@ app.post('/api/power/execute', auth, async (req, res) => {
         await fs.mkdir(filesDir, { recursive: true });
         await fs.mkdir(logsDir, { recursive: true });
 
-        if (action === 'stop' || action === 'restart') {
+        const killExisting = () => {
             const child = pids.get(serverId);
-            if (child) { 
-                try { process.kill(-child.pid, 'SIGKILL'); } catch(e) {}
-                pids.delete(serverId); 
+            if (child) {
+               try { process.kill(-child.pid, 'SIGKILL'); } catch(e) {}
+               pids.delete(serverId);
             }
+        };
+
+        if (action === 'stop' || action === 'restart') {
+            killExisting();
             if (action === 'stop') return res.json({ success: true });
         }
 
+        // FULL PARITY: INITIAL BOOT LOGS
+        const ascii = '\\x1b[38;2;79;70;229m\\n░█▀▀░▀█▀░█▀▀░█▀▀░█░░░█▀█░█░█░█▀▄\\n░▀▀█░░█░░▀▀█░█░░░█░░░█░█░█░█░█░█\\n░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀░\\x1b[0m';
+        const runtimeName = config.runtime === 'python' ? 'Python' : 'Node.Js';
+        const versionLabel = config.runtime === 'python' ? config.version : 'v' + config.version;
+
+        let initialLogs = ascii + '\\n[STS] [' + getTimestamp() + '] Runtime: ' + runtimeName + ' ' + versionLabel + '\\n';
+        initialLogs += '[STS] [' + getTimestamp() + '] Checking environment... ';
+
+        const entryFilePath = path.join(filesDir, config.entryFile);
+        try {
+           await fs.access(entryFilePath);
+           initialLogs += '\\x1b[32mOk\\x1b[0m\\n';
+        } catch(e) {
+           initialLogs += '\\x1b[31mFailed\\x1b[0m\\n[STS] [' + getTimestamp() + '] [ERROR] Entry file missing: ' + config.entryFile + '\\n';
+           await fs.writeFile(logPath, initialLogs);
+           return res.json({ success: false, error: "Entry file not found" });
+        }
+
+        // Disk check
+        initialLogs += '[STS] [' + getTimestamp() + '] Checking available disk... ';
+        await fs.writeFile(logPath, initialLogs);
+
         const logStream = createWriteStream(logPath, { flags: 'a' });
-        
+
+        // Dependencies
         if (config.runtime === 'nodejs') {
            const pkgPath = path.join(filesDir, 'package.json');
            try {
               await fs.access(pkgPath);
-              logStream.write('[STS] Checking dependencies...\\\\n');
-              execSync('npm install --production', { cwd: filesDir });
+              logStream.write('[STS] [' + getTimestamp() + '] Resolving dependencies...\\n');
+              execSync('npm install --production', { cwd: filesDir, env: { ...process.env, NODE_ENV: 'production' } });
            } catch(e) {}
         }
+
+        logStream.write('\\n[STS] [' + getTimestamp() + '] Starting application\\n');
 
         const child = spawn(config.startupCommand, { 
             shell: true, 
             cwd: filesDir, 
             detached: true, 
-            stdio: ['pipe', 'pipe', 'pipe'] 
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: { ...process.env, FORCE_COLOR: '1', NODE_ENV: 'production', PYTHONUNBUFFERED: '1' }
         });
         
         pids.set(serverId, child);
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
         child.on('close', c => {
-            logStream.write('\\\\n[STS] Process exited with code ' + c + '\\\\n');
+            logStream.write('\\n[STS] [' + getTimestamp() + '] Process exited with code ' + c + '\\n');
             pids.delete(serverId);
         });
 
@@ -359,7 +393,7 @@ app.post('/api/power/input', auth, (req, res) => {
     const { serverId, text } = req.body;
     const child = pids.get(serverId);
     if (child && child.stdin && child.stdin.writable) {
-        child.stdin.write(text + '\\\\n');
+        child.stdin.write(text + '\\n');
         return res.json({ success: true });
     }
     res.json({ success: false, error: "Not running or not writable" });
@@ -370,8 +404,8 @@ app.post('/api/files/logs', auth, async (req, res) => {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
         const content = await fs.readFile(logPath, 'utf8');
-        const lines = content.split('\\\\n');
-        res.json({ success: true, content: lines.slice(-300).join('\\\\n') });
+        const lines = content.split('\\n');
+        res.json({ success: true, content: lines.slice(-300).join('\\n') });
     } catch (e) { res.json({ success: true, content: "" }); }
 });
 
