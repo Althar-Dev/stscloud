@@ -133,7 +133,10 @@ export default function LandingPage() {
     if (globalAgents.length === 0) return;
 
     const checkAgent = async (agent: any) => {
-      const url = agent.url;
+      // Map localhost to stscloud.id root project for real latency measurement
+      const rawUrl = agent.url || "";
+      const url = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "stscloud.id" : rawUrl;
+      
       setAgentLiveInfo(prev => ({ 
         ...prev, 
         [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
@@ -357,7 +360,7 @@ export default function LandingPage() {
                         </div>
                       ) : (
                         <>
-                          {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+                          {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />}
                           Optimal Latency: {agent.displayLatency || "N/A"}
                         </>
                       )}

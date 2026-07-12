@@ -296,22 +296,16 @@ function DevConsoleContent() {
     if (landingAgents.length === 0) return;
 
     const checkAgent = async (agent: any) => {
-      const url = agent.url || agent.domain;
-      if (!url) return;
+      const rawUrl = agent.url || agent.domain || "";
+      if (!rawUrl) return;
+
+      // Map localhost to stscloud.id root project for real latency measurement
+      const url = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "stscloud.id" : rawUrl;
 
       setAgentLiveInfo(prev => ({ 
         ...prev, 
         [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
       }));
-
-      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-      if (isLocal) {
-        setAgentLiveInfo(prev => ({ 
-          ...prev, 
-          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Local)", isChecking: false } 
-        }));
-        return;
-      }
 
       const start = performance.now();
       try {

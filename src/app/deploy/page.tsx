@@ -207,7 +207,10 @@ export default function DeployPage() {
     if (step !== 2 || regions.length === 0) return;
 
     const checkRegion = async (agent: any) => {
-      const url = agent.url;
+      // Map localhost to stscloud.id root project for real latency measurement
+      const rawUrl = agent.url || "";
+      const url = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "stscloud.id" : rawUrl;
+      
       setRegionLiveInfo(prev => ({ 
         ...prev, 
         [agent.id]: { ...(prev[agent.id] || {}), isChecking: true } 
