@@ -3,8 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Expanded: Complete Agent Worker with File & Power management APIs.
- * Fixed: Escaping issues for Node.js strings and PM2 startup commands.
+ * Updated: Robust Agent Worker with parity logic for file & power management.
  */
 
 export async function GET() {
@@ -44,7 +43,7 @@ fi
 # Update and Install System Dependencies
 echo -e "\${GREEN}[1/6] Memperbarui paket sistem...\${NC}"
 apt-get update -y
-apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essential unzip tar
+apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essential unzip tar python3-pip python3-venv
 
 # Install/Check Node.js
 if command -v node &> /dev/null; then
@@ -141,7 +140,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -178,8 +177,7 @@ const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers'
 // Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const token = 'Bearer ' + SECRET_KEY;
-    if (authHeader === token) return next();
+    if (authHeader === 'Bearer ' + SECRET_KEY) return next();
     if (req.body && req.body.secret === SECRET_KEY) return next();
     return res.status(401).json({ success: false, error: 'Unauthorized' });
 };
@@ -202,13 +200,14 @@ app.post('/api/system/info', auth, (req, res) => {
         const cpus = os.cpus();
         const totalRamBytes = os.totalmem();
         const freeRamBytes = os.freemem();
-        let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB";
+        let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB", freeDiskBytes = 0;
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
             const parts = output.split(/\s+/);
             if (parts.length >= 4) {
                 const total = parseInt(parts[1]);
                 const free = parseInt(parts[3]);
+                freeDiskBytes = free;
                 totalDisk = (total / (1024 ** 3)).toFixed(1) + " GB";
                 freeDisk = (free / (1024 ** 3)).toFixed(1) + " GB";
                 usedDisk = ((total - free) / (1024 ** 3)).toFixed(1) + " GB";
@@ -222,7 +221,7 @@ app.post('/api/system/info', auth, (req, res) => {
                 totalRam: (totalRamBytes / (1024 ** 3)).toFixed(1) + " GB",
                 usedRam: ((totalRamBytes - freeRamBytes) / (1024 ** 3)).toFixed(1) + " GB",
                 freeRam: (freeRamBytes / (1024 ** 3)).toFixed(1) + " GB",
-                totalDisk, freeDisk, usedDisk
+                totalDisk, freeDisk, usedDisk, freeDiskBytes
             }
         });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -383,27 +382,33 @@ app.post('/api/files/decommission', auth, async (req, res) => {
 app.post('/api/files/upload-raw', auth, (req, res) => {
     const busboy = Busboy({ headers: req.headers });
     const serverId = req.query.serverId;
-    const subPath = req.query.subPath;
+    const subPath = req.query.subPath || '';
     const targetDir = getSafePath(serverId, subPath);
     let errorSent = false;
 
-    busboy.on('file', (name, file, info) => {
-        const filename = info.filename;
-        const targetPath = path.join(targetDir, filename);
-        const writeStream = createWriteStream(targetPath);
-        file.pipe(writeStream);
-    });
+    fs.mkdir(targetDir, { recursive: true }).then(() => {
+        busboy.on('file', (name, file, info) => {
+            const filename = info.filename;
+            const targetPath = path.join(targetDir, filename);
+            const writeStream = createWriteStream(targetPath);
+            file.pipe(writeStream);
+        });
 
-    busboy.on('finish', () => {
-        if (!errorSent) res.json({ success: true });
-    });
+        busboy.on('finish', () => {
+            if (!errorSent) res.json({ success: true });
+        });
 
-    busboy.on('error', (err) => {
-        errorSent = true;
-        res.status(500).json({ success: false, error: err.message });
-    });
+        busboy.on('error', (err) => {
+            if (!errorSent) {
+                errorSent = true;
+                res.status(500).json({ success: false, error: err.message });
+            }
+        });
 
-    req.pipe(busboy);
+        req.pipe(busboy);
+    }).catch(err => {
+        res.status(500).json({ success: false, error: "Failed to create directory" });
+    });
 });
 
 // --- POWER APIs ---
@@ -428,6 +433,22 @@ app.post('/api/power/execute', auth, async (req, res) => {
         await fs.mkdir(path.dirname(logPath), { recursive: true });
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
+        const timestamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+        logStream.write('\n[STS] [' + timestamp() + '] Application Powering On...\n');
+
+        // Logic check for node_modules/pip
+        if (config.runtime === 'nodejs') {
+            const pkgPath = path.join(baseDir, 'package.json');
+            const modPath = path.join(baseDir, 'node_modules');
+            try {
+                await fs.access(pkgPath);
+                try { await fs.access(modPath); } catch {
+                    logStream.write('[STS] [' + timestamp() + '] Installing node_modules...\n');
+                    execSync('npm install --production', { cwd: baseDir });
+                }
+            } catch {}
+        }
+
         let cmd = config.startupCommand;
         if (config.runtime === 'nodejs') cmd = 'npx -y -p node@' + config.version + ' -- ' + cmd;
         
@@ -437,7 +458,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         child.stdout.on('data', d => { logStream.write(d); });
         child.stderr.on('data', d => { logStream.write(d); });
         child.on('close', code => { 
-            logStream.write('\\n[STS] Process exited with code ' + code + '\\n'); 
+            logStream.write('\n[STS] [' + timestamp() + '] Process exited (code ' + code + ')\n'); 
             pids.delete(serverId); 
         });
         
@@ -455,7 +476,7 @@ app.post('/api/power/input', auth, (req, res) => {
     const { serverId, text } = req.body;
     const child = pids.get(serverId);
     if (child && child.stdin && child.stdin.writable) {
-        child.stdin.write(text + '\\n');
+        child.stdin.write(text + '\n');
         return res.json({ success: true });
     }
     res.json({ success: false, error: "Not running or not writable" });
@@ -466,8 +487,8 @@ app.post('/api/files/logs', auth, async (req, res) => {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
         const content = await fs.readFile(logPath, 'utf8');
-        const lines = content.split('\\n');
-        res.json({ success: true, content: lines.slice(-300).join('\\n') });
+        const lines = content.split('\n');
+        res.json({ success: true, content: lines.slice(-300).join('\n') });
     } catch (e) { res.json({ success: true, content: "" }); }
 });
 
@@ -493,8 +514,6 @@ echo -e "\${GREEN}[6/6] Memulai layanan di PM2...\${NC}"
 pm2 delete stscloud-agent 2>/dev/null || true
 pm2 start index.js --name stscloud-agent
 pm2 save
-# Only show startup command, users might need to run manually as root if piping fails
-pm2 startup
 
 echo -e "\${GREEN}Instalasi Selesai!\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"

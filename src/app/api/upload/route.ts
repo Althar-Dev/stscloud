@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
           'Authorization': `Bearer ${agent.secretKey}`
         },
         body: req.body as any,
-        // @ts-ignore - duplex is required for streaming bodies
+        // @ts-ignore - duplex is required for streaming bodies in Undici
         duplex: 'half'
       });
 
