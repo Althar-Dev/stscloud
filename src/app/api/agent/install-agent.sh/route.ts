@@ -455,7 +455,7 @@ app.post('/api/power/input', auth, (req, res) => {
     const { serverId, text } = req.body;
     const child = pids.get(serverId);
     if (child && child.stdin && child.stdin.writable) {
-        child.stdin.write(text + '\n');
+        child.stdin.write(text + '\\n');
         return res.json({ success: true });
     }
     res.json({ success: false, error: "Not running or not writable" });
@@ -466,8 +466,8 @@ app.post('/api/files/logs', auth, async (req, res) => {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
         const content = await fs.readFile(logPath, 'utf8');
-        const lines = content.split('\n');
-        res.json({ success: true, content: lines.slice(-300).join('\n') });
+        const lines = content.split('\\n');
+        res.json({ success: true, content: lines.slice(-300).join('\\n') });
     } catch (e) { res.json({ success: true, content: "" }); }
 });
 
