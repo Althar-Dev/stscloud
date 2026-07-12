@@ -487,13 +487,13 @@ export default function DeployPage() {
                           <div className="size-8 rounded-lg bg-secondary flex items-center justify-center">
                             <Globe className={cn("size-4", selectedRegion === region.id ? "text-primary" : "text-muted-foreground")} />
                           </div>
-                          <span className="font-bold font-headline">{region.name}</span>
+                          <span className="font-bold font-headline">{region.location}</span>
                         </div>
                         {selectedRegion === region.id && !isDown && !isSoldOut && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
                         {(isDown || (isSoldOut && !isDown)) && <AlertCircle className={cn("size-4", isDown ? "text-destructive" : "text-destructive opacity-50")} />}
                       </div>
                       <div className="space-y-1">
-                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.location}</p>
+                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.name}</p>
                          <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
                             {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />)}
                             {isChecking ? "Pinging..." : isDown ? "OFFLINE" : isSoldOut ? "NO CAPACITY" : `Latency: ${live?.latency || "N/A"}`}

@@ -185,6 +185,42 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [globalAgents]);
 
+  const groupedAgents = React.useMemo(() => {
+    const groups: Map<string, any> = new Map();
+    
+    globalAgents.forEach(agent => {
+      const regionName = agent.name;
+      const live = agentLiveInfo[agent.id];
+      const isActive = live?.status === "ACTIVE";
+      const latencyNum = live?.latency ? parseInt(live.latency.replace(/[^0-9]/g, '')) || 9999 : 9999;
+
+      if (!groups.has(regionName)) {
+        groups.set(regionName, {
+          ...agent,
+          displayStatus: live?.status || "PROBING",
+          displayLatency: live?.latency || "Checking...",
+          latencyVal: latencyNum,
+          isAnyChecking: live?.isChecking ?? true
+        });
+      } else {
+        const existing = groups.get(regionName);
+        existing.isAnyChecking = existing.isAnyChecking || (live?.isChecking ?? true);
+        
+        if (isActive && (existing.displayStatus !== "ACTIVE" || latencyNum < existing.latencyVal)) {
+          existing.displayStatus = "ACTIVE";
+          existing.displayLatency = live.latency;
+          existing.latencyVal = latencyNum;
+        } else if (existing.displayStatus !== "ACTIVE" && live?.status === "ACTIVE") {
+           existing.displayStatus = "ACTIVE";
+           existing.displayLatency = live.latency;
+           existing.latencyVal = latencyNum;
+        }
+      }
+    });
+
+    return Array.from(groups.values());
+  }, [globalAgents, agentLiveInfo]);
+
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/20 overflow-x-hidden">
       <nav className="fixed top-0 w-full z-50 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
@@ -301,10 +337,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-             {globalAgents.map((agent) => {
-                const live = agentLiveInfo[agent.id];
-                const isActive = live?.status === "ACTIVE";
-                const isChecking = live?.isChecking || !live;
+             {groupedAgents.map((agent) => {
+                const isActive = agent.displayStatus === "ACTIVE";
+                const isChecking = agent.isAnyChecking;
                 
                 return (
                   <Card key={agent.id} className="bg-card border-border/50 p-6 text-left group hover:border-primary/50 transition-all duration-300">
@@ -317,12 +352,11 @@ export default function LandingPage() {
                         isChecking ? "bg-secondary text-muted-foreground animate-pulse" :
                         isActive ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                       )}>
-                        {isChecking ? "PROBING..." : live?.status}
+                        {isChecking ? "PROBING..." : agent.displayStatus}
                       </Badge>
                     </div>
                     <h4 className="font-headline font-bold text-lg">{agent.name}</h4>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">{agent.location}</p>
-                    <p className="text-[8px] font-code text-muted-foreground opacity-50 mb-4 truncate">{agent.url}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-4">Global Network Area</p>
                     
                     <div className={cn(
                       "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest min-h-[1.5rem]",
@@ -336,7 +370,7 @@ export default function LandingPage() {
                       ) : (
                         <>
                           {isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-                          Latency: {live?.latency || "N/A"}
+                          Optimal Latency: {agent.displayLatency || "N/A"}
                         </>
                       )}
                     </div>
