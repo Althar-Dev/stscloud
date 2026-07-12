@@ -109,7 +109,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
   React.useEffect(() => {
     if (!serverId) return;
 
-    let eventSource: ReadableStreamDefaultReader | null = null;
+    let reader: ReadableStreamDefaultReader | null = null;
     const controller = new AbortController();
 
     const startStreaming = async () => {
@@ -117,8 +117,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
         const response = await fetch(`/api/servers/${serverId}/logs`, { signal: controller.signal });
         if (!response.body) return;
 
-        const reader = response.body.getReader();
-        eventSource = reader;
+        reader = response.body.getReader();
         const decoder = new TextDecoder();
 
         setIsInitializing(false);
@@ -132,23 +131,26 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
 
           lines.forEach(line => {
             if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.replace('data: ', ''));
-              
-              if (data.initial) {
-                const mapped = data.content.split('\n').filter(Boolean).map((l: string, i: number) => parseLine(l, i));
-                setLogs(mapped.slice(-300));
-              } else {
-                const newLines = data.content.split('\n').filter(Boolean).map((l: string, i: number) => parseLine(l, i));
-                setLogs(prev => [...prev, ...newLines].slice(-300));
-              }
+              try {
+                const data = JSON.parse(line.replace('data: ', ''));
+                if (data.content !== undefined) {
+                   const newLines = data.content.split('\n').filter(Boolean).map((l: string, i: number) => parseLine(l, i));
+                   if (data.initial) {
+                      setLogs(newLines.slice(-300));
+                   } else {
+                      setLogs(prev => [...prev, ...newLines].slice(-300));
+                   }
+                }
+              } catch (e) {}
             }
           });
         }
-      } catch (e) {
-        if (!controller.signal.aborted) {
-          console.error("Stream error, retrying in 3s...", e);
-          setTimeout(startStreaming, 3000);
-        }
+      } catch (e: any) {
+        if (e.name === 'AbortError' || controller.signal.aborted) return;
+        console.error("Stream error, retrying in 3s...", e);
+        setTimeout(() => {
+          if (!controller.signal.aborted) startStreaming();
+        }, 3000);
       }
     };
 
@@ -156,7 +158,7 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
 
     return () => {
       controller.abort();
-      if (eventSource) eventSource.cancel();
+      if (reader) reader.cancel().catch(() => {});
     };
   }, [serverId]);
 

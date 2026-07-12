@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Fix: Added filename sanitization for uploads.
+ * Fixed: Escaping issues and directory provisioning.
  */
 
 export async function GET() {
@@ -140,7 +140,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -383,7 +383,6 @@ app.post('/api/files/upload-raw', auth, (req, res) => {
     
     fs.mkdir(targetDir, { recursive: true }).then(() => {
         busboy.on('file', (name, file, info) => {
-            // FIX: Remove accidental quotes from filename
             const filename = info.filename.replace(/^['"]|['"]$/g, '');
             const targetPath = path.join(targetDir, filename);
             file.pipe(createWriteStream(targetPath));
@@ -399,7 +398,12 @@ app.post('/api/power/execute', auth, async (req, res) => {
         const { serverId, action, config } = req.body;
         const filesDir = path.resolve(STORAGE_BASE, serverId, 'files');
         const stsDir = path.join(filesDir, '.sts');
-        const logPath = path.join(stsDir, 'logs', 'logs.sts');
+        const logsDir = path.join(stsDir, 'logs');
+        const logPath = path.join(logsDir, 'logs.sts');
+
+        // AUTO-PROVISION ON EXECUTE
+        await fs.mkdir(filesDir, { recursive: true });
+        await fs.mkdir(logsDir, { recursive: true });
 
         if (action === 'stop' || action === 'restart') {
             const child = pids.get(serverId);
@@ -410,7 +414,6 @@ app.post('/api/power/execute', auth, async (req, res) => {
             if (action === 'stop') return res.json({ success: true });
         }
 
-        await fs.mkdir(path.dirname(logPath), { recursive: true });
         const logStream = createWriteStream(logPath, { flags: 'a' });
         
         if (config.runtime === 'nodejs') {
