@@ -98,7 +98,8 @@ export async function POST(req: NextRequest) {
       };
 
       busboy.on('file', (name, fileStream, info) => {
-        const { filename } = info;
+        // SANITIZE FILENAME: Remove accidental quotes from browser/header
+        const filename = info.filename.replace(/^['"]|['"]$/g, '');
         const targetDir = getSafePath(serverId, subPath);
         const targetPath = path.join(targetDir, filename);
 

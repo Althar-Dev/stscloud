@@ -1,8 +1,9 @@
+
 import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Robust Agent Worker with parity logic for file & power management.
+ * Fix: Added filename sanitization for uploads.
  */
 
 export async function GET() {
@@ -139,7 +140,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -382,7 +383,9 @@ app.post('/api/files/upload-raw', auth, (req, res) => {
     
     fs.mkdir(targetDir, { recursive: true }).then(() => {
         busboy.on('file', (name, file, info) => {
-            const targetPath = path.join(targetDir, info.filename);
+            // FIX: Remove accidental quotes from filename
+            const filename = info.filename.replace(/^['"]|['"]$/g, '');
+            const targetPath = path.join(targetDir, filename);
             file.pipe(createWriteStream(targetPath));
         });
         busboy.on('finish', () => res.json({ success: true }));
