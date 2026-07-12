@@ -166,7 +166,7 @@ const SECRET_KEY = process.env.SECRET_KEY;
 // Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (authHeader === `Bearer ${SECRET_KEY}`) return next();
+    if (authHeader === \`Bearer \${SECRET_KEY}\`) return next();
     if (req.body && req.body.secret === SECRET_KEY) return next();
     return res.status(401).json({ success: false, error: 'Unauthorized' });
 };
@@ -187,7 +187,7 @@ app.post('/api/system/info', auth, (req, res) => {
 
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
-            const parts = output.split(/\s+/);
+            const parts = output.split(/\\s+/);
             if (parts.length >= 4) {
                 totalDiskBytes = parseInt(parts[1]);
                 freeDiskBytes = parseInt(parts[3]);
@@ -214,7 +214,7 @@ app.post('/api/system/info', auth, (req, res) => {
 });
 
 const PORT = process.env.PORT || 9005;
-app.listen(PORT, () => console.log(`Agent worker running on port ${PORT}`));
+app.listen(PORT, () => console.log(\`Agent worker running on port \${PORT}\`));
 EOF
 
 npm install --production
