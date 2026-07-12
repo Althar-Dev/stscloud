@@ -218,15 +218,10 @@ export default function DeployPage() {
         return;
       }
 
-      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-      if (isLocal) {
-        setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "ACTIVE", latency: "< 1ms", isChecking: false } }));
-        return;
-      }
-
       const start = performance.now();
       try {
-        await fetch(url.startsWith("http") ? url : `https://${url}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+        const targetUrl = url.startsWith("http") ? url : `https://${url}`;
+        await fetch(targetUrl, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
         const end = performance.now();
         setRegionLiveInfo(prev => ({ ...prev, [agent.id]: { status: "ACTIVE", latency: `${Math.round(end - start)}ms`, isChecking: false } }));
       } catch (e) {
@@ -235,6 +230,8 @@ export default function DeployPage() {
     };
 
     regions.forEach(checkRegion);
+    const interval = setInterval(() => regions.forEach(checkRegion), 5000);
+    return () => clearInterval(interval);
   }, [step, regions]);
 
   React.useEffect(() => {

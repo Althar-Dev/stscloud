@@ -56,9 +56,7 @@ const defaultPricingTiers = [
 ];
 
 const defaultGlobalAgents = [
-  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "stscloud.id", latency: "< 5ms", status: "active", color: "text-primary" },
-  { id: "ag2", name: "Singapore", location: "SG Region (SIN-01)", url: "google.com", latency: "< 15ms", status: "active", color: "text-blue-400" },
-  { id: "ag3", name: "Malaysia", location: "KL Region (KUL-01)", url: "127.0.0.1", latency: "< 20ms", status: "active", color: "text-red-400" },
+  { id: "ag1", name: "Indonesia", location: "Jakarta Region (JKT-01)", url: "stscloud.id", latency: "Checking...", status: "active", color: "text-primary" },
 ];
 
 const faqs = [
@@ -149,16 +147,6 @@ export default function LandingPage() {
         return;
       }
 
-      const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-      if (isLocal) {
-        await new Promise(r => setTimeout(r, 800));
-        setAgentLiveInfo(prev => ({ 
-          ...prev, 
-          [agent.id]: { status: "ACTIVE", latency: "< 1ms (Lokal)", isChecking: false } 
-        }));
-        return;
-      }
-
       const start = performance.now();
       try {
         const targetUrl = url.startsWith("http") ? url : `https://${url}`;
@@ -181,7 +169,7 @@ export default function LandingPage() {
     };
 
     globalAgents.forEach(agent => checkAgent(agent));
-    const interval = setInterval(() => globalAgents.forEach(agent => checkAgent(agent)), 15000);
+    const interval = setInterval(() => globalAgents.forEach(agent => checkAgent(agent)), 10000);
     return () => clearInterval(interval);
   }, [globalAgents]);
 
