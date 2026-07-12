@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Fixed: Escaping issues and directory provisioning.
+ * Fixed: Escaping issues, auto-provisioning, and real-time log stability.
  */
 
 export async function GET() {
@@ -140,7 +140,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.2",
+  "version": "1.3.5",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",

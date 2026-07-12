@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash update script for STSCloud Agents.
- * Fixed: Escaping issues and directory provisioning logic.
+ * Fixed: Escaping issues, auto-provisioning, and log bridge stability.
  */
 
 export async function GET() {
@@ -47,7 +47,7 @@ echo -e "\${GREEN}[1/3] Memperbarui file aplikasi...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.2",
+  "version": "1.3.5",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
