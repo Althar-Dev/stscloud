@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 
 /**
  * @fileOverview Traffic Controller STSCloud (Architecture).
- * Handles internal rewriting for subdomains and ensures query parameters are preserved.
+ * Handles internal rewriting for subdomains and ensures CORS is enabled for cross-subdomain RSC.
  */
 
 export function middleware(request: NextRequest) {
@@ -18,15 +18,22 @@ export function middleware(request: NextRequest) {
     currentHost.includes('vercel.app') ||
     currentHost.includes('127.0.0.1');
 
+  // Basic response headers for all requests
+  const response = NextResponse.next();
+
   if (isDevEnvironment) {
-    return NextResponse.next();
+    return response;
   }
 
   // Domain Config
-  const rootDomain = 'stscloud.id';
   const clientDomain = 'client.stscloud.id';
   const deployDomain = 'deploy.stscloud.id';
   const devDomain = 'dev.stscloud.id';
+
+  // Add CORS headers to support cross-subdomain RSC data fetching
+  response.headers.set('Access-Control-Allow-Origin', `https://${clientDomain}`);
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, x-sts-server-id, x-sts-sub-path');
 
   // Routes for explicit routing
   const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth'];
@@ -42,11 +49,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
     }
     
-    // Internal Map root to /dashboard, but keep path if it's already specific
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL(`/dashboard${url.search}`, request.url));
     }
-    return NextResponse.next();
+    return response;
   }
 
   // 2. Deploy Subdomain (Server Setup)
@@ -60,11 +66,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
     }
     
-    // Map / to /deploy internally if not already there
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL(`/deploy${url.search}`, request.url));
     }
-    return NextResponse.next();
+    return response;
   }
 
   // 3. Dev Subdomain (Console & Infrastructure Docs)
@@ -73,10 +78,6 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(`${url.pathname === '/dashboard' ? '/' : url.pathname}${url.search}`, `https://${clientDomain}`));
     }
     
-    // Crucial: Avoid double /dev prefixing
-    // If the path is '/' -> rewrite to '/dev'
-    // If the path is '/docs' -> rewrite to '/dev/docs'
-    // If the path is already '/dev' -> do nothing (let it pass to filesystem)
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL(`/dev${url.search}`, request.url));
     }
@@ -84,7 +85,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL(`/dev${url.pathname}${url.search}`, request.url));
     }
     
-    return NextResponse.next();
+    return response;
   }
 
   // 4. Fallback from root (stscloud.id) to proper subdomain
@@ -101,7 +102,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${deployDomain}`));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

@@ -50,7 +50,6 @@ export default function Dashboard() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // If loading is done and NO authentication (Firebase OR Cookie) is found, redirect.
     if (!loading && !isAuthenticated) {
       router.replace("/auth?type=login");
     }
@@ -77,7 +76,6 @@ export default function Dashboard() {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setServers(list);
 
-      // Expiration Notice Scanner
       const email = profile?.email || user?.email;
       if (email) {
         list.forEach(server => {
@@ -182,12 +180,13 @@ export default function Dashboard() {
             <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/20 px-3 py-1.5 text-[10px] md:text-xs">
               <Activity className="size-3 mr-2 animate-pulse" /> Status: {totalServers > 0 ? 'Online' : 'No Active Servers'}
             </Badge>
-            <Link href="/deploy">
+            {/* Hard Navigation using anchor for cross-subdomain */}
+            <a href="https://deploy.stscloud.id/">
               <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white h-9 px-3 md:px-4">
                 <Plus className="size-4" />
                 <span>New Server</span>
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -302,14 +301,15 @@ export default function Dashboard() {
                 </Link>
               );
             })}
-            <Link href="/deploy">
+            {/* Hard Navigation for cross-subdomain */}
+            <a href="https://deploy.stscloud.id/">
               <Card className="h-full min-h-[120px] md:min-h-[140px] border-dashed border-2 border-border/50 bg-transparent flex flex-col items-center justify-center p-4 md:p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group">
                 <div className="size-8 md:size-10 rounded-full border border-dashed border-border group-hover:border-primary/50 flex items-center justify-center mb-2 md:mb-3 transition-colors">
                   <Plus className="size-5 md:size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <p className="text-xs md:text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors text-center">Provision New Instance</p>
               </Card>
-            </Link>
+            </a>
           </div>
         </section>
       </main>

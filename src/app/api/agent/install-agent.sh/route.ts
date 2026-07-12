@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Fixed: Added functional index.js worker to handle real hardware metrics and API requests.
+ * Expanded: Complete Agent Worker with File & Power management APIs.
  */
 
 export async function GET() {
@@ -43,7 +43,7 @@ fi
 # Update and Install System Dependencies
 echo -e "\${GREEN}[1/6] Memperbarui paket sistem...\${NC}"
 apt-get update -y
-apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essential unzip
+apt-get install -y curl wget git nginx certbot python3-certbot-nginx build-essential unzip tar
 
 # Install/Check Node.js
 if command -v node &> /dev/null; then
@@ -86,7 +86,7 @@ else
     echo -e "\${BLUE}Menggunakan Secret Key yang sudah ada.\${NC}"
 fi
 
-# Setup Nginx Configuration (Using Quoted Heredoc to prevent variable expansion)
+# Setup Nginx Configuration
 echo -e "\${GREEN}[3/6] Mengonfigurasi Nginx Reverse Proxy...\${NC}"
 cat > /etc/nginx/sites-available/stscloud-agent <<'EOF'
 server {
@@ -145,7 +145,10 @@ cat > package.json <<'EOF'
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "adm-zip": "^0.5.16",
+    "busboy": "^1.6.0",
+    "tar": "^7.1.0"
   }
 }
 EOF
@@ -154,7 +157,13 @@ cat > index.js <<'EOF'
 const express = require('express');
 const cors = require('cors');
 const os = require('os');
-const { execSync } = require('child_process');
+const fs = require('fs').promises;
+const { createWriteStream, createReadStream } = require('fs');
+const path = require('path');
+const { spawn, execSync } = require('child_process');
+const AdmZip = require('adm-zip');
+const tar = require('tar');
+const Busboy = require('busboy');
 require('dotenv').config();
 
 const app = express();
@@ -162,56 +171,149 @@ app.use(cors());
 app.use(express.json());
 
 const SECRET_KEY = process.env.SECRET_KEY;
+const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers';
 
 // Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (authHeader === \`Bearer \${SECRET_KEY}\`) return next();
+    if (authHeader === `Bearer \${SECRET_KEY}`) return next();
     if (req.body && req.body.secret === SECRET_KEY) return next();
     return res.status(401).json({ success: false, error: 'Unauthorized' });
 };
 
-// Health Check (Latency checking)
-app.get('/', (req, res) => res.send('STSCloud Agent Active'));
+// Helper: Get safe path
+const getSafePath = (serverId, subPath = '') => {
+    const base = path.resolve(STORAGE_BASE, serverId, 'files');
+    const final = path.resolve(base, subPath);
+    if (!final.startsWith(base)) return base;
+    return final;
+};
 
-// System Hardware Info
+// --- SYSTEM APIs ---
 app.post('/api/system/info', auth, (req, res) => {
     try {
         const cpus = os.cpus();
         const totalRamBytes = os.totalmem();
         const freeRamBytes = os.freemem();
-        
-        let totalDisk = "Unknown";
-        let freeDiskBytes = 0;
-        let totalDiskBytes = 0;
-
+        let totalDisk = "Unknown", freeDisk = "0 GB", usedDisk = "0 GB";
         try {
             const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
             const parts = output.split(/\\s+/);
             if (parts.length >= 4) {
-                totalDiskBytes = parseInt(parts[1]);
-                freeDiskBytes = parseInt(parts[3]);
-                totalDisk = (totalDiskBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+                const total = parseInt(parts[1]);
+                const free = parseInt(parts[3]);
+                totalDisk = (total / (1024 ** 3)).toFixed(1) + " GB";
+                freeDisk = (free / (1024 ** 3)).toFixed(1) + " GB";
+                usedDisk = ((total - free) / (1024 ** 3)).toFixed(1) + " GB";
             }
         } catch (e) {}
-
         res.json({
             success: true,
             data: {
                 cpuModel: cpus[0]?.model || "Generic CPU",
                 cpuCores: cpus.length,
-                totalRam: (totalRamBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
-                freeRam: (freeRamBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
-                usedRam: ((totalRamBytes - freeRamBytes) / (1024 * 1024 * 1024)).toFixed(1) + " GB",
-                totalDisk: totalDisk,
-                freeDisk: (freeDiskBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
-                usedDisk: ((totalDiskBytes - freeDiskBytes) / (1024 * 1024 * 1024)).toFixed(1) + " GB"
+                totalRam: (totalRamBytes / (1024 ** 3)).toFixed(1) + " GB",
+                usedRam: ((totalRamBytes - freeRamBytes) / (1024 ** 3)).toFixed(1) + " GB",
+                freeRam: (freeRamBytes / (1024 ** 3)).toFixed(1) + " GB",
+                totalDisk, freeDisk, usedDisk
             }
         });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
+
+// --- FILE APIs ---
+app.post('/api/files/list', auth, async (req, res) => {
+    try {
+        const { serverId, subPath } = req.body;
+        const target = getSafePath(serverId, subPath);
+        await fs.mkdir(target, { recursive: true });
+        const entries = await fs.readdir(target, { withFileTypes: true });
+        const files = await Promise.all(entries.map(async e => {
+            const stats = await fs.stat(path.join(target, e.name));
+            return {
+                name: e.name,
+                type: e.isDirectory() ? 'folder' : 'file',
+                size: e.isDirectory() ? '--' : \`\${(stats.size / 1024).toFixed(1)} KB\`,
+                modified: stats.mtime.toLocaleDateString()
+            };
+        }));
+        res.json({ success: true, files });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/read', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const content = await fs.readFile(path.join(getSafePath(serverId, subPath), fileName), 'utf8');
+        res.json({ success: true, content });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/write', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, content, subPath } = req.body;
+        await fs.writeFile(path.join(getSafePath(serverId, subPath), fileName), content, 'utf8');
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/create', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath, type } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        if (type === 'folder') await fs.mkdir(target, { recursive: true });
+        else await fs.writeFile(target, '');
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/delete', auth, async (req, res) => {
+    try {
+        const { serverId, names, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        for (const name of names) await fs.rm(path.join(base, name), { recursive: true, force: true });
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+// --- POWER APIs ---
+const pids = new Map();
+app.post('/api/power/execute', auth, async (req, res) => {
+    try {
+        const { serverId, action, config } = req.body;
+        const baseDir = path.resolve(STORAGE_BASE, serverId, 'files');
+        const stsDir = path.join(baseDir, '.sts');
+        const logPath = path.join(stsDir, 'logs', 'logs.sts');
+
+        if (action === 'stop' || action === 'restart') {
+            const child = pids.get(serverId);
+            if (child) { try { process.kill(-child.pid, 'SIGKILL'); } catch(e) {} pids.delete(serverId); }
+            if (action === 'stop') return res.json({ success: true });
+        }
+
+        await fs.mkdir(path.dirname(logPath), { recursive: true });
+        const logStream = createWriteStream(logPath, { flags: 'a' });
+        
+        let cmd = config.startupCommand;
+        if (config.runtime === 'nodejs') cmd = \`npx -y -p node@\${config.version} -- \${cmd}\`;
+        
+        const child = spawn(cmd, { shell: true, cwd: baseDir, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
+        pids.set(serverId, child);
+        
+        child.stdout.on('data', d => logStream.write(d));
+        child.stderr.on('data', d => logStream.write(d));
+        child.on('close', code => { logStream.write(\`\\n[STS] Process exited with code \${code}\\n\`); pids.delete(serverId); });
+        
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/power/status', auth, (req, res) => {
+    const { serverId } = req.body;
+    res.json({ running: pids.has(serverId) });
+});
+
+app.get('/', (req, res) => res.send('STSCloud Agent Active'));
 
 const PORT = process.env.PORT || 9005;
 app.listen(PORT, () => console.log(\`Agent worker running on port \${PORT}\`));
@@ -230,9 +332,6 @@ echo -e "\${GREEN}Instalasi Selesai!\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"
 echo -e "Domain: \${BLUE}\$AGENT_DOMAIN\${NC}"
 echo -e "Secret Key: \${YELLOW}\$SECRET_KEY\${NC}"
-echo -e "\${BLUE}=======================================================\${NC}"
-echo -e "Gunakan Secret Key di atas saat mendaftarkan agent di Dev Console."
-echo -e "Agent berjalan di port 9005 dan diproxy oleh Nginx."
 echo -e "\${BLUE}=======================================================\${NC}"
 `;
 
