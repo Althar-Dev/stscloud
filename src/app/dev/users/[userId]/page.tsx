@@ -22,7 +22,8 @@ import {
   Globe,
   Bot,
   Code2,
-  Loader2
+  Loader2,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -100,10 +101,12 @@ export default function UserDetailPage() {
   const [userServers, setUserServers] = React.useState<any[]>([]);
   const [updating, setUpdating] = React.useState(false);
   const [resourcePresets, setResourcePresets] = React.useState<any[]>([]);
+  const [regions, setRegions] = React.useState<any[]>([]);
 
   // Provisioning State
   const [isProvisioning, setIsProvisioning] = React.useState(false);
   const [provisionPlanId, setProvisionPlanId] = React.useState("");
+  const [provisionRegionId, setProvisionRegionId] = React.useState("");
   const [provisionTemplate, setProvisionTemplate] = React.useState("website");
   const [provisionRuntime, setProvisionRuntime] = React.useState("nodejs");
   const [provisionVersion, setProvisionVersion] = React.useState("20");
@@ -133,7 +136,7 @@ export default function UserDetailPage() {
     return () => unsub();
   }, [currentUser, authLoading, db, router]);
 
-  // Fetch Target User Data & Global Pricing
+  // Fetch Target User Data, Global Pricing & Regions
   React.useEffect(() => {
     if (!userId || !db) return;
 
@@ -162,6 +165,18 @@ export default function UserDetailPage() {
       }
     });
 
+    const unsubRegions = onSnapshot(doc(db, "main", "agents"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.list && Array.isArray(data.list)) {
+          setRegions(data.list);
+          if (data.list.length > 0 && !provisionRegionId) {
+            setProvisionRegionId(data.list[0].id);
+          }
+        }
+      }
+    });
+
     const serversQuery = query(collection(db, "servers"), where("ownerId", "==", userId));
     const unsubServers = onSnapshot(serversQuery, (snapshot) => {
       setUserServers(snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
@@ -170,9 +185,10 @@ export default function UserDetailPage() {
     return () => {
       unsubUser();
       unsubPricing();
+      unsubRegions();
       unsubServers();
     };
-  }, [userId, db, router, toast, provisionPlanId]);
+  }, [userId, db, router, toast, provisionPlanId, provisionRegionId]);
 
   // Sync version when runtime changes
   React.useEffect(() => {
@@ -212,23 +228,32 @@ export default function UserDetailPage() {
 
     setIsProvisioning(true);
     const plan = resourcePresets.find(p => p.id === provisionPlanId);
+    const region = regions.find(r => r.id === provisionRegionId);
     const serverId = `sts-serv-${Math.random().toString(36).substring(2, 9)}`;
 
+    const agentId = region?.agentId || null;
+
     try {
-      const provision = await provisionServerFiles(serverId);
-      if (!provision.success) throw new Error("File provisioning failed");
+      // Skip local file provisioning if it's a remote agent
+      if (!agentId) {
+        const provision = await provisionServerFiles(serverId);
+        if (!provision.success) throw new Error("File provisioning failed");
+      }
 
       await setDoc(doc(db, "servers", serverId), {
         name: provisionServerName,
         ownerId: targetUser.id,
+        agentId: agentId,
         plan: plan?.name,
         template: provisionTemplate,
+        region: region?.name || "Local",
         runtime: provisionRuntime,
         runtimeVersion: provisionVersion,
         nodeVersion: provisionRuntime === 'nodejs' ? provisionVersion : null,
         pythonVersion: provisionRuntime === 'python' ? provisionVersion : null,
         status: "online",
         createdAt: serverTimestamp(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         resources: {
           ram: plan?.ram,
           cpu: plan?.cpu,
@@ -236,7 +261,7 @@ export default function UserDetailPage() {
         }
       });
 
-      toast({ title: "Admin Provision Success", description: `Agent ${provisionServerName} deployed.` });
+      toast({ title: "Admin Provision Success", description: `Instance ${provisionServerName} deployed.` });
       setIsDialogOpen(false);
       setProvisionServerName("");
     } catch (error: any) {
@@ -353,12 +378,31 @@ export default function UserDetailPage() {
                         />
                       </div>
 
+                      <div className="grid gap-2">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Deployment Location</Label>
+                        <Select value={provisionRegionId} onValueChange={setProvisionRegionId}>
+                          <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
+                            <SelectValue placeholder="Select location..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {regions.map(r => (
+                              <SelectItem key={r.id} value={r.id}>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="size-3 text-primary" />
+                                  <span className="font-bold text-xs">{r.location}</span>
+                                  <span className="text-[10px] opacity-50 uppercase">({r.name})</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                            {regions.length === 0 && <div className="p-4 text-center text-xs text-muted-foreground">No regions configured.</div>}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-2">
                           <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Template</Label>
-                          <Select value={provisionTemplate} onValueChange={(val) => {
-                            setProvisionTemplate(val);
-                          }}>
+                          <Select value={provisionTemplate} onValueChange={setProvisionTemplate}>
                             <SelectTrigger className="bg-secondary/30 border-none h-11 w-full">
                               <SelectValue placeholder="Template" />
                             </SelectTrigger>
