@@ -43,10 +43,9 @@ fi
 # 1. Stop and Delete PM2 Process
 echo -e "\${GREEN}[1/4] Menghentikan proses agent di PM2...\${NC}"
 if command -v pm2 &> /dev/null; then
-    # Try to find the process name
-    pm2 stop stscloud-agent || true
-    pm2 delete stscloud-agent || true
-    pm2 save --force || true
+    pm2 stop stscloud-agent 2>/dev/null || true
+    pm2 delete stscloud-agent 2>/dev/null || true
+    pm2 save --force 2>/dev/null || true
     echo -e "\${BLUE}Proses PM2 dibersihkan.\${NC}"
 else
     echo -e "\${YELLOW}PM2 tidak ditemukan, melewati langkah ini.\${NC}"
@@ -56,26 +55,23 @@ fi
 echo -e "\${GREEN}[2/4] Menghapus konfigurasi Nginx...\${NC}"
 if [ -f /etc/nginx/sites-enabled/stscloud-agent ]; then
     rm -f /etc/nginx/sites-enabled/stscloud-agent
+fi
+if [ -f /etc/nginx/sites-available/stscloud-agent ]; then
     rm -f /etc/nginx/sites-available/stscloud-agent
-    echo -e "\${BLUE}Konfigurasi Nginx dihapus.\${NC}"
-    
-    if nginx -t &> /dev/null; then
-        systemctl restart nginx
-        echo -e "\${BLUE}Nginx berhasil dimuat ulang.\${NC}"
-    else
-        echo -e "\${RED}Peringatan: Konfigurasi Nginx lainnya bermasalah, silakan periksa manual.\${NC}"
-    fi
+fi
+
+if nginx -t &> /dev/null; then
+    systemctl restart nginx || true
+    echo -e "\${BLUE}Konfigurasi Nginx dihapus dan dimuat ulang.\${NC}"
 else
-    echo -e "\${YELLOW}Konfigurasi Nginx tidak ditemukan.\${NC}"
+    echo -e "\${RED}Peringatan: Konfigurasi Nginx lainnya bermasalah, silakan periksa manual.\${NC}"
 fi
 
 # 3. Remove Core Files
-echo -e "\${GREEN}[3/4] Menghapus file sistem agent...\\${NC}"
+echo -e "\${GREEN}[3/4] Menghapus file sistem agent...\${NC}"
 if [ -d /opt/stscloud/agent ]; then
     rm -rf /opt/stscloud/agent
     echo -e "\${BLUE}Direktori /opt/stscloud/agent dihapus.\${NC}"
-else
-    echo -e "\${YELLOW}Direktori agent tidak ditemukan.\${NC}"
 fi
 
 # 4. Storage Cleanup Option
