@@ -161,18 +161,6 @@ export default function DeployPage() {
       }
     });
 
-    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.tiers && Array.isArray(data.tiers)) {
-          setResourcePresets(data.tiers);
-          if (!selectedPreset && data.tiers.length > 0) {
-            setSelectedPreset(data.tiers[0].id);
-          }
-        }
-      }
-    });
-
     const unsubTemplates = onSnapshot(doc(db, "main", "templates"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -196,11 +184,48 @@ export default function DeployPage() {
 
     return () => {
       unsubProfile();
-      unsubPricing();
       unsubTemplates();
       unsubRegions();
     };
-  }, [user, sessionUid, db, selectedPreset, selectedRegion]);
+  }, [user, sessionUid, db, selectedRegion]);
+
+  // Dynamic Pricing Listener based on selected region
+  React.useEffect(() => {
+    if (!db) return;
+
+    const selectedRegionData = regions.find(r => r.id === selectedRegion);
+    const isLocalhost = selectedRegionData?.url?.includes('localhost') || selectedRegionData?.url?.includes('127.0.0.1');
+    
+    // Determine which pricing document to load
+    const pricingDocId = (selectedRegion && !isLocalhost) ? `product_${selectedRegion}` : "product";
+
+    const unsubPricing = onSnapshot(doc(db, "main", pricingDocId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tiers && Array.isArray(data.tiers)) {
+          setResourcePresets(data.tiers);
+          // Auto-select first available or preserve selection if valid
+          if (data.tiers.length > 0) {
+            const currentValid = data.tiers.find(p => p.id === selectedPreset);
+            if (!selectedPreset || !currentValid) {
+               setSelectedPreset(data.tiers[0].id);
+            }
+          }
+        }
+      } else if (pricingDocId !== "product") {
+        // Fallback to global if location-specific pricing doesn't exist yet
+        const unsubGlobal = onSnapshot(doc(db, "main", "product"), (globalSnap) => {
+          if (globalSnap.exists()) {
+            const gData = globalSnap.data();
+            if (gData.tiers) setResourcePresets(gData.tiers);
+          }
+        });
+        return () => unsubGlobal();
+      }
+    });
+
+    return () => unsubPricing();
+  }, [db, selectedRegion, regions]);
 
   React.useEffect(() => {
     if (step !== 2 || regions.length === 0) return;
@@ -470,25 +495,19 @@ export default function DeployPage() {
                 const isChecking = live?.isChecking || !live;
                 const isActive = live?.status === "ACTIVE";
                 const isDown = !isChecking && live?.status === "DOWN";
-                const isSoldOut = !isAnyTierAvailable;
 
                 return (
                   <Card 
                     key={region.id}
                     className={cn(
                       "transition-all border-border/50 relative overflow-hidden group",
-                      (isDown || isSoldOut) ? "opacity-50 grayscale cursor-not-allowed border-dashed bg-secondary/10" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
-                      selectedRegion === region.id && !isDown && !isSoldOut && "bg-primary/5 border-primary ring-1 ring-primary/50"
+                      isDown ? "opacity-50 grayscale cursor-not-allowed border-dashed bg-secondary/10" : "cursor-pointer bg-card hover:border-primary/30 hover:bg-secondary/20",
+                      selectedRegion === region.id && !isDown && "bg-primary/5 border-primary ring-1 ring-primary/50"
                     )}
                     onClick={() => {
-                      if (!isDown && !isSoldOut) setSelectedRegion(region.id);
+                      if (!isDown) setSelectedRegion(region.id);
                     }}
                   >
-                    {isSoldOut && !isDown && (
-                      <div className="absolute top-0 right-0 z-20">
-                         <Badge className="bg-destructive text-white rounded-none rounded-bl-lg text-[9px] uppercase font-bold px-3 py-1">Sold Out</Badge>
-                      </div>
-                    )}
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -497,14 +516,14 @@ export default function DeployPage() {
                           </div>
                           <span className="font-bold font-headline">{region.location}</span>
                         </div>
-                        {selectedRegion === region.id && !isDown && !isSoldOut && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
-                        {(isDown || (isSoldOut && !isDown)) && <AlertCircle className={cn("size-4", isDown ? "text-destructive" : "text-destructive opacity-50")} />}
+                        {selectedRegion === region.id && !isDown && <CheckCircle2 className="size-4 text-primary fill-primary text-white" />}
+                        {isDown && <AlertCircle className="size-4 text-destructive" />}
                       </div>
                       <div className="space-y-1">
                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{region.name}</p>
                          <div className={cn("flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-muted-foreground")}>
                             {isChecking ? <Loader2 className="size-3 animate-spin opacity-50" /> : (isActive ? <Wifi className="size-3" /> : <WifiOff className="size-3 text-destructive" />)}
-                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : isSoldOut ? "NO CAPACITY" : `Latency: ${live?.latency || "N/A"}`}
+                            {isChecking ? "Pinging..." : isDown ? "OFFLINE" : `Latency: ${live?.latency || "N/A"}`}
                          </div>
                       </div>
                     </CardContent>
@@ -523,7 +542,7 @@ export default function DeployPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Select Resources</h2>
-              <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name} at {selectedRegionData?.name}.</p>
+              <p className="text-muted-foreground text-sm">Define performance for your {selectedTemplateData?.name} at {selectedRegionData?.location || 'Global'}.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => {
