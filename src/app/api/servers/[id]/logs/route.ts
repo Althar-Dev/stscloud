@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * @fileOverview Real-time Log Streamer using Server-Sent Events (SSE).
- * Enhanced: Supports Local Storage and Remote Agent Proxying.
+ * Enhanced: Supports Local Storage and Remote Agent Proxying with Clear-Log detection.
  */
 
 export const dynamic = 'force-dynamic';
@@ -62,18 +62,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
               cache: 'no-store'
             });
             const data = await res.json();
-            if (data.success && data.content !== lastContent) {
-              // On remote, we usually get the last 300 lines
-              // To avoid jitter, we treat remote changes as "initial" refresh if large, 
-              // or attempt to find new lines. For simplicity, we send what's new.
-              if (!lastContent) {
+            if (data.success) {
+              if (data.content === lastContent) return;
+
+              // Detect log clearing or reduction
+              if (data.content.length < lastContent.length || (lastContent !== "" && data.content === "")) {
+                sendEvent({ content: data.content, initial: true, cleared: true });
+              } else if (!lastContent || lastContent === "") {
                 sendEvent({ content: data.content, initial: true });
-              } else if (data.content.length > lastContent.length) {
+              } else if (data.content.startsWith(lastContent)) {
                 const delta = data.content.substring(lastContent.length);
                 sendEvent({ content: delta, initial: false });
-              } else if (data.content.length < lastContent.length) {
-                // Log was likely cleared
-                sendEvent({ content: data.content, initial: true, cleared: true });
+              } else {
+                // Large change, treat as initial
+                sendEvent({ content: data.content, initial: true });
               }
               lastContent = data.content;
             }

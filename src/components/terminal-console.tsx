@@ -123,27 +123,37 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
         setIsInitializing(false);
 
         while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
+          try {
+            const { value, done } = await reader.read();
+            if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n\n');
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n\n');
 
-          lines.forEach(line => {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.replace('data: ', ''));
-                if (data.content !== undefined) {
-                   const newLines = data.content.split('\n').filter(Boolean).map((l: string, i: number) => parseLine(l, i));
-                   if (data.initial) {
-                      setLogs(newLines.slice(-300));
-                   } else {
-                      setLogs(prev => [...prev, ...newLines].slice(-300));
-                   }
-                }
-              } catch (e) {}
-            }
-          });
+            lines.forEach(line => {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.replace('data: ', ''));
+                  
+                  if (data.cleared) {
+                    setLogs([]);
+                  }
+
+                  if (data.content !== undefined) {
+                     const newLines = data.content.split('\n').filter(Boolean).map((l: string, i: number) => parseLine(l, i));
+                     if (data.initial) {
+                        setLogs(newLines.slice(-300));
+                     } else {
+                        setLogs(prev => [...prev, ...newLines].slice(-300));
+                     }
+                  }
+                } catch (e) {}
+              }
+            });
+          } catch (e: any) {
+            if (e.name === 'AbortError') break;
+            throw e;
+          }
         }
       } catch (e: any) {
         if (e.name === 'AbortError' || controller.signal.aborted) return;
@@ -194,8 +204,8 @@ export function TerminalConsole({ serverId, externalStatus, onPowerAction, isExp
 
   const handleClearLogs = async () => {
     if (!serverId) return;
+    setLogs([]); // Immediate UI feedback
     await clearServerLogs(serverId);
-    setLogs([]);
   };
 
   return (

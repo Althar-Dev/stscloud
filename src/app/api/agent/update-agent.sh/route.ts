@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash update script for STSCloud Agents.
- * Fixed: Escaping issues, auto-provisioning, and log bridge stability.
+ * Synchronized with install script to ensure clear-logs and other features work correctly.
  */
 
 export async function GET() {
@@ -47,7 +47,7 @@ echo -e "\${GREEN}[1/3] Memperbarui file aplikasi...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -309,7 +309,6 @@ app.post('/api/power/execute', auth, async (req, res) => {
         const logsDir = path.join(stsDir, 'logs');
         const logPath = path.join(logsDir, 'logs.sts');
 
-        // AUTO-PROVISION ON EXECUTE
         await fs.mkdir(filesDir, { recursive: true });
         await fs.mkdir(logsDir, { recursive: true });
 
@@ -328,7 +327,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
            const pkgPath = path.join(filesDir, 'package.json');
            try {
               await fs.access(pkgPath);
-              logStream.write('[STS] Checking dependencies...\\n');
+              logStream.write('[STS] Checking dependencies...\\\\n');
               execSync('npm install --production', { cwd: filesDir });
            } catch(e) {}
         }
@@ -344,7 +343,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
         child.on('close', c => {
-            logStream.write('\\n[STS] Process exited with code ' + c + '\\n');
+            logStream.write('\\\\n[STS] Process exited with code ' + c + '\\\\n');
             pids.delete(serverId);
         });
 
@@ -360,7 +359,7 @@ app.post('/api/power/input', auth, (req, res) => {
     const { serverId, text } = req.body;
     const child = pids.get(serverId);
     if (child && child.stdin && child.stdin.writable) {
-        child.stdin.write(text + '\\n');
+        child.stdin.write(text + '\\\\n');
         return res.json({ success: true });
     }
     res.json({ success: false, error: "Not running or not writable" });
@@ -371,8 +370,8 @@ app.post('/api/files/logs', auth, async (req, res) => {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
         const content = await fs.readFile(logPath, 'utf8');
-        const lines = content.split('\\n');
-        res.json({ success: true, content: lines.slice(-300).join('\\n') });
+        const lines = content.split('\\\\n');
+        res.json({ success: true, content: lines.slice(-300).join('\\\\n') });
     } catch (e) { res.json({ success: true, content: "" }); }
 });
 
@@ -380,6 +379,7 @@ app.post('/api/files/clear-logs', auth, async (req, res) => {
     try {
         const { serverId } = req.body;
         const logPath = getLogPath(serverId);
+        await fs.mkdir(path.dirname(logPath), { recursive: true });
         await fs.writeFile(logPath, "");
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
