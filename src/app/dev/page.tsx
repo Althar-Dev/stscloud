@@ -85,7 +85,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter as useNextRouter } from "next/navigation";
 import { doc, onSnapshot, collection, query, limit, setDoc, serverTimestamp, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { getSystemHardwareInfo } from "@/app/actions/system-info";
@@ -407,13 +406,19 @@ function DevConsoleContent() {
   };
 
   const handleDeleteLandingAgent = async (id: string) => {
+    // Immediate write to ensure deletion works and isn't overwritten by onSnapshot
+    setIsLandingDirty(true);
     const updated = landingAgents.filter(a => a.id !== id);
     setLandingAgents(updated);
+    
     try {
       await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
       toast({ title: "Region Removed", description: "Public infrastructure list updated." });
+      // Reset dirty after a short delay to allow snapshot to pick up changes
+      setTimeout(() => setIsLandingDirty(false), 1000);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
+      setIsLandingDirty(false);
     }
   };
 
@@ -485,6 +490,7 @@ function DevConsoleContent() {
     }
     setIsAddingAgent(true);
     const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
+    // Only adding to infrastructure_agents, not landing agents as per request
     setDoc(doc(db, "infrastructure_agents", agentId), { 
       regionName, 
       domain: agentDomain, 
@@ -498,9 +504,9 @@ function DevConsoleContent() {
         toast({ title: "Agent Registered", description: `Node active at ${regionName}.` });
         setIsDialogOpen(false);
         setRegionName("");
-        setAgentDomain("");
-        setAgentIp("");
-        setAgentSecret("");
+        agentDomain && setAgentDomain("");
+        agentIp && setAgentIp("");
+        agentSecret && setAgentSecret("");
       })
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsAddingAgent(false));
@@ -705,8 +711,7 @@ function DevConsoleContent() {
                      </div>
                      <div className="space-y-3">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold font-headline">{vpsMetrics ? vpsMetrics.usedRam : "-- GB"}</span>
-                          <span className="text-xs text-muted-foreground">/ {vpsMetrics ? vpsMetrics.totalRam : "-- GB"}</span>
+                          <span className="text-2xl font-bold font-headline">{vpsMetrics ? `${vpsMetrics.usedRam} / ${vpsMetrics.totalRam}` : "-- GB"}</span>
                         </div>
                         <div className="space-y-1.5">
                            <Progress value={ramUsage} className="h-1 bg-secondary" />
@@ -724,8 +729,7 @@ function DevConsoleContent() {
                      </div>
                      <div className="space-y-3">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? vpsMetrics.usedDisk : "-- GB"}</span>
-                          <span className="text-xs text-muted-foreground">/ {vpsMetrics ? vpsMetrics.totalDisk : "-- GB"}</span>
+                          <span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? `${vpsMetrics.usedDisk} / ${vpsMetrics.totalDisk}` : "-- GB"}</span>
                         </div>
                         <div className="space-y-1.5">
                            <Progress value={diskUsage} className="h-1 bg-secondary" />
@@ -1274,7 +1278,7 @@ function DevConsoleContent() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Decommission Agent?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This will permanently remove <strong>{agent.regionName}</strong> from the infrastructure cluster. All files on this node will be unreachable.
+                                    Are you sure you want to permanently remove <strong>{agent.regionName}</strong> from the infrastructure cluster? This will stop all server routing on this node.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
