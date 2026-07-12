@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
- * Fixed: Nginx variable escaping using quoted heredocs and added automatic agent app deployment.
+ * Fixed: Added functional index.js worker to handle real hardware metrics and API requests.
  */
 
 export async function GET() {
@@ -137,8 +137,6 @@ fi
 
 # Deploy Agent Application Worker
 echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
-# Note: In a production scenario, you would git clone your agent repo here.
-# For this prototype, we'll create a robust skeleton worker.
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
@@ -147,23 +145,86 @@ cat > package.json <<'EOF'
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "busboy": "^1.6.0",
-    "adm-zip": "^0.5.10",
-    "tar": "^6.2.0",
-    "ansi-to-html": "^0.7.2"
+    "dotenv": "^16.3.1"
   }
 }
+EOF
+
+cat > index.js <<'EOF'
+const express = require('express');
+const cors = require('cors');
+const os = require('os');
+const { execSync } = require('child_process');
+require('dotenv').config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const SECRET_KEY = process.env.SECRET_KEY;
+
+// Auth Middleware
+const auth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader === `Bearer ${SECRET_KEY}`) return next();
+    if (req.body && req.body.secret === SECRET_KEY) return next();
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+};
+
+// Health Check (Latency checking)
+app.get('/', (req, res) => res.send('STSCloud Agent Active'));
+
+// System Hardware Info
+app.post('/api/system/info', auth, (req, res) => {
+    try {
+        const cpus = os.cpus();
+        const totalRamBytes = os.totalmem();
+        const freeRamBytes = os.freemem();
+        
+        let totalDisk = "Unknown";
+        let freeDiskBytes = 0;
+        let totalDiskBytes = 0;
+
+        try {
+            const output = execSync("df -B1 / | tail -1", { encoding: 'utf8' }).trim();
+            const parts = output.split(/\s+/);
+            if (parts.length >= 4) {
+                totalDiskBytes = parseInt(parts[1]);
+                freeDiskBytes = parseInt(parts[3]);
+                totalDisk = (totalDiskBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+            }
+        } catch (e) {}
+
+        res.json({
+            success: true,
+            data: {
+                cpuModel: cpus[0]?.model || "Generic CPU",
+                cpuCores: cpus.length,
+                totalRam: (totalRamBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
+                freeRam: (freeRamBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
+                usedRam: ((totalRamBytes - freeRamBytes) / (1024 * 1024 * 1024)).toFixed(1) + " GB",
+                totalDisk: totalDisk,
+                freeDisk: (freeDiskBytes / (1024 * 1024 * 1024)).toFixed(1) + " GB",
+                usedDisk: ((totalDiskBytes - freeDiskBytes) / (1024 * 1024 * 1024)).toFixed(1) + " GB"
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+const PORT = process.env.PORT || 9005;
+app.listen(PORT, () => console.log(`Agent worker running on port ${PORT}`));
 EOF
 
 npm install --production
 
 # Finalizing PM2
 echo -e "\${GREEN}[6/6] Memulai layanan di PM2...\${NC}"
-# Assuming index.js is provided or cloned. For now, we ensure the process is registered.
-# pm2 start index.js --name stscloud-agent
-# pm2 save
-# pm2 startup
+pm2 delete stscloud-agent 2>/dev/null || true
+pm2 start index.js --name stscloud-agent
+pm2 save
+pm2 startup | bash || true
 
 echo -e "\${GREEN}Instalasi Selesai!\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"

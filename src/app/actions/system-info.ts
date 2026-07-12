@@ -32,11 +32,14 @@ export async function getSystemHardwareInfo(agentId?: string) {
             'Authorization': `Bearer ${agent.secretKey}`
           },
           body: JSON.stringify({ secret: agent.secretKey }),
-          next: { revalidate: 0 }
+          cache: 'no-store'
         });
         
         if (!res.ok) throw new Error(`Agent API returned ${res.status}`);
-        return await res.json();
+        const result = await res.json();
+        
+        if (!result.success) throw new Error(result.error);
+        return result;
       } catch (e: any) {
         return { success: false, error: `Agent Unreachable: ${e.message}` };
       }
