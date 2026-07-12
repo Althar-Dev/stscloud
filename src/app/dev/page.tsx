@@ -43,7 +43,8 @@ import {
   Key,
   Wrench,
   Clock,
-  ExternalLink
+  ExternalLink,
+  MapPin
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,13 @@ import {
   AlertDialogDescription,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,12 +165,18 @@ function DevConsoleContent() {
   const [agentLiveInfo, setAgentLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
   const [vpsMetrics, setVpsMetrics] = React.useState<any>(null);
 
+  // Agent Registration State
   const [isAddingAgent, setIsAddingAgent] = React.useState(false);
   const [regionName, setRegionName] = React.useState("");
   const [agentDomain, setAgentDomain] = React.useState("");
   const [agentIp, setAgentIp] = React.useState("");
   const [agentSecret, setAgentSecret] = React.useState("");
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+
+  // Public Map Selection State
+  const [isAddRegionOpen, setIsAddRegionOpen] = React.useState(false);
+  const [selectedAgentId, setSelectedAgentId] = React.useState("");
+  const [regionLocationInput, setRegionLocationInput] = React.useState("");
 
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -392,21 +406,42 @@ function DevConsoleContent() {
     setLandingAgents(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
   };
 
-  const handleAddLandingAgentRow = () => {
-    setIsLandingDirty(true);
-    const newAgent = {
-      id: `ag-${Math.random().toString(36).substring(2, 7)}`,
-      name: "New Region",
-      location: "City, Country",
-      url: "localhost",
+  const handleConfirmAddRegion = async () => {
+    if (!selectedAgentId || !regionLocationInput) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please select an agent and enter location." });
+      return;
+    }
+
+    const sourceAgent = agentsList.find(a => a.id === selectedAgentId);
+    if (!sourceAgent) return;
+
+    setIsUpdatingLanding(true);
+    const newRegion = {
+      id: `reg-${Math.random().toString(36).substring(2, 7)}`,
+      name: sourceAgent.regionName,
+      location: regionLocationInput,
+      url: sourceAgent.domain,
       latency: "Checking...",
       status: "active"
     };
-    setLandingAgents(prev => [...prev, newAgent]);
+
+    const updated = [...landingAgents, newRegion];
+    setLandingAgents(updated);
+
+    try {
+      await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
+      toast({ title: "Region Added", description: `${sourceAgent.regionName} is now on public map.` });
+      setIsAddRegionOpen(false);
+      setSelectedAgentId("");
+      setRegionLocationInput("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsUpdatingLanding(false);
+    }
   };
 
   const handleDeleteLandingAgent = async (id: string) => {
-    // Immediate write to ensure deletion works and isn't overwritten by onSnapshot
     setIsLandingDirty(true);
     const updated = landingAgents.filter(a => a.id !== id);
     setLandingAgents(updated);
@@ -414,7 +449,6 @@ function DevConsoleContent() {
     try {
       await setDoc(doc(db, "main", "agents"), { list: updated, updatedAt: serverTimestamp() });
       toast({ title: "Region Removed", description: "Public infrastructure list updated." });
-      // Reset dirty after a short delay to allow snapshot to pick up changes
       setTimeout(() => setIsLandingDirty(false), 1000);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
@@ -490,7 +524,6 @@ function DevConsoleContent() {
     }
     setIsAddingAgent(true);
     const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
-    // Only adding to infrastructure_agents, not landing agents as per request
     setDoc(doc(db, "infrastructure_agents", agentId), { 
       regionName, 
       domain: agentDomain, 
@@ -504,9 +537,9 @@ function DevConsoleContent() {
         toast({ title: "Agent Registered", description: `Node active at ${regionName}.` });
         setIsDialogOpen(false);
         setRegionName("");
-        agentDomain && setAgentDomain("");
-        agentIp && setAgentIp("");
-        agentSecret && setAgentSecret("");
+        setAgentDomain("");
+        setAgentIp("");
+        setAgentSecret("");
       })
       .catch((err) => toast({ variant: "destructive", title: "Error", description: err.message }))
       .finally(() => setIsAddingAgent(false));
@@ -532,7 +565,6 @@ function DevConsoleContent() {
     ? (agentsList.reduce((acc, a) => acc + (a.load || 0), 0) / agentsList.length).toFixed(1)
     : "0.0";
 
-  // Parsing metrics for progress bars
   const parseGB = (str: string) => parseFloat(str) || 0;
   const ramUsage = vpsMetrics ? (parseGB(vpsMetrics.usedRam) / parseGB(vpsMetrics.totalRam)) * 100 : 0;
   const diskUsage = vpsMetrics ? (parseGB(vpsMetrics.usedDisk) / parseGB(vpsMetrics.totalDisk)) * 100 : 0;
@@ -652,7 +684,6 @@ function DevConsoleContent() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-12 animate-in fade-in duration-500">
-            {/* Logic Metrics */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <StatCard title="Total Revenue" value={`IDR ${(totalRevenue / 1000).toFixed(1)}K`} trend="Live" icon={CreditCard} color="text-green-400" />
               <StatCard title="Avg Agent Load" value={`${avgGlobalLoad}%`} trend={parseFloat(avgGlobalLoad) > 80 ? "Critical" : "Stable"} icon={Cpu} color="text-primary" />
@@ -660,7 +691,6 @@ function DevConsoleContent() {
               <StatCard title="Total Users" value={usersList.length} trend="+New" icon={Users} color="text-yellow-400" />
             </div>
 
-            {/* Hardware Metrics Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 px-1">
                 <div className="size-10 rounded-xl bg-secondary flex items-center justify-center text-primary shadow-inner">
@@ -1057,9 +1087,6 @@ function DevConsoleContent() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {templatesData.length === 0 && (
-                       <TableRow><TableCell colSpan={5} className="text-center py-10 opacity-50 text-xs">No templates defined.</TableCell></TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -1140,9 +1167,65 @@ function DevConsoleContent() {
                   <CardDescription>Real-time status tracking for regions on Landing Page.</CardDescription>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddLandingAgentRow}>
-                    <PlusCircle className="size-4" /> Add Region
-                  </Button>
+                  <Dialog open={isAddRegionOpen} onOpenChange={setIsAddRegionOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none">
+                        <PlusCircle className="size-4" /> Add Region
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] w-[95vw] bg-card border-border/50 rounded-lg">
+                      <DialogHeader>
+                        <DialogTitle className="font-headline font-bold text-xl">Select Agent for Public Map</DialogTitle>
+                        <DialogDescription>Choose an existing infrastructure node to display on the landing page.</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label className="text-xs font-bold uppercase text-muted-foreground">Select Agent</Label>
+                          <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+                            <SelectTrigger className="bg-secondary/30 border-none h-11">
+                              <SelectValue placeholder="Select a node..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {agentsList.map(agent => (
+                                <SelectItem key={agent.id} value={agent.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Globe className="size-3 text-primary" />
+                                    <span>{agent.regionName} ({agent.domain})</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                              {agentsList.length === 0 && (
+                                <div className="p-4 text-center text-xs text-muted-foreground">No registered agents.</div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-xs font-bold uppercase text-muted-foreground">Display Location</Label>
+                          <div className="relative">
+                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                             <Input 
+                               placeholder="e.g., Jakarta Region (JKT-01)" 
+                               className="bg-secondary/30 border-none h-11 pl-10" 
+                               value={regionLocationInput} 
+                               onChange={(e) => setRegionLocationInput(e.target.value)} 
+                             />
+                          </div>
+                        </div>
+                        {selectedAgentId && (
+                           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1 animate-in fade-in slide-in-from-top-1">
+                              <p className="text-[10px] font-bold uppercase text-primary">Preview URL</p>
+                              <p className="text-xs font-code truncate">{agentsList.find(a => a.id === selectedAgentId)?.domain}</p>
+                           </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button className="w-full bg-primary text-white font-bold h-11" onClick={handleConfirmAddRegion} disabled={isUpdatingLanding || !selectedAgentId}>
+                          {isUpdatingLanding ? <Loader2 className="size-4 animate-spin mr-2" /> : <CheckCircle2 className="size-4 mr-2" />}Add Region
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   <Button className="bg-primary text-white font-bold flex-1 sm:flex-none" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}>
                     {isUpdatingLanding ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
                   </Button>
@@ -1170,7 +1253,7 @@ function DevConsoleContent() {
                         <TableRow key={agent.id} className="hover:bg-secondary/10">
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-32 font-bold" value={agent.name} onChange={(e) => handleUpdateLandingAgent(agent.id, 'name', e.target.value)} /></TableCell>
                           <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full" value={agent.location} onChange={(e) => handleUpdateLandingAgent(agent.id, 'location', e.target.value)} /></TableCell>
-                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || agent.domain || ''} placeholder="node.domain.com" onChange={(e) => handleUpdateLandingAgent(agent.id, 'domain', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-full font-code" value={agent.url || agent.domain || ''} placeholder="node.domain.com" readOnly /></TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-2">
                               {isChecking ? (
