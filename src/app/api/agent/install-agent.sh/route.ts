@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
  * Expanded: Complete Agent Worker with File & Power management APIs.
+ * Fixed: Escaped JS variables and comprehensive API endpoints.
  */
 
 export async function GET() {
@@ -140,7 +141,7 @@ echo -e "\${GREEN}[5/6] Memasang STSCloud Worker Application...\${NC}"
 cat > package.json <<'EOF'
 {
   "name": "stscloud-agent",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "dependencies": {
     "express": "^4.18.2",
@@ -168,7 +169,8 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers';
@@ -187,6 +189,10 @@ const getSafePath = (serverId, subPath = '') => {
     const final = path.resolve(base, subPath);
     if (!final.startsWith(base)) return base;
     return final;
+};
+
+const getLogPath = (serverId) => {
+    return path.join(STORAGE_BASE, serverId, 'files', '.sts', 'logs', 'logs.sts');
 };
 
 // --- SYSTEM APIs ---
@@ -244,7 +250,8 @@ app.post('/api/files/list', auth, async (req, res) => {
 app.post('/api/files/read', auth, async (req, res) => {
     try {
         const { serverId, fileName, subPath } = req.body;
-        const content = await fs.readFile(path.join(getSafePath(serverId, subPath), fileName), 'utf8');
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        const content = await fs.readFile(target, 'utf8');
         res.json({ success: true, content });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
@@ -252,7 +259,8 @@ app.post('/api/files/read', auth, async (req, res) => {
 app.post('/api/files/write', auth, async (req, res) => {
     try {
         const { serverId, fileName, content, subPath } = req.body;
-        await fs.writeFile(path.join(getSafePath(serverId, subPath), fileName), content, 'utf8');
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        await fs.writeFile(target, content, 'utf8');
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
@@ -276,6 +284,126 @@ app.post('/api/files/delete', auth, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+app.post('/api/files/rename', auth, async (req, res) => {
+    try {
+        const { serverId, oldName, newName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        await fs.rename(path.join(base, oldName), path.join(base, newName));
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/move', auth, async (req, res) => {
+    try {
+        const { serverId, names, currentSubPath, targetSubPath } = req.body;
+        const sourceBase = getSafePath(serverId, currentSubPath);
+        const targetBase = getSafePath(serverId, path.join(currentSubPath, targetSubPath));
+        await fs.mkdir(targetBase, { recursive: true });
+        for (const name of names) {
+            await fs.rename(path.join(sourceBase, name), path.join(targetBase, name));
+        }
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/archive', auth, async (req, res) => {
+    try {
+        const { serverId, names, zipName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        const zip = new AdmZip();
+        for (const name of names) {
+            const target = path.join(base, name);
+            const stats = await fs.stat(target);
+            if (stats.isDirectory()) zip.addLocalFolder(target, name);
+            else zip.addLocalFile(target);
+        }
+        const finalZip = zipName.endsWith('.zip') ? zipName : \`\${zipName}.zip\`;
+        zip.writeZip(path.join(base, finalZip));
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/unarchive', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const base = getSafePath(serverId, subPath);
+        const target = path.join(base, fileName);
+        const lower = fileName.toLowerCase();
+        if (lower.endsWith('.zip')) {
+            const zip = new AdmZip(target);
+            zip.extractAllTo(base, true);
+        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.tar')) {
+            await tar.x({ file: target, cwd: base });
+        } else {
+            return res.json({ success: false, error: "Unsupported format" });
+        }
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/download', auth, async (req, res) => {
+    try {
+        const { serverId, fileName, subPath } = req.body;
+        const target = path.join(getSafePath(serverId, subPath), fileName);
+        const content = await fs.readFile(target);
+        res.json({ success: true, content: content.toString('base64'), fileName });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/disk-usage', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const base = path.resolve(STORAGE_BASE, serverId, 'files');
+        let total = 0;
+        async function calc(p) {
+            try {
+                const entries = await fs.readdir(p, { withFileTypes: true });
+                for (const e of entries) {
+                    const full = path.join(p, e.name);
+                    const s = await fs.stat(full);
+                    if (e.isDirectory()) await calc(full);
+                    else total += s.size;
+                }
+            } catch (err) {}
+        }
+        await calc(base);
+        res.json({ success: true, sizeInMB: total / (1024 * 1024) });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/decommission', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        await fs.rm(path.resolve(STORAGE_BASE, serverId), { recursive: true, force: true });
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/files/upload-raw', auth, (req, res) => {
+    const busboy = Busboy({ headers: req.headers });
+    const { serverId, subPath } = req.query;
+    const targetDir = getSafePath(serverId, subPath);
+    let errorSent = false;
+
+    busboy.on('file', (name, file, info) => {
+        const { filename } = info;
+        const targetPath = path.join(targetDir, filename);
+        const writeStream = createWriteStream(targetPath);
+        file.pipe(writeStream);
+    });
+
+    busboy.on('finish', () => {
+        if (!errorSent) res.json({ success: true });
+    });
+
+    busboy.on('error', (err) => {
+        errorSent = true;
+        res.status(500).json({ success: false, error: err.message });
+    });
+
+    req.pipe(busboy);
+});
+
 // --- POWER APIs ---
 const pids = new Map();
 app.post('/api/power/execute', auth, async (req, res) => {
@@ -287,7 +415,7 @@ app.post('/api/power/execute', auth, async (req, res) => {
 
         if (action === 'stop' || action === 'restart') {
             const child = pids.get(serverId);
-            if (child) { try { process.kill(-child.pid, 'SIGKILL'); } catch(e) {} pids.delete(serverId); }
+            if (child) { try { process.kill(-child.pid, 'SIGKILL'); } catch(e) { try { process.kill(child.pid, 'SIGKILL'); } catch(e2) {} } pids.delete(serverId); }
             if (action === 'stop') return res.json({ success: true });
         }
 
@@ -302,7 +430,10 @@ app.post('/api/power/execute', auth, async (req, res) => {
         
         child.stdout.on('data', d => logStream.write(d));
         child.stderr.on('data', d => logStream.write(d));
-        child.on('close', code => { logStream.write(\`\\n[STS] Process exited with code \${code}\\n\`); pids.delete(serverId); });
+        child.on('close', code => { 
+            logStream.write(\`\\n[STS] Process exited with code \${code}\\n\`); 
+            pids.delete(serverId); 
+        });
         
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
@@ -310,7 +441,37 @@ app.post('/api/power/execute', auth, async (req, res) => {
 
 app.post('/api/power/status', auth, (req, res) => {
     const { serverId } = req.body;
-    res.json({ running: pids.has(serverId) });
+    const running = pids.has(serverId);
+    res.json({ running });
+});
+
+app.post('/api/power/input', auth, (req, res) => {
+    const { serverId, text } = req.body;
+    const child = pids.get(serverId);
+    if (child && child.stdin && child.stdin.writable) {
+        child.stdin.write(text + '\\n');
+        return res.json({ success: true });
+    }
+    res.json({ success: false, error: "Not running or not writable" });
+});
+
+app.post('/api/files/logs', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const logPath = getLogPath(serverId);
+        const content = await fs.readFile(logPath, 'utf8');
+        const lines = content.split('\\n');
+        res.json({ success: true, content: lines.slice(-300).join('\\n') });
+    } catch (e) { res.json({ success: true, content: "" }); }
+});
+
+app.post('/api/files/clear-logs', auth, async (req, res) => {
+    try {
+        const { serverId } = req.body;
+        const logPath = getLogPath(serverId);
+        await fs.writeFile(logPath, "");
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.get('/', (req, res) => res.send('STSCloud Agent Active'));
