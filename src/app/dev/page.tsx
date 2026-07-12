@@ -140,6 +140,7 @@ function DevConsoleContent() {
   const [transactions, setTransactions] = React.useState<any[]>([]);
 
   const [pricingData, setPricingData] = React.useState<any[]>([]);
+  const [pricingTab, setPricingTab] = React.useState("global");
   const [landingAgents, setLandingAgents] = React.useState<any[]>([]);
   const [templatesData, setTemplatesData] = React.useState<any[]>([]);
   const [socialsData, setSocialsData] = React.useState<any>(defaultSocials);
@@ -224,7 +225,8 @@ function DevConsoleContent() {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (err) => console.warn("Transactions list permission denied"));
 
-    const unsubPricing = onSnapshot(doc(db, "main", "product"), (docSnap) => {
+    const pricingDocId = pricingTab === "global" ? "product" : `product_${pricingTab}`;
+    const unsubPricing = onSnapshot(doc(db, "main", pricingDocId), (docSnap) => {
       if (!isPricingDirty) {
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -284,7 +286,7 @@ function DevConsoleContent() {
       unsubSocials();
       unsubSystem();
     };
-  }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty, isSocialsDirty]);
+  }, [profile, db, isPricingDirty, isLandingDirty, isTemplatesDirty, isSocialsDirty, pricingTab]);
 
   React.useEffect(() => {
     if (landingAgents.length === 0) return;
@@ -380,10 +382,11 @@ function DevConsoleContent() {
 
   const savePricingToDB = async () => {
     setIsUpdatingPricing(true);
-    setDoc(doc(db, "main", "product"), { tiers: pricingData, updatedAt: serverTimestamp() })
+    const pricingDocId = pricingTab === "global" ? "product" : `product_${pricingTab}`;
+    setDoc(doc(db, "main", pricingDocId), { tiers: pricingData, updatedAt: serverTimestamp() })
       .then(() => {
         setIsPricingDirty(false);
-        toast({ title: "Pricing Saved", description: "Changes synchronized with production." });
+        toast({ title: "Pricing Saved", description: `Changes for ${pricingTab} scope synchronized.` });
       })
       .catch((err) => toast({ variant: "destructive", title: "Save Error", description: err.message }))
       .finally(() => setIsUpdatingPricing(false));
@@ -406,7 +409,7 @@ function DevConsoleContent() {
     setIsUpdatingLanding(true);
     const newRegion = {
       id: `reg-${Math.random().toString(36).substring(2, 7)}`,
-      agentId: selectedAgentId, // Essential for routing
+      agentId: selectedAgentId, 
       name: sourceAgent.regionName,
       location: regionLocationInput,
       url: sourceAgent.domain,
@@ -949,143 +952,109 @@ function DevConsoleContent() {
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
-            <Tabs defaultValue="tiers" className="w-full">
-              <div className="flex items-center justify-between mb-4 px-1">
-                <TabsList className="bg-secondary/30 p-1 h-9 border border-border/50">
-                  <TabsTrigger value="tiers" className="text-xs h-7 px-4">Product Tiers</TabsTrigger>
-                  <TabsTrigger value="inventory" className="text-xs h-7 px-4">Agent Inventory</TabsTrigger>
-                </TabsList>
+            <div className="flex flex-col gap-6">
+              <div className="bg-secondary/30 p-1.5 rounded-xl w-full overflow-x-auto border border-border/50">
+                 <div className="flex items-center gap-1 min-w-max">
+                    <Button 
+                      variant={pricingTab === 'global' ? 'secondary' : 'ghost'} 
+                      size="sm" 
+                      className={cn("rounded-lg gap-2 text-xs font-bold h-9 px-4", pricingTab === 'global' && "bg-primary text-primary-foreground shadow-lg shadow-primary/20")}
+                      onClick={() => { setPricingTab('global'); setIsPricingDirty(false); }}
+                    >
+                      <Globe className="size-3.5" /> Global Config
+                    </Button>
+                    <div className="w-px h-4 bg-border mx-2" />
+                    {landingAgents.map(agent => (
+                      <Button 
+                        key={agent.id}
+                        variant={pricingTab === agent.id ? 'secondary' : 'ghost'} 
+                        size="sm" 
+                        className={cn("rounded-lg gap-2 text-xs font-bold h-9 px-4", pricingTab === agent.id && "bg-primary text-primary-foreground shadow-lg shadow-primary/20")}
+                        onClick={() => { setPricingTab(agent.id); setIsPricingDirty(false); }}
+                      >
+                        <MapPin className="size-3.5" /> {agent.name}
+                      </Button>
+                    ))}
+                 </div>
               </div>
 
-              <TabsContent value="tiers" className="mt-0">
-                <Card className="bg-card border-border/50">
-                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
-                    <div>
-                      <CardTitle className="font-headline">Product Tiers Management</CardTitle>
-                      <CardDescription>
-                        Configure resources and pricing. 
-                        {isPricingDirty && <span className="text-primary font-bold ml-2">(Unsaved Changes)</span>}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}>
-                        <PlusCircle className="size-4" /> Add Row
-                      </Button>
-                      <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={savePricingToDB} disabled={isUpdatingPricing}>
-                        {isUpdatingPricing ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0 overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tier Name</TableHead>
-                          <TableHead>Price Display</TableHead>
-                          <TableHead>Value (IDR)</TableHead>
-                          <TableHead>RAM</TableHead>
-                          <TableHead>CPU</TableHead>
-                          <TableHead>Disk</TableHead>
-                          <TableHead>Manual Stock</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="w-12"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pricingData.map((tier) => (
-                          <TableRow key={tier.id} className="hover:bg-secondary/10">
-                            <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tier.name} onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)} /></TableCell>
-                            <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.price} onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)} /></TableCell>
-                            <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.priceValue} onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)} /></TableCell>
-                            <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
-                            <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
-                            <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 px-2">
-                                 <Package className="size-3.5 text-muted-foreground" />
-                                 <Input 
-                                   type="number"
-                                   className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
-                                   value={tier.stock || 0}
-                                   onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
-                                   onKeyDown={(e) => (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.preventDefault()}
-                                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                                 />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>
-                                {tier.popular ? 'Popular' : 'Standard'}
-                              </Button>
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}>
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="inventory" className="mt-0">
-                <Card className="bg-card border-border/50">
-                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
-                    <div>
-                      <CardTitle className="font-headline">Agent Inventory Control</CardTitle>
-                      <CardDescription>Toggle global Sold Out status for specific regions. {isLandingDirty && <span className="text-primary font-bold ml-2">(Unsaved)</span>}</CardDescription>
-                    </div>
-                    <Button className="bg-primary text-white gap-2 font-bold w-full sm:w-auto" onClick={saveLandingAgentsToDB} disabled={isUpdatingLanding}>
-                      {isUpdatingLanding ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
+              <Card className="bg-card border-border/50">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 pb-6 gap-4">
+                  <div>
+                    <CardTitle className="font-headline flex items-center gap-2">
+                      Tiers Management 
+                      <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                        {pricingTab === 'global' ? 'Global Scope' : landingAgents.find(a => a.id === pricingTab)?.name}
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Configure resources and pricing for this specific scope.
+                      {isPricingDirty && <span className="text-primary font-bold ml-2">(Unsaved Changes)</span>}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleAddTierRow}>
+                      <PlusCircle className="size-4" /> Add Row
                     </Button>
-                  </CardHeader>
-                  <CardContent className="p-0 overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Region Name</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>System Status</TableHead>
-                          <TableHead>Inventory Status</TableHead>
+                    <Button className="bg-primary text-white gap-2 font-bold flex-1 sm:flex-none" onClick={savePricingToDB} disabled={isUpdatingPricing}>
+                      {isUpdatingPricing ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save Changes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tier Name</TableHead>
+                        <TableHead>Price Display</TableHead>
+                        <TableHead>Value (IDR)</TableHead>
+                        <TableHead>RAM</TableHead>
+                        <TableHead>CPU</TableHead>
+                        <TableHead>Disk</TableHead>
+                        <TableHead>Manual Stock</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pricingData.map((tier) => (
+                        <TableRow key={tier.id} className="hover:bg-secondary/10">
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs font-bold" value={tier.name} onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.price} onChange={(e) => handleUpdateTier(tier.id, 'price', e.target.value)} /></TableCell>
+                          <TableCell><Input type="number" className="bg-secondary/30 border-none h-9 text-xs w-28" value={tier.priceValue} onChange={(e) => handleUpdateTier(tier.id, 'priceValue', parseInt(e.target.value) || 0)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.ram} onChange={(e) => handleUpdateTier(tier.id, 'ram', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.cpu} onChange={(e) => handleUpdateTier(tier.id, 'cpu', e.target.value)} /></TableCell>
+                          <TableCell><Input className="bg-secondary/30 border-none h-9 text-xs w-20" value={tier.disk} onChange={(e) => handleUpdateTier(tier.id, 'disk', e.target.value)} /></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 px-2">
+                               <Package className="size-3.5 text-muted-foreground" />
+                               <Input 
+                                 type="number"
+                                 className="bg-secondary/30 border-none h-9 text-xs w-16 font-bold font-code" 
+                                 value={tier.stock || 0}
+                                 onChange={(e) => handleUpdateTier(tier.id, 'stock', parseInt(e.target.value) || 0)}
+                                 onKeyDown={(e) => (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.preventDefault()}
+                                 onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                               />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-[10px] font-bold uppercase", tier.popular ? "text-primary bg-primary/10" : "text-muted-foreground")} onClick={() => handleUpdateTier(tier.id, 'popular', !tier.popular)}>
+                              {tier.popular ? 'Popular' : 'Standard'}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTier(tier.id)}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {landingAgents.map((agent) => (
-                          <TableRow key={agent.id} className="hover:bg-secondary/10">
-                            <TableCell className="font-bold text-xs">{agent.name}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{agent.location}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={cn("text-[8px] uppercase", agent.status === 'active' ? "border-green-500/50 text-green-500 bg-green-500/5" : "text-muted-foreground")}>
-                                {agent.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Switch 
-                                  checked={agent.soldOut || false} 
-                                  onCheckedChange={(val) => handleUpdateLandingAgent(agent.id, 'soldOut', val)}
-                                />
-                                <span className={cn("text-[10px] font-bold uppercase", agent.soldOut ? "text-destructive" : "text-primary")}>
-                                  {agent.soldOut ? "SOLD OUT" : "IN STOCK"}
-                                </span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {landingAgents.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center py-20 opacity-50">No regions found in Public Map.</TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-6 animate-in fade-in duration-500">
