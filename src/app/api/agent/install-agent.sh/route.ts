@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 /**
  * @fileOverview Serves the dynamic bash installation script for STSCloud Agents.
  * Expanded: Complete Agent Worker with File & Power management APIs.
- * Fixed: Escaped JS variables and robust syntax for Next.js compilation.
+ * Fixed: Escaping issues for Node.js strings and PM2 startup commands.
  */
 
 export async function GET() {
@@ -103,17 +103,17 @@ server {
     location / {
         proxy_pass http://localhost:9005;
         proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_request_buffering off;
         proxy_buffering off;
         proxy_connect_timeout 300s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_cache_bypass $http_upgrade;
     }
 }
 EOF
@@ -178,7 +178,8 @@ const STORAGE_BASE = process.env.STORAGE_PATH || '/opt/stscloud/storage/servers'
 // Auth Middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (authHeader === 'Bearer ' + SECRET_KEY) return next();
+    const token = 'Bearer ' + SECRET_KEY;
+    if (authHeader === token) return next();
     if (req.body && req.body.secret === SECRET_KEY) return next();
     return res.status(401).json({ success: false, error: 'Unauthorized' });
 };
@@ -216,7 +217,7 @@ app.post('/api/system/info', auth, (req, res) => {
         res.json({
             success: true,
             data: {
-                cpuModel: cpus[0]?.model || "Generic CPU",
+                cpuModel: cpus[0] ? cpus[0].model : "Generic CPU",
                 cpuCores: cpus.length,
                 totalRam: (totalRamBytes / (1024 ** 3)).toFixed(1) + " GB",
                 usedRam: ((totalRamBytes - freeRamBytes) / (1024 ** 3)).toFixed(1) + " GB",
@@ -433,10 +434,10 @@ app.post('/api/power/execute', auth, async (req, res) => {
         const child = spawn(cmd, { shell: true, cwd: baseDir, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
         pids.set(serverId, child);
         
-        child.stdout.on('data', d => logStream.write(d));
-        child.stderr.on('data', d => logStream.write(d));
+        child.stdout.on('data', d => { logStream.write(d); });
+        child.stderr.on('data', d => { logStream.write(d); });
         child.on('close', code => { 
-            logStream.write('\n[STS] Process exited with code ' + code + '\n'); 
+            logStream.write('\\n[STS] Process exited with code ' + code + '\\n'); 
             pids.delete(serverId); 
         });
         
@@ -492,7 +493,8 @@ echo -e "\${GREEN}[6/6] Memulai layanan di PM2...\${NC}"
 pm2 delete stscloud-agent 2>/dev/null || true
 pm2 start index.js --name stscloud-agent
 pm2 save
-pm2 startup | bash || true
+# Only show startup command, users might need to run manually as root if piping fails
+pm2 startup
 
 echo -e "\${GREEN}Instalasi Selesai!\${NC}"
 echo -e "\${BLUE}=======================================================\${NC}"
