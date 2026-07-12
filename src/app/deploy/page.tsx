@@ -130,6 +130,8 @@ export default function DeployPage() {
 
   const [regionLiveInfo, setRegionLiveInfo] = React.useState<Record<string, { status: string, latency: string, isChecking: boolean }>>({});
 
+  const isDevUser = profile?.dev === true;
+
   React.useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.replace("/auth?type=login");
@@ -225,7 +227,7 @@ export default function DeployPage() {
     });
 
     return () => unsubPricing();
-  }, [db, selectedRegion, regions]);
+  }, [db, selectedRegion, regions, selectedPreset]);
 
   React.useEffect(() => {
     if (step !== 2 || regions.length === 0) return;
@@ -290,11 +292,14 @@ export default function DeployPage() {
     setPaymentLoading(true);
     
     const invoiceId = `STS-${Date.now()}`;
+    // DEV ROLE: Set amount to 1 IDR
+    const finalAmount = isDevUser ? 1 : selectedPresetData.priceValue;
+
     const result = await createSvalePayment({
-      amount: selectedPresetData.priceValue,
+      amount: finalAmount,
       email: userEmail,
       external_id: invoiceId,
-      description: `Server Deployment: ${serverName || 'My Project'}`
+      description: `Server Deployment: ${serverName || 'My Project'} ${isDevUser ? '(Developer Discount)' : ''}`
     });
 
     if (result.success) {
@@ -317,11 +322,12 @@ export default function DeployPage() {
         const txId = `tx-${Date.now()}`;
         const uid = user?.uid || sessionUid;
         const userEmail = profile?.email || user?.email;
+        const finalAmount = isDevUser ? 1 : (selectedPresetData?.priceValue || 0);
         
         setDoc(doc(db, "transactions", txId), {
           userId: uid,
           userEmail: userEmail,
-          amount: selectedPresetData?.priceValue || 0,
+          amount: finalAmount,
           plan: selectedPresetData?.name || "Unknown",
           status: "success",
           createdAt: serverTimestamp(),
@@ -547,6 +553,8 @@ export default function DeployPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {resourcePresets.map((preset) => {
                 const available = isTierAvailable(preset);
+                const displayPrice = isDevUser ? "IDR 1" : preset.price;
+
                 return (
                   <Card 
                     key={preset.id}
@@ -577,7 +585,13 @@ export default function DeployPage() {
                         <div className="flex items-center gap-2 text-muted-foreground"><Cpu className="size-3.5" /><span className="font-medium">CPU {preset.cpu}</span></div>
                         <div className="flex items-center gap-2 text-muted-foreground"><HardDrive className="size-3.5" /><span className="font-medium">Disk {preset.disk}</span></div>
                       </div>
-                      <div className="pt-3 border-t border-border/50"><div className="flex items-center gap-2"><Tag className="size-3.5 text-primary" /><span className="font-bold text-sm text-primary">{preset.price}</span></div></div>
+                      <div className="pt-3 border-t border-border/50">
+                        <div className="flex items-center gap-2">
+                          <Tag className="size-3.5 text-primary" />
+                          <span className="font-bold text-sm text-primary">{displayPrice}</span>
+                          {isDevUser && <Badge variant="outline" className="text-[7px] border-primary/40 text-primary uppercase">Dev Rate</Badge>}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -670,7 +684,15 @@ export default function DeployPage() {
                   <div className="text-muted-foreground">Runtime</div><div className="font-bold text-right uppercase">{selectedAppType} ({selectedAppType === 'python' ? 'Python' : 'v'}{selectedVersion})</div>
                   <div className="text-muted-foreground">Storage</div><div className="font-bold text-right">{selectedPresetData?.disk} SSD</div>
                 </div>
-                <div className="pt-6 border-t border-border/50 flex items-center justify-between"><span className="font-bold font-headline text-lg">Total Cost</span><span className="font-bold font-headline text-3xl text-primary">{selectedPresetData?.price}</span></div>
+                <div className="pt-6 border-t border-border/50 flex items-center justify-between">
+                  <span className="font-bold font-headline text-lg">Total Cost</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold font-headline text-3xl text-primary">
+                      {isDevUser ? "IDR 1" : (selectedPresetData?.price || "N/A")}
+                    </span>
+                    {isDevUser && <span className="text-[10px] font-bold text-primary uppercase">Developer Rate Applied</span>}
+                  </div>
+                </div>
               </CardContent>
             </Card>
             <div className="flex flex-col-reverse md:flex-row justify-between gap-3 pt-6">
@@ -682,7 +704,11 @@ export default function DeployPage() {
 
         {step === 6 && (
           <div className="max-w-md mx-auto space-y-8 text-center animate-in zoom-in-95 duration-500">
-             <div className="space-y-2"><h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2><p className="text-muted-foreground text-sm">Scan QRIS to complete payment</p></div>
+             <div className="space-y-2">
+               <h2 className="text-2xl md:text-3xl font-headline font-bold">QRIS</h2>
+               <p className="text-muted-foreground text-sm">Scan QRIS to complete payment</p>
+               {isDevUser && <Badge className="bg-primary/20 text-primary border-primary/30">Dev Transaction: IDR 1</Badge>}
+             </div>
             <div className="p-8 rounded-3xl bg-secondary/20 border border-border/50 space-y-6">
               <div className="bg-white rounded-2xl shadow-inner relative overflow-hidden min-h-[250px] flex items-center justify-center">
                 {paymentLoading ? (

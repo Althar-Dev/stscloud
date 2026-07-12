@@ -109,6 +109,7 @@ export default function ServerPage() {
   const [isCheckingRenewal, setIsCheckingRenewal] = React.useState(false);
   const [renewalLoading, setRenewalLoading] = React.useState(false);
 
+  const isDevUser = profile?.dev === true;
   const wasOnlineOnMount = React.useRef(false);
 
   React.useEffect(() => {
@@ -309,11 +310,14 @@ export default function ServerPage() {
 
     setRenewalLoading(true);
     const invoiceId = `STS-RENEW-${Date.now()}`;
+    // DEV ROLE: Set renewal amount to 1 IDR
+    const finalAmount = isDevUser ? 1 : tier.priceValue;
+
     const result = await createSvalePayment({
-      amount: tier.priceValue,
+      amount: finalAmount,
       email: user.email,
       external_id: invoiceId,
-      description: `Renewal for Server: ${server.name}`
+      description: `Renewal for Server: ${server.name} ${isDevUser ? '(Developer Discount)' : ''}`
     });
 
     if (result.success) {
@@ -335,10 +339,12 @@ export default function ServerPage() {
       if (result.status === "success") {
         const txId = `tx-renew-${Date.now()}`;
         const tier = pricingTiers.find(p => p.name === server.plan);
+        const finalAmount = isDevUser ? 1 : (tier?.priceValue || 0);
+
         setDoc(doc(db, "transactions", txId), {
           userId: user?.uid,
           userEmail: user?.email,
-          amount: tier?.priceValue || 0,
+          amount: finalAmount,
           plan: server.plan,
           status: "success",
           createdAt: serverTimestamp(),
@@ -562,6 +568,7 @@ export default function ServerPage() {
                             <div className="space-y-2">
                                <h3 className="text-xl font-headline font-bold">Renewal Payment</h3>
                                <p className="text-xs text-muted-foreground">Scan QRIS to extend for 30 days.</p>
+                               {isDevUser && <Badge className="bg-primary/20 text-primary border-primary/30">Dev Transaction: IDR 1</Badge>}
                             </div>
                             <div className="p-0 rounded-2xl bg-white flex items-center justify-center relative overflow-hidden">
                                {renewalPaymentData?.qr_url ? (
@@ -619,6 +626,7 @@ export default function ServerPage() {
                                 <p className="text-xs text-muted-foreground leading-relaxed">
                                    Extend your instance for another 30 days. Payments are processed instantly via SValePay QRIS.
                                 </p>
+                                {isDevUser && <Badge variant="outline" className="mt-2 text-[10px] border-primary/40 text-primary">Dev Discount: IDR 1</Badge>}
                              </div>
                              <Button onClick={handleInitiateRenewal} disabled={renewalLoading} className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold gap-2 mt-6">
                                 {renewalLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Renew Instance
