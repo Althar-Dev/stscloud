@@ -136,6 +136,7 @@ function DevConsoleContent() {
   const [mounted, setMounted] = React.useState(false);
   
   const [usersList, setUsersList] = React.useState<any[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = React.useState("");
   const [agentsList, setAgentsList] = React.useState<any[]>([]);
   const [transactions, setTransactions] = React.useState<any[]>([]);
 
@@ -316,6 +317,11 @@ function DevConsoleContent() {
   if (authLoading || !user || !profile || profile.dev !== true) {
     return <Loader />;
   }
+
+  const filteredUsers = usersList.filter(u => 
+    (u.displayName || "").toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
 
   const handleToggleMaintenance = async (val: boolean) => {
     setIsUpdatingSystem(true);
@@ -672,6 +678,124 @@ function DevConsoleContent() {
                 <Card className="bg-card border-border/50 relative overflow-hidden group"><CardContent className="p-6"><div className="flex items-center justify-between mb-4"><HardDrive className="size-5 text-orange-400" /><Badge variant="outline" className="text-[8px] uppercase border-orange-400/20 text-orange-400">Storage</Badge></div><div className="space-y-3"><div className="flex items-baseline gap-1"><span className="text-2xl font-bold font-headline text-orange-400">{vpsMetrics ? `${vpsMetrics.usedDisk} / ${vpsMetrics.totalDisk}` : "-- GB"}</span></div><div className="space-y-1.5"><Progress value={diskUsage} className="h-1 bg-secondary" /><div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Occupied: {diskUsage.toFixed(1)}%</div></div></div></CardContent></Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="font-headline">Registered Users</CardTitle>
+                    <CardDescription>Manage user roles and view active deployments.</CardDescription>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search users..." 
+                      className="bg-secondary/30 border-none h-10 pl-10" 
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((u) => (
+                      <TableRow key={u.id} className="hover:bg-secondary/10">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-8">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                                {(u.displayName || u.email).charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-bold text-xs">{u.displayName || "Standard User"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
+                        <TableCell>
+                          {u.dev ? (
+                            <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] uppercase">Developer</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[9px] uppercase">User</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/dev/users/${u.id}`}>
+                            <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs hover:text-primary">
+                              View Details <ChevronRight className="size-3" />
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-6 animate-in fade-in duration-500">
+            <Card className="bg-card border-border/50">
+              <CardHeader>
+                <CardTitle className="font-headline">Transaction History</CardTitle>
+                <CardDescription>Real-time billing records across the platform.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead>Invoice ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((tx) => (
+                      <TableRow key={tx.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-code text-[10px]">{tx.externalId || tx.id}</TableCell>
+                        <TableCell className="text-xs">{tx.userEmail}</TableCell>
+                        <TableCell className="font-bold text-xs">IDR {tx.amount?.toLocaleString()}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-[9px] uppercase">{tx.plan}</Badge></TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "text-[9px] uppercase font-bold",
+                            tx.status === 'success' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+                          )}>
+                            {tx.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleString() : "N/A"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {transactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-12 opacity-50 text-xs">No billing records found.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-6 animate-in fade-in duration-500">
