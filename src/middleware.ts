@@ -36,14 +36,10 @@ export function middleware(request: NextRequest) {
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, x-sts-server-id, x-sts-sub-path');
 
   // Routes for explicit routing
-  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth'];
+  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy'];
 
-  // 1. Client Subdomain (Panel & Dashboard)
+  // 1. Client Subdomain (Panel, Dashboard & Deploy)
   if (currentHost === clientDomain) {
-    if (url.pathname.startsWith('/deploy')) {
-      const target = url.pathname.replace('/deploy', '') || '/';
-      return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${deployDomain}`));
-    }
     if (url.pathname.startsWith('/dev')) {
       const target = url.pathname.replace('/dev', '') || '/';
       return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
@@ -55,26 +51,15 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // 2. Deploy Subdomain (Server Setup)
+  // 2. Deploy Subdomain (Legacy - Redirect to Client)
   if (currentHost === deployDomain) {
-    if (clientRoutes.some(r => url.pathname.startsWith(r))) {
-      const target = url.pathname === '/dashboard' ? '/' : url.pathname;
-      return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${clientDomain}`));
-    }
-    if (url.pathname.startsWith('/dev')) {
-      const target = url.pathname.replace('/dev', '') || '/';
-      return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
-    }
-    
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL(`/deploy${url.search}`, request.url));
-    }
-    return response;
+    const targetPath = url.pathname === '/' ? '/deploy' : url.pathname;
+    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
   }
 
   // 3. Dev Subdomain (Console & Infrastructure Docs)
   if (currentHost === devDomain) {
-    if (clientRoutes.some(r => url.pathname.startsWith(r)) || url.pathname.startsWith('/deploy')) {
+    if (clientRoutes.some(r => url.pathname.startsWith(r))) {
       return NextResponse.redirect(new URL(`${url.pathname === '/dashboard' ? '/' : url.pathname}${url.search}`, `https://${clientDomain}`));
     }
     
@@ -93,13 +78,11 @@ export function middleware(request: NextRequest) {
     const target = url.pathname.replace('/dev', '') || '/';
     return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
   }
+  
   if (clientRoutes.some(r => url.pathname.startsWith(r))) {
-    const target = url.pathname === '/dashboard' ? '/' : url.pathname;
-    return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${clientDomain}`));
-  }
-  if (url.pathname.startsWith('/deploy')) {
-    const target = url.pathname.replace('/deploy', '') || '/';
-    return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${deployDomain}`));
+    let targetPath = url.pathname;
+    if (targetPath === '/dashboard') targetPath = '/';
+    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
   }
 
   return response;

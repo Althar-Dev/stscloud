@@ -25,22 +25,15 @@ export function middleware(request: NextRequest) {
   }
 
   // Definisi Domain & Subdomain
-  const rootDomain = 'stscloud.id';
   const clientDomain = 'client.stscloud.id';
   const deployDomain = 'deploy.stscloud.id';
   const devDomain = 'dev.stscloud.id';
 
   // Daftar rute eksklusif Client
-  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth'];
+  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy'];
 
   // 1. Logika Subdomain Client (Pusat Kendali & Auth)
   if (currentHost === clientDomain) {
-    // Larang akses ke /deploy (Pindahkan ke subdomain deploy)
-    if (url.pathname.startsWith('/deploy')) {
-      const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
-    }
-
     // Larang akses ke /dev (Pindahkan ke subdomain dev)
     if (url.pathname.startsWith('/dev')) {
       const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
@@ -60,39 +53,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Logika Subdomain Deploy (Server Management)
+  // 2. Logika Subdomain Deploy (Legacy - Redirect ke Client)
   if (currentHost === deployDomain) {
-    // Larang akses ke rute Client (Redirect ke client.stscloud.id)
-    if (clientRoutes.some(route => url.pathname.startsWith(route))) {
-      let targetPath = url.pathname;
-      if (targetPath === '/dashboard') targetPath = '/';
-      return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
-    }
-
-    // Larang akses ke /dev (Redirect ke dev.stscloud.id)
-    if (url.pathname.startsWith('/dev')) {
-      const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
-    }
-
-    // Jika akses /deploy secara eksplisit di subdomain deploy, bersihkan prefix
-    if (url.pathname === '/deploy') {
-      return NextResponse.redirect(new URL(`/${url.search}`, `https://${deployDomain}`));
-    }
-
-    // Map root ke folder deploy secara internal
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/deploy', request.url));
-    }
-    
-    return NextResponse.next();
+    const targetPath = url.pathname === '/' ? '/deploy' : url.pathname;
+    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
   }
 
   // 3. Logika Subdomain Dev (Developer Sandbox)
   if (currentHost === devDomain) {
-    // Larang akses ke rute Client atau Deploy
-    if (clientRoutes.some(route => url.pathname.startsWith(route)) || url.pathname.startsWith('/deploy')) {
-      return NextResponse.redirect(new URL('/', `https://${clientDomain}`));
+    // Larang akses ke rute Client
+    if (clientRoutes.some(route => url.pathname.startsWith(route))) {
+      const target = url.pathname === '/dashboard' ? '/' : url.pathname;
+      return NextResponse.redirect(new URL(target, `https://${clientDomain}`));
     }
 
     // Map root ke folder dev secara internal
@@ -110,17 +82,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
   }
 
-  // Rute Client / Auth
-  if (url.pathname.startsWith('/auth') || url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/servers') || url.pathname.startsWith('/settings')) {
+  // Rute Client / Auth / Deploy
+  if (clientRoutes.some(r => url.pathname.startsWith(r))) {
     let targetPath = url.pathname;
     if (targetPath === '/dashboard') targetPath = '/';
     return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
-  }
-
-  // Rute Deploy
-  if (url.pathname.startsWith('/deploy')) {
-    const remainingPath = url.pathname.replace(/^\/deploy/, '') || '/';
-    return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${deployDomain}`));
   }
 
   return NextResponse.next();
