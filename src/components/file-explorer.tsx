@@ -215,23 +215,25 @@ export function FileExplorer({ serverId, isExpired }: FileExplorerProps) {
     if (!serverId || !inputFiles || inputFiles.length === 0 || isExpired) return;
     setLoading(true);
     try {
-      const formData = new FormData();
-      for (let i = 0; i < inputFiles.length; i++) { 
+      let uploadedCount = 0;
+      for (let i = 0; i < inputFiles.length; i++) {
+        const formData = new FormData();
         formData.append('files', inputFiles[i]); 
+        
+        const response = await fetch('/api/upload', { 
+          method: 'POST', 
+          body: formData,
+          headers: {
+            'x-sts-server-id': serverId,
+            'x-sts-sub-path': getSubPathString()
+          }
+        });
+        
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || `Failed to upload ${inputFiles[i].name}`);
+        uploadedCount++;
       }
-      
-      const response = await fetch('/api/upload', { 
-        method: 'POST', 
-        body: formData,
-        headers: {
-          'x-sts-server-id': serverId,
-          'x-sts-sub-path': getSubPathString()
-        }
-      });
-      
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error);
-      toast({ title: "Upload Success", description: `${inputFiles.length} file(s) uploaded.` });
+      toast({ title: "Upload Success", description: `${uploadedCount} file(s) uploaded successfully.` });
       fetchFiles();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: error.message });

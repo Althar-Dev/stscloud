@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 
 /**
  * @fileOverview Traffic Controller STSCloud (Project Sebelah).
- * Mengatur isolasi rute antar subdomain untuk mencegah kebocoran akses (e.g. /dev di subdomain client).
+ * Handles internal rewriting for client subdomain and ensures CORS is enabled for cross-subdomain RSC.
  */
 
 export function middleware(request: NextRequest) {
@@ -26,26 +26,16 @@ export function middleware(request: NextRequest) {
 
   // Definisi Domain & Subdomain
   const clientDomain = 'client.stscloud.id';
-  const deployDomain = 'deploy.stscloud.id';
-  const devDomain = 'dev.stscloud.id';
 
   // Daftar rute eksklusif Client
-  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy'];
+  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy', '/dev'];
 
   // 1. Logika Subdomain Client (Pusat Kendali & Auth)
   if (currentHost === clientDomain) {
-    // Larang akses ke /dev (Pindahkan ke subdomain dev)
-    if (url.pathname.startsWith('/dev')) {
-      const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-      return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
-    }
-
-    // Jika akses /dashboard secara eksplisit, bersihkan prefix (redirect ke root client)
     if (url.pathname === '/dashboard') {
       return NextResponse.redirect(new URL(`/${url.search}`, `https://${clientDomain}`));
     }
 
-    // Map root ke dashboard secara internal (Hide /dashboard dari URL)
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL('/dashboard', request.url));
     }
@@ -53,36 +43,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Logika Subdomain Deploy (Legacy - Redirect ke Client)
-  if (currentHost === deployDomain) {
-    const targetPath = url.pathname === '/' ? '/deploy' : url.pathname;
-    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
-  }
-
-  // 3. Logika Subdomain Dev (Developer Sandbox)
-  if (currentHost === devDomain) {
-    // Larang akses ke rute Client
-    if (clientRoutes.some(route => url.pathname.startsWith(route))) {
-      const target = url.pathname === '/dashboard' ? '/' : url.pathname;
-      return NextResponse.redirect(new URL(target, `https://${clientDomain}`));
-    }
-
-    // Map root ke folder dev secara internal
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/dev', request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // 4. Force Redirect rute dari root domain (stscloud.id) ke subdomain yang tepat
-  
-  // Rute Dev
-  if (url.pathname.startsWith('/dev')) {
-    const remainingPath = url.pathname.replace(/^\/dev/, '') || '/';
-    return NextResponse.redirect(new URL(`${remainingPath}${url.search}`, `https://${devDomain}`));
-  }
-
-  // Rute Client / Auth / Deploy
+  // 2. Main Domain (stscloud.id) - Redirect rute client ke client.stscloud.id
   if (clientRoutes.some(r => url.pathname.startsWith(r))) {
     let targetPath = url.pathname;
     if (targetPath === '/dashboard') targetPath = '/';
@@ -94,9 +55,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for internal Next.js and assets
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|assets|img).*)',
   ],
 };
+

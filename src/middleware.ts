@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 
 /**
  * @fileOverview Traffic Controller STSCloud (Architecture).
- * Handles internal rewriting for subdomains and ensures CORS is enabled for cross-subdomain RSC.
+ * Handles internal rewriting for client subdomain and ensures CORS is enabled for cross-subdomain RSC.
  */
 
 export function middleware(request: NextRequest) {
@@ -27,58 +27,24 @@ export function middleware(request: NextRequest) {
 
   // Domain Config
   const clientDomain = 'client.stscloud.id';
-  const deployDomain = 'deploy.stscloud.id';
-  const devDomain = 'dev.stscloud.id';
 
   // Add CORS headers to support cross-subdomain RSC data fetching
   response.headers.set('Access-Control-Allow-Origin', `https://${clientDomain}`);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, x-sts-server-id, x-sts-sub-path');
 
-  // Routes for explicit routing
-  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy'];
+  // Client Application Routes
+  const clientRoutes = ['/dashboard', '/servers', '/settings', '/auth', '/deploy', '/dev'];
 
-  // 1. Client Subdomain (Panel, Dashboard & Deploy)
+  // 1. Client Subdomain (Panel, Dashboard, Auth & Apps)
   if (currentHost === clientDomain) {
-    if (url.pathname.startsWith('/dev')) {
-      const target = url.pathname.replace('/dev', '') || '/';
-      return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
-    }
-    
     if (url.pathname === '/') {
       return NextResponse.rewrite(new URL(`/dashboard${url.search}`, request.url));
     }
     return response;
   }
 
-  // 2. Deploy Subdomain (Legacy - Redirect to Client)
-  if (currentHost === deployDomain) {
-    const targetPath = url.pathname === '/' ? '/deploy' : url.pathname;
-    return NextResponse.redirect(new URL(`${targetPath}${url.search}`, `https://${clientDomain}`));
-  }
-
-  // 3. Dev Subdomain (Console & Infrastructure Docs)
-  if (currentHost === devDomain) {
-    if (clientRoutes.some(r => url.pathname.startsWith(r))) {
-      return NextResponse.redirect(new URL(`${url.pathname === '/dashboard' ? '/' : url.pathname}${url.search}`, `https://${clientDomain}`));
-    }
-    
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL(`/dev${url.search}`, request.url));
-    }
-    if (!url.pathname.startsWith('/dev')) {
-      return NextResponse.rewrite(new URL(`/dev${url.pathname}${url.search}`, request.url));
-    }
-    
-    return response;
-  }
-
-  // 4. Fallback from root (stscloud.id) to proper subdomain
-  if (url.pathname.startsWith('/dev')) {
-    const target = url.pathname.replace('/dev', '') || '/';
-    return NextResponse.redirect(new URL(`${target}${url.search}`, `https://${devDomain}`));
-  }
-  
+  // 2. Main Domain (stscloud.id) - Redirect client routes to client.stscloud.id (Landing page stays at '/')
   if (clientRoutes.some(r => url.pathname.startsWith(r))) {
     let targetPath = url.pathname;
     if (targetPath === '/dashboard') targetPath = '/';
@@ -91,3 +57,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|assets|img).*)'],
 };
+

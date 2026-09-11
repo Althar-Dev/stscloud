@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs, createWriteStream } from 'fs';
+import { promises as fsPromises, mkdirSync, createWriteStream, unlinkSync } from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
 import Busboy from 'busboy';
@@ -9,7 +9,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * @fileOverview High-performance streaming upload API with Remote Agent Proxying.
- * Optimized for low memory footprint and high throughput.
+ * Optimized for zero chunk loss, instant stream piping, and corruption prevention.
  */
 
 export const runtime = 'nodejs';
@@ -79,19 +79,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // 3. LOCAL STORAGE MODE (Fast Disk I/O)
+    // 3. LOCAL STORAGE MODE (Fast & Safe Disk I/O)
     const busboy = Busboy({ 
       headers: { 'content-type': contentType },
       limits: { fileSize: 5 * 1024 * 1024 * 1024 } // 5GB
     });
     
     const uploadedFiles: string[] = [];
+    const activeWritePaths = new Set<string>();
 
     const uploadPromise = new Promise((resolve, reject) => {
       let activeWrites = 0;
       let isBusboyFinished = false;
+      let hasError = false;
+
+      const cleanupPath = (p: string) => {
+        try {
+          unlinkSync(p);
+        } catch (_) {}
+      };
 
       const attemptFinish = () => {
+        if (hasError) return;
         if (isBusboyFinished && activeWrites === 0) {
           resolve({ success: true, files: uploadedFiles });
         }
@@ -104,27 +113,65 @@ export async function POST(req: NextRequest) {
         const targetPath = path.join(targetDir, filename);
 
         activeWrites++;
+        activeWritePaths.add(targetPath);
 
-        fs.mkdir(targetDir, { recursive: true }).then(() => {
+        try {
+          // Synchronous mkdir avoids async promise delay that drops initial stream chunks
+          mkdirSync(targetDir, { recursive: true });
+          
           const writeStream = createWriteStream(targetPath, { highWaterMark: 1024 * 1024 }); // 1MB chunk buffer
           
           fileStream.pipe(writeStream);
 
+          let fileStreamCompleted = false;
+
+          fileStream.on('end', () => {
+            fileStreamCompleted = true;
+          });
+
+          fileStream.on('limit', () => {
+            fileStream.unpipe(writeStream);
+            writeStream.destroy();
+            cleanupPath(targetPath);
+            activeWritePaths.delete(targetPath);
+            activeWrites--;
+            attemptFinish();
+          });
+
+          fileStream.on('error', (err) => {
+            fileStream.unpipe(writeStream);
+            writeStream.destroy();
+            cleanupPath(targetPath);
+            activeWritePaths.delete(targetPath);
+            activeWrites--;
+            attemptFinish();
+          });
+
           writeStream.on('finish', () => {
-            uploadedFiles.push(filename);
+            if (fileStreamCompleted) {
+              uploadedFiles.push(filename);
+            } else {
+              cleanupPath(targetPath);
+            }
+            activeWritePaths.delete(targetPath);
             activeWrites--;
             attemptFinish();
           });
 
           writeStream.on('error', (err) => {
+            writeStream.destroy();
+            cleanupPath(targetPath);
+            activeWritePaths.delete(targetPath);
             activeWrites--;
             attemptFinish();
           });
-        }).catch(err => {
+        } catch (err) {
           fileStream.resume();
+          cleanupPath(targetPath);
+          activeWritePaths.delete(targetPath);
           activeWrites--;
           attemptFinish();
-        });
+        }
       });
 
       busboy.on('finish', () => {
@@ -133,6 +180,10 @@ export async function POST(req: NextRequest) {
       });
 
       busboy.on('error', (err) => {
+        hasError = true;
+        for (const p of activeWritePaths) {
+          cleanupPath(p);
+        }
         reject(err);
       });
     });
@@ -152,3 +203,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

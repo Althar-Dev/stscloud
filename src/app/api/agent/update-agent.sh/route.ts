@@ -285,18 +285,20 @@ app.post('/api/files/decommission', auth, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
-app.post('/api/files/upload-raw', auth, async (req, res) => {
+app.post('/api/files/upload-raw', auth, (req, res) => {
     const busboy = Busboy({ headers: req.headers });
     const serverId = req.query.serverId;
     const subPath = req.query.subPath || '';
     const targetDir = getSafePath(serverId, subPath);
     
     try {
-      await fs.mkdir(targetDir, { recursive: true });
+      require('fs').mkdirSync(targetDir, { recursive: true });
       busboy.on('file', (name, file, info) => {
           const filename = info.filename.replace(/^['"]|['"]$/g, '');
           const targetPath = path.join(targetDir, filename);
-          file.pipe(createWriteStream(targetPath));
+          const writeStream = createWriteStream(targetPath);
+          file.pipe(writeStream);
+          writeStream.on('error', () => { try { require('fs').unlinkSync(targetPath); } catch(e){} });
       });
       busboy.on('finish', () => res.json({ success: true }));
       req.pipe(busboy);

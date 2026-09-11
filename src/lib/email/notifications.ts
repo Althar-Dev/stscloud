@@ -43,7 +43,7 @@ export async function sendResourceLimitNotification(
           <p>To prevent performance degradation of other nodes, the system has suspended this instance. Please upgrade your plan or optimize your application before restarting.</p>
           
           <div style="text-align: center; margin-top: 30px;">
-            <a href="https://stscloud.id/dashboard" style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to Dashboard</a>
+            <a href="https://client.stscloud.id" style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to Dashboard</a>
           </div>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
