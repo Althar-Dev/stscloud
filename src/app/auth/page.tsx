@@ -78,45 +78,6 @@ function AuthContent() {
     }
 
     setSubmitting(true);
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const result = await sendVerificationCode(email, code);
-
-    if (result.success) {
-      setSentCode(code);
-      setShowVerification(true);
-      toast({ title: "Code Sent", description: `Verification code sent to ${email}` });
-    } else {
-      toast({ variant: "destructive", title: "Email Error", description: result.error || "Failed to send verification code." });
-    }
-    setSubmitting(false);
-  };
-
-  const handleLogin = async () => {
-    setSubmitting(true);
-    try {
-      const res = await signInWithEmailAndPassword(auth, email, password);
-      // Sync session to shared domain cookie
-      await setSessionCookie(res.user.uid);
-      
-      toast({ title: "Welcome back!", description: "Successfully signed in to your account." });
-      
-      // Redirect to client subdomain
-      window.location.href = "https://client.stscloud.id/";
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Authentication failed", description: error.message });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleVerifyAndRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verificationCode !== sentCode) {
-      toast({ variant: "destructive", title: "Invalid Code", description: "The verification code you entered is incorrect." });
-      return;
-    }
-
-    setSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
@@ -136,6 +97,24 @@ function AuthContent() {
       window.location.href = "https://client.stscloud.id/";
     } catch (error: any) {
       toast({ variant: "destructive", title: "Registration failed", description: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setSubmitting(true);
+    try {
+      const res = await signInWithEmailAndPassword(auth, email, password);
+      // Sync session to shared domain cookie
+      await setSessionCookie(res.user.uid);
+      
+      toast({ title: "Welcome back!", description: "Successfully signed in to your account." });
+      
+      // Redirect to client subdomain
+      window.location.href = "https://client.stscloud.id/";
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Authentication failed", description: error.message });
     } finally {
       setSubmitting(false);
     }
